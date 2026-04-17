@@ -8,7 +8,7 @@ namespace GrowIt.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ExerciseController(IMediator mediator) : ControllerBase
+public class ExercisesController(IMediator mediator) : ControllerBase
 {
         [HttpGet]
         public async Task<IActionResult> GetExercises(CancellationToken ct = default)
