@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { TodayStackParamList } from '../navigation/types';
 import { apiFetch } from '../api/client';
 
-// Tymczasowo hardcoded — zastąpimy Cognito
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type TodayWorkout = {
@@ -22,6 +24,7 @@ function useTodayWorkout() {
 
 function useCreateWorkout() {
   const queryClient = useQueryClient();
+  const today = new Date().toISOString().split('T')[0];
   return useMutation({
     mutationFn: () =>
       apiFetch<{ id: string }>('/api/workouts', {
@@ -29,12 +32,12 @@ function useCreateWorkout() {
         body: JSON.stringify({
           userId: USER_ID,
           name: `Trening ${new Date().toLocaleDateString('pl-PL')}`,
-          performedAt: new Date().toISOString().split('T')[0],
+          performedAt: today,
           notes: null,
         }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workout', 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['workout', 'by-date', today] });
     },
   });
 }
@@ -42,6 +45,7 @@ function useCreateWorkout() {
 export default function WorkoutsScreen() {
   const { data: workout, isLoading } = useTodayWorkout();
   const { mutate: createWorkout, isPending } = useCreateWorkout();
+  const navigation = useNavigation<NativeStackNavigationProp<TodayStackParamList>>();
 
   const today = new Date().toLocaleDateString('pl-PL', {
     weekday: 'long',
@@ -62,14 +66,17 @@ export default function WorkoutsScreen() {
       <Text style={styles.date}>{today}</Text>
 
       {workout ? (
-        <View style={styles.card}>
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
+        >
           <Text style={styles.workoutName}>{workout.name}</Text>
           <Text style={styles.meta}>
             {workout.exerciseCount === 0
               ? 'Brak ćwiczeń'
               : `${workout.exerciseCount} ćwiczenie${workout.exerciseCount > 1 ? 'ń' : ''}`}
           </Text>
-        </View>
+        </TouchableOpacity>
       ) : (
         <TouchableOpacity
           style={styles.button}
