@@ -1,8 +1,8 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { TodayStackParamList } from '../navigation/types';
+import { TodayStackParamList } from '../../../navigation/types';
 import { useWorkoutDetail } from '../hooks/useWorkoutDetail';
-import { WorkoutExerciseDetail } from '../api/types';
+import { WorkoutExerciseDetail } from '../../../api/types';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'WorkoutDetail'>;
 

@@ -1,14 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../api/client';
+import { addExerciseToWorkout } from '../../../api/workouts';
 
 export const useAddExerciseToWorkout = (workoutId: string, onSuccess: () => void) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (exerciseId: string) =>
-      apiFetch(`/api/workouts/${workoutId}/exercises`, {
-        method: 'POST',
-        body: JSON.stringify({ exerciseId }),
-      }),
+    mutationFn: (exerciseId: string) => addExerciseToWorkout(workoutId, exerciseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workout', workoutId] });
       onSuccess();

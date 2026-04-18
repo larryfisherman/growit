@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { TodayStackParamList } from '../navigation/types';
-import { useTodayWorkout, useCreateWorkout } from '../hooks/useTodayWorkout';
+import { TodayStackParamList } from '../../../navigation/types';
+import { useTodayWorkout } from '../hooks/useTodayWorkout';
+import { useCreateWorkout } from '../hooks/useCreateWorkout';
 
 export const WorkoutsScreen = () => {
   const { data: workout, isLoading } = useTodayWorkout();

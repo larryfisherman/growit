@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../api/client';
-import { WorkoutDetail } from '../api/types';
+import { getWorkoutById } from '../../../api/workouts';
 
 export const useWorkoutDetail = (workoutId: string) =>
   useQuery({
     queryKey: ['workout', workoutId],
-    queryFn: () => apiFetch<WorkoutDetail>(`/api/workouts/${workoutId}`),
+    queryFn: () => getWorkoutById(workoutId),
   });

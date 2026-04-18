@@ -1,7 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { WorkoutsScreen } from '../screens/WorkoutsScreen';
-import { WorkoutDetailScreen } from '../screens/WorkoutDetailScreen';
-import { AddExerciseToWorkoutScreen } from '../screens/AddExerciseToWorkoutScreen';
+import { WorkoutsScreen } from '../features/workouts/screens/WorkoutsScreen';
+import { WorkoutDetailScreen } from '../features/workouts/screens/WorkoutDetailScreen';
+import { AddExerciseToWorkoutScreen } from '../features/workouts/screens/AddExerciseToWorkoutScreen';
 import { TodayStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<TodayStackParamList>();

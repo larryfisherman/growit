@@ -1,7 +1,7 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { TodayStackParamList } from '../navigation/types';
-import { useExercises } from '../hooks/useExercises';
+import { TodayStackParamList } from '../../../navigation/types';
+import { useExercises } from '../../exercises/hooks/useExercises';
 import { useAddExerciseToWorkout } from '../hooks/useAddExerciseToWorkout';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'AddExerciseToWorkout'>;
