@@ -1,48 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TodayStackParamList } from '../navigation/types';
-import { apiFetch } from '../api/client';
+import { useTodayWorkout, useCreateWorkout } from '../hooks/useTodayWorkout';
 
-const USER_ID = '00000000-0000-0000-0000-000000000001';
-
-type TodayWorkout = {
-  id: string;
-  name: string;
-  performedAt: string;
-  exerciseCount: number;
-};
-
-function useTodayWorkout() {
-  const today = new Date().toISOString().split('T')[0];
-  return useQuery({
-    queryKey: ['workout', 'by-date', today],
-    queryFn: () => apiFetch<TodayWorkout | null>(`/api/workouts/${USER_ID}/by-date?date=${today}`),
-  });
-}
-
-function useCreateWorkout() {
-  const queryClient = useQueryClient();
-  const today = new Date().toISOString().split('T')[0];
-  return useMutation({
-    mutationFn: () =>
-      apiFetch<{ id: string }>('/api/workouts', {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: USER_ID,
-          name: `Trening ${new Date().toLocaleDateString('pl-PL')}`,
-          performedAt: today,
-          notes: null,
-        }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workout', 'by-date', today] });
-    },
-  });
-}
-
-export default function WorkoutsScreen() {
+export const WorkoutsScreen = () => {
   const { data: workout, isLoading } = useTodayWorkout();
   const { mutate: createWorkout, isPending } = useCreateWorkout();
   const navigation = useNavigation<NativeStackNavigationProp<TodayStackParamList>>();
@@ -55,23 +17,23 @@ export default function WorkoutsScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center">
         <ActivityIndicator />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.date}>{today}</Text>
+    <View className="flex-1 p-6">
+      <Text className="text-xl font-semibold mb-6 capitalize">{today}</Text>
 
       {workout ? (
         <TouchableOpacity
-          style={styles.card}
+          className="bg-gray-100 rounded-xl p-5"
           onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
         >
-          <Text style={styles.workoutName}>{workout.name}</Text>
-          <Text style={styles.meta}>
+          <Text className="text-lg font-semibold">{workout.name}</Text>
+          <Text className="text-sm text-gray-500 mt-1">
             {workout.exerciseCount === 0
               ? 'Brak ćwiczeń'
               : `${workout.exerciseCount} ćwiczenie${workout.exerciseCount > 1 ? 'ń' : ''}`}
@@ -79,60 +41,17 @@ export default function WorkoutsScreen() {
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={styles.button}
+          className="bg-black rounded-xl py-4 items-center"
           onPress={() => createWorkout()}
           disabled={isPending}
         >
           {isPending ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Rozpocznij trening</Text>
+            <Text className="text-white text-base font-semibold">Rozpocznij trening</Text>
           )}
         </TouchableOpacity>
       )}
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  container: {
-    flex: 1,
-    padding: 24,
-  },
-  date: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 24,
-    textTransform: 'capitalize',
-  },
-  card: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 20,
-  },
-  workoutName: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  meta: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  button: {
-    backgroundColor: '#000',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+};

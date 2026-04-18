@@ -1,49 +1,34 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TodayStackParamList } from '../navigation/types';
-import { apiFetch } from '../api/client';
+import { useWorkoutDetail } from '../hooks/useWorkoutDetail';
+import { WorkoutExerciseDetail } from '../api/types';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'WorkoutDetail'>;
 
-type SetDetail = {
-  id: string;
-  weightKg: number;
-  reps: number;
-  orderIndex: number;
-};
+const ExerciseCard = ({ item }: { item: WorkoutExerciseDetail }) => (
+  <View className="bg-gray-100 rounded-xl p-4">
+    <Text className="text-base font-semibold">{item.exerciseName}</Text>
+    <Text className="text-sm text-gray-500 mt-0.5">{item.category}</Text>
+    {item.sets.length > 0 && (
+      <View className="mt-2 gap-0.5">
+        {item.sets.map((set, i) => (
+          <Text key={set.id} className="text-sm text-gray-700">
+            Seria {i + 1}: {set.weightKg} kg × {set.reps}
+          </Text>
+        ))}
+      </View>
+    )}
+  </View>
+);
 
-type WorkoutExerciseDetail = {
-  id: string;
-  exerciseId: string;
-  exerciseName: string;
-  category: string;
-  orderIndex: number;
-  sets: SetDetail[];
-};
-
-type WorkoutDetail = {
-  id: string;
-  name: string;
-  performedAt: string;
-  notes: string | null;
-  exercises: WorkoutExerciseDetail[];
-};
-
-function useWorkoutDetail(workoutId: string) {
-  return useQuery({
-    queryKey: ['workout', workoutId],
-    queryFn: () => apiFetch<WorkoutDetail>(`/api/workouts/${workoutId}`),
-  });
-}
-
-export default function WorkoutDetailScreen({ route, navigation }: Props) {
+export const WorkoutDetailScreen = ({ route, navigation }: Props) => {
   const { workoutId } = route.params;
   const { data: workout, isLoading } = useWorkoutDetail(workoutId);
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center">
         <ActivityIndicator />
       </View>
     );
@@ -51,101 +36,29 @@ export default function WorkoutDetailScreen({ route, navigation }: Props) {
 
   if (!workout) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center">
         <Text>Nie znaleziono treningu</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1">
       <FlatList
         data={workout.exercises}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <Text style={styles.empty}>Brak ćwiczeń — dodaj pierwsze</Text>
+          <Text className="text-center text-gray-500 mt-10">Brak ćwiczeń — dodaj pierwsze</Text>
         }
-        renderItem={({ item }) => (
-          <View style={styles.exerciseCard}>
-            <Text style={styles.exerciseName}>{item.exerciseName}</Text>
-            <Text style={styles.category}>{item.category}</Text>
-            {item.sets.length > 0 && (
-              <View style={styles.sets}>
-                {item.sets.map((set, i) => (
-                  <Text key={set.id} style={styles.set}>
-                    Seria {i + 1}: {set.weightKg} kg × {set.reps}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-        contentContainerStyle={styles.list}
+        renderItem={({ item }) => <ExerciseCard item={item} />}
+        contentContainerClassName="p-4 gap-3 pb-28"
       />
       <TouchableOpacity
-        style={styles.button}
+        className="absolute bottom-8 left-4 right-4 bg-black rounded-xl py-4 items-center"
         onPress={() => navigation.navigate('AddExerciseToWorkout', { workoutId })}
       >
-        <Text style={styles.buttonText}>+ Dodaj ćwiczenie</Text>
+        <Text className="text-white text-base font-semibold">+ Dodaj ćwiczenie</Text>
       </TouchableOpacity>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  container: {
-    flex: 1,
-  },
-  list: {
-    padding: 16,
-    gap: 12,
-    paddingBottom: 100,
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 40,
-  },
-  exerciseCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 16,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  category: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 2,
-  },
-  sets: {
-    marginTop: 8,
-    gap: 2,
-  },
-  set: {
-    fontSize: 14,
-    color: '#333',
-  },
-  button: {
-    position: 'absolute',
-    bottom: 32,
-    left: 16,
-    right: 16,
-    backgroundColor: '#000',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+};
