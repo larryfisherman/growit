@@ -3,6 +3,7 @@ using GrowIt.Application.Workouts.Commands.AddExerciseToWorkout;
 using GrowIt.Application.Workouts.Commands.CreateWorkout;
 using GrowIt.Application.Workouts.Queries.GetWorkoutByDate;
 using GrowIt.Application.Workouts.Queries.GetWorkoutById;
+using GrowIt.Application.Workouts.Queries.GetWorkoutDates;
 using GrowIt.Application.Workouts.Queries.GetWorkoutHistory;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -39,6 +40,13 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetWorkoutByDate(Guid userId, [FromQuery] DateOnly date, CancellationToken ct)
     {
         var result = await mediator.Send(new GetWorkoutByDateQuery(userId, date), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("{userId:guid}/dates")]
+    public async Task<IActionResult> GetWorkoutDates(Guid userId, [FromQuery] int year, [FromQuery] int month, CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetWorkoutDatesQuery(userId, year, month), ct);
         return Ok(result);
     }
 
