@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TemplatesStackParamList } from '../../../navigation/types';
@@ -23,15 +23,23 @@ const ExerciseRow = ({ exercise, onEdit, onDelete }: ExerciseRowProps) => {
   const ref = useRef<Swipeable>(null);
 
   const renderRightActions = () => (
-    <Pressable
-      onPress={() => {
-        ref.current?.close();
-        onDelete();
-      }}
-      className="bg-red-500 justify-center items-center w-20 rounded-lg my-0"
-    >
-      <Text className="text-white font-semibold">Usuń</Text>
-    </Pressable>
+    <View style={{ width: 80, justifyContent: 'center', paddingLeft: 8 }}>
+      <RectButton
+        onPress={() => {
+          console.log('[delete] button pressed, exercise:', exercise.id);
+          ref.current?.close();
+          onDelete();
+        }}
+        style={{
+          backgroundColor: '#ef4444',
+          borderRadius: 8,
+          paddingVertical: 16,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: '600' }}>Usuń</Text>
+      </RectButton>
+    </View>
   );
 
   return (
