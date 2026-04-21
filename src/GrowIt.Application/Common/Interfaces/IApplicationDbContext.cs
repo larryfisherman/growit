@@ -9,6 +9,8 @@ public interface IApplicationDbContext
     DbSet<Workout> Workouts { get; }
     DbSet<WorkoutExercise> WorkoutExercises { get; }
     DbSet<Set> Sets { get; }
+    DbSet<WorkoutTemplate> WorkoutTemplates { get; }
+    DbSet<TemplateExercise> TemplateExercises { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

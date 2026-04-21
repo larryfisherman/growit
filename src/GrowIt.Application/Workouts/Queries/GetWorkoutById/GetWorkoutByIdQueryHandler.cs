@@ -21,8 +21,11 @@ public class GetWorkoutByIdQueryHandler(IApplicationDbContext dbContext)
                     .Select(we => new WorkoutExerciseDetail(
                         we.Id,
                         we.ExerciseId,
-                        we.Exercise.Name,
-                        we.Exercise.Category,
+                        we.Exercise != null ? we.Exercise.Name : we.CustomExerciseName!,
+                        we.Exercise != null ? we.Exercise.Category : null,
+                        we.TargetSets,
+                        we.TargetReps,
+                        we.RestSeconds,
                         we.OrderIndex,
                         we.Sets
                             .OrderBy(s => s.OrderIndex)

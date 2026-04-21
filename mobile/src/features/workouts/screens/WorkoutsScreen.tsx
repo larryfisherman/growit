@@ -41,17 +41,25 @@ export const WorkoutsScreen = () => {
           </Text>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity
-          className="bg-black rounded-xl py-4 items-center"
-          onPress={() => createWorkout()}
-          disabled={isPending}
-        >
-          {isPending ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white text-base font-semibold">Rozpocznij trening</Text>
-          )}
-        </TouchableOpacity>
+        <View className="gap-3">
+          <TouchableOpacity
+            className="bg-black rounded-xl py-4 items-center"
+            onPress={() => navigation.navigate('StartFromTemplate')}
+          >
+            <Text className="text-white text-base font-semibold">Rozpocznij z szablonu</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="bg-gray-100 rounded-xl py-4 items-center"
+            onPress={() => createWorkout()}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <ActivityIndicator />
+            ) : (
+              <Text className="text-base font-semibold">Rozpocznij pusty trening</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );

@@ -1,10 +1,11 @@
 using GrowIt.API.Models;
 using GrowIt.Application.Workouts.Commands.AddExerciseToWorkout;
 using GrowIt.Application.Workouts.Commands.CreateWorkout;
+using GrowIt.Application.Workouts.Commands.CreateWorkoutFromTemplate;
 using GrowIt.Application.Workouts.Queries.GetWorkoutByDate;
 using GrowIt.Application.Workouts.Queries.GetWorkoutById;
-using GrowIt.Application.Workouts.Queries.GetWorkoutDates;
 using GrowIt.Application.Workouts.Queries.GetWorkoutHistory;
+using GrowIt.Application.Workouts.Queries.GetWorkoutsByMonth;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,10 +44,10 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{userId:guid}/dates")]
-    public async Task<IActionResult> GetWorkoutDates(Guid userId, [FromQuery] int year, [FromQuery] int month, CancellationToken ct)
+    [HttpGet("{userId:guid}/by-month")]
+    public async Task<IActionResult> GetWorkoutsByMonth(Guid userId, [FromQuery] int year, [FromQuery] int month, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetWorkoutDatesQuery(userId, year, month), ct);
+        var result = await mediator.Send(new GetWorkoutsByMonthQuery(userId, year, month), ct);
         return Ok(result);
     }
 
@@ -56,5 +57,12 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     {
         var id = await mediator.Send(new AddExerciseToWorkoutCommand(workoutId, request.ExerciseId), ct);
         return Ok(id);
+    }
+
+    [HttpPost("from-template")]
+    public async Task<IActionResult> CreateFromTemplate([FromBody] CreateWorkoutFromTemplateRequest request, CancellationToken ct)
+    {
+        var id = await mediator.Send(new CreateWorkoutFromTemplateCommand(request.UserId, request.TemplateId, request.PerformedAt), ct);
+        return Ok(new { id });
     }
 }

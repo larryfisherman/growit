@@ -9,7 +9,13 @@ type Props = NativeStackScreenProps<TodayStackParamList, 'WorkoutDetail'>;
 const ExerciseCard = ({ item }: { item: WorkoutExerciseDetail }) => (
   <View className="bg-gray-100 rounded-xl p-4">
     <Text className="text-base font-semibold">{item.exerciseName}</Text>
-    <Text className="text-sm text-gray-500 mt-0.5">{item.category}</Text>
+    {item.category && <Text className="text-sm text-gray-500 mt-0.5">{item.category}</Text>}
+    {item.targetSets != null && item.targetReps != null && (
+      <Text className="text-sm text-gray-600 mt-1">
+        Cel: {item.targetSets} × {item.targetReps}
+        {item.restSeconds != null ? ` · przerwa ${item.restSeconds}s` : ''}
+      </Text>
+    )}
     {item.sets.length > 0 && (
       <View className="mt-2 gap-0.5">
         {item.sets.map((set, i) => (

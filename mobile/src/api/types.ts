@@ -14,9 +14,12 @@ export type SetDetail = {
 
 export type WorkoutExerciseDetail = {
   id: string;
-  exerciseId: string;
+  exerciseId: string | null;
   exerciseName: string;
-  category: string;
+  category: string | null;
+  targetSets: number | null;
+  targetReps: number | null;
+  restSeconds: number | null;
   orderIndex: number;
   sets: SetDetail[];
 };
@@ -29,9 +32,35 @@ export type WorkoutDetail = {
   exercises: WorkoutExerciseDetail[];
 };
 
-export type TodayWorkout = {
+export type WorkoutSummary = {
   id: string;
   name: string;
   performedAt: string;
   exerciseCount: number;
-} | null;
+};
+
+export type TodayWorkout = WorkoutSummary | null;
+
+export type TemplateSummary = {
+  id: string;
+  name: string;
+  exerciseCount: number;
+};
+
+export type TemplateExerciseDetail = {
+  id: string;
+  exerciseId: string | null;
+  exerciseName: string;
+  category: string | null;
+  targetSets: number;
+  targetReps: number;
+  restSeconds: number;
+  orderIndex: number;
+};
+
+export type TemplateDetail = {
+  id: string;
+  name: string;
+  notes: string | null;
+  exercises: TemplateExerciseDetail[];
+};

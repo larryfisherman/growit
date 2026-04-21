@@ -13,9 +13,12 @@ public record WorkoutDetailResponse(
 
 public record WorkoutExerciseDetail(
     Guid Id,
-    Guid ExerciseId,
+    Guid? ExerciseId,
     string ExerciseName,
-    string Category,
+    string? Category,
+    int? TargetSets,
+    int? TargetReps,
+    int? RestSeconds,
     int OrderIndex,
     IReadOnlyList<SetDetail> Sets);
 
