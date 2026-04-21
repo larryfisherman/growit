@@ -5,6 +5,15 @@ export type TodayStackParamList = {
   StartFromTemplate: undefined;
   TemplateDetail: { templateId: string | null };
   TemplateExercisePicker: { templateId: string };
+  TemplateExerciseEdit: {
+    templateId: string;
+    templateExerciseId: string;
+    exerciseName: string;
+    targetSets: number;
+    targetReps: number;
+    restSeconds: number;
+    orderIndex: number;
+  };
 };
 
 export type CalendarStackParamList = {
@@ -16,4 +25,13 @@ export type TemplatesStackParamList = {
   TemplatesList: undefined;
   TemplateDetail: { templateId: string | null };
   TemplateExercisePicker: { templateId: string };
+  TemplateExerciseEdit: {
+    templateId: string;
+    templateExerciseId: string;
+    exerciseName: string;
+    targetSets: number;
+    targetReps: number;
+    restSeconds: number;
+    orderIndex: number;
+  };
 };

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TemplatesStackParamList } from '../../../navigation/types';
+import { TemplateExerciseDetail } from '../../../api/types';
 import { useTemplate } from '../hooks/useTemplate';
 import { useCreateTemplate } from '../hooks/useCreateTemplate';
 import { useUpdateTemplate } from '../hooks/useUpdateTemplate';
@@ -10,6 +12,39 @@ import { useRemoveExerciseFromTemplate } from '../hooks/useRemoveExerciseFromTem
 
 type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplateDetail'>;
 type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateDetail'>;
+
+type ExerciseRowProps = {
+  exercise: TemplateExerciseDetail;
+  onEdit: () => void;
+  onDelete: () => void;
+};
+
+const ExerciseRow = ({ exercise, onEdit, onDelete }: ExerciseRowProps) => {
+  const ref = useRef<Swipeable>(null);
+
+  const renderRightActions = () => (
+    <Pressable
+      onPress={() => {
+        ref.current?.close();
+        onDelete();
+      }}
+      className="bg-red-500 justify-center items-center w-20 rounded-lg my-0"
+    >
+      <Text className="text-white font-semibold">Usuń</Text>
+    </Pressable>
+  );
+
+  return (
+    <Swipeable ref={ref} renderRightActions={renderRightActions} overshootRight={false}>
+      <Pressable onPress={onEdit} className="bg-gray-50 rounded-lg p-3">
+        <Text className="text-base font-medium">{exercise.exerciseName}</Text>
+        <Text className="text-sm text-gray-500">
+          {exercise.targetSets} × {exercise.targetReps} · przerwa {exercise.restSeconds}s
+        </Text>
+      </Pressable>
+    </Swipeable>
+  );
+};
 
 export const TemplateDetailScreen = () => {
   const navigation = useNavigation<NavProp>();
@@ -44,12 +79,6 @@ export const TemplateDetailScreen = () => {
       update(payload);
     }
   };
-
-  const confirmRemoveExercise = (id: string, label: string) =>
-    Alert.alert('Usuń ćwiczenie', `Usunąć „${label}" z szablonu?`, [
-      { text: 'Anuluj', style: 'cancel' },
-      { text: 'Usuń', style: 'destructive', onPress: () => removeExercise.mutate(id) },
-    ]);
 
   if (isLoading) {
     return (
@@ -106,16 +135,22 @@ export const TemplateDetailScreen = () => {
           ) : (
             <View className="gap-2 mb-2">
               {template.exercises.map((ex) => (
-                <Pressable
+                <ExerciseRow
                   key={ex.id}
-                  onLongPress={() => confirmRemoveExercise(ex.id, ex.exerciseName)}
-                  className="bg-gray-50 rounded-lg p-3"
-                >
-                  <Text className="text-base font-medium">{ex.exerciseName}</Text>
-                  <Text className="text-sm text-gray-500">
-                    {ex.targetSets} × {ex.targetReps} · przerwa {ex.restSeconds}s
-                  </Text>
-                </Pressable>
+                  exercise={ex}
+                  onEdit={() =>
+                    navigation.navigate('TemplateExerciseEdit', {
+                      templateId: templateId!,
+                      templateExerciseId: ex.id,
+                      exerciseName: ex.exerciseName,
+                      targetSets: ex.targetSets,
+                      targetReps: ex.targetReps,
+                      restSeconds: ex.restSeconds,
+                      orderIndex: ex.orderIndex,
+                    })
+                  }
+                  onDelete={() => removeExercise.mutate(ex.id)}
+                />
               ))}
             </View>
           )}
