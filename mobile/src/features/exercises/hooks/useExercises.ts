@@ -5,4 +5,5 @@ export const useExercises = () =>
   useQuery({
     queryKey: ['exercises'],
     queryFn: getExercises,
+    staleTime: Infinity,
   });

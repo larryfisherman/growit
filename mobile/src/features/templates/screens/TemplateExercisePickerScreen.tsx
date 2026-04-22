@@ -1,15 +1,11 @@
-import { useState } from 'react';
 import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { TemplatesStackParamList } from '../../../navigation/types';
 import { useExercises } from '../../exercises/hooks/useExercises';
 import { useAddExerciseToTemplate } from '../hooks/useAddExerciseToTemplate';
+import { useTemplateExerciseForm } from '../hooks/useTemplateExerciseForm';
 
 type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateExercisePicker'>;
-
-type Selection =
-  | { kind: 'library'; id: string; name: string }
-  | { kind: 'custom'; name: string };
 
 export const TemplateExercisePickerScreen = () => {
   const navigation = useNavigation();
@@ -18,30 +14,12 @@ export const TemplateExercisePickerScreen = () => {
   const { data: exercises, isLoading } = useExercises();
   const { mutate: add, isPending } = useAddExerciseToTemplate(templateId);
 
-  const [selection, setSelection] = useState<Selection | null>(null);
-  const [customName, setCustomName] = useState('');
-  const [sets, setSets] = useState('3');
-  const [reps, setReps] = useState('10');
-  const [rest, setRest] = useState('90');
+  const { selection, setSelection, targets, setTarget, handleSubmit } = useTemplateExerciseForm(
+    (payload) => add(payload, { onSuccess: () => navigation.goBack() })
+  );
 
-  const handleSubmit = () => {
-    if (!selection) return;
-    const targetSets = parseInt(sets, 10);
-    const targetReps = parseInt(reps, 10);
-    const restSeconds = parseInt(rest, 10);
-    if (!targetSets || !targetReps || isNaN(restSeconds)) return;
-
-    add(
-      {
-        exerciseId: selection.kind === 'library' ? selection.id : null,
-        customExerciseName: selection.kind === 'custom' ? selection.name : null,
-        targetSets,
-        targetReps,
-        restSeconds,
-      },
-      { onSuccess: () => navigation.goBack() }
-    );
-  };
+  const isLibrary = selection?.exerciseId != null;
+  const customName = selection && !isLibrary ? selection.name : '';
 
   if (isLoading) {
     return (
@@ -55,25 +33,20 @@ export const TemplateExercisePickerScreen = () => {
     <View className="p-4 gap-4 border-b border-gray-200">
       <View>
         <Text className="text-sm font-medium text-gray-700 mb-1">Własne ćwiczenie</Text>
-        <View className="flex-row gap-2">
-          <TextInput
-            value={customName}
-            onChangeText={(t) => {
-              setCustomName(t);
-              setSelection(t.trim() ? { kind: 'custom', name: t.trim() } : null);
-            }}
-            placeholder="Nazwa"
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base"
-          />
-        </View>
+        <TextInput
+          value={customName}
+          onChangeText={(t) => setSelection(t.trim() ? { exerciseId: null, name: t } : null)}
+          placeholder="Nazwa"
+          className="border border-gray-300 rounded-lg px-3 py-2 text-base"
+        />
       </View>
 
       <View className="flex-row gap-2">
         <View className="flex-1">
           <Text className="text-sm font-medium text-gray-700 mb-1">Serie</Text>
           <TextInput
-            value={sets}
-            onChangeText={setSets}
+            value={targets.sets}
+            onChangeText={(t) => setTarget('sets', t)}
             keyboardType="number-pad"
             className="border border-gray-300 rounded-lg px-3 py-2 text-base"
           />
@@ -81,8 +54,8 @@ export const TemplateExercisePickerScreen = () => {
         <View className="flex-1">
           <Text className="text-sm font-medium text-gray-700 mb-1">Powtórzenia</Text>
           <TextInput
-            value={reps}
-            onChangeText={setReps}
+            value={targets.reps}
+            onChangeText={(t) => setTarget('reps', t)}
             keyboardType="number-pad"
             className="border border-gray-300 rounded-lg px-3 py-2 text-base"
           />
@@ -90,15 +63,15 @@ export const TemplateExercisePickerScreen = () => {
         <View className="flex-1">
           <Text className="text-sm font-medium text-gray-700 mb-1">Przerwa (s)</Text>
           <TextInput
-            value={rest}
-            onChangeText={setRest}
+            value={targets.rest}
+            onChangeText={(t) => setTarget('rest', t)}
             keyboardType="number-pad"
             className="border border-gray-300 rounded-lg px-3 py-2 text-base"
           />
         </View>
       </View>
 
-      {selection?.kind === 'library' && (
+      {isLibrary && selection && (
         <View className="bg-blue-50 rounded-lg p-3">
           <Text className="text-sm text-gray-600">Wybrane ćwiczenie</Text>
           <Text className="text-base font-medium">{selection.name}</Text>
@@ -128,13 +101,10 @@ export const TemplateExercisePickerScreen = () => {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={renderHeader()}
       renderItem={({ item }) => {
-        const isSelected = selection?.kind === 'library' && selection.id === item.id;
+        const isSelected = selection?.exerciseId === item.id;
         return (
           <Pressable
-            onPress={() => {
-              setCustomName('');
-              setSelection({ kind: 'library', id: item.id, name: item.name });
-            }}
+            onPress={() => setSelection({ exerciseId: item.id, name: item.name })}
             className={`px-4 py-3 border-b border-gray-100 ${isSelected ? 'bg-blue-50' : ''}`}
           >
             <Text className="text-base font-medium">{item.name}</Text>
