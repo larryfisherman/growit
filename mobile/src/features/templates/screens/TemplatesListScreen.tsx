@@ -1,22 +1,62 @@
+import { useRef } from 'react';
 import { View, Text, Pressable, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TemplatesStackParamList } from '../../../navigation/types';
+import { TemplateSummary } from '../../../api/types';
 import { useTemplates } from '../hooks/useTemplates';
 import { useDeleteTemplate } from '../hooks/useDeleteTemplate';
 
 type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplatesList'>;
 
+type TemplateRowProps = {
+  template: TemplateSummary;
+  onPress: () => void;
+  onDelete: () => void;
+};
+
+const TemplateRow = ({ template, onPress, onDelete }: TemplateRowProps) => {
+  const swipeRef = useRef<Swipeable>(null);
+
+  const confirmDelete = () => {
+    swipeRef.current?.close();
+    Alert.alert('Usuń szablon', `Na pewno usunąć „${template.name}"?`, [
+      { text: 'Anuluj', style: 'cancel' },
+      { text: 'Usuń', style: 'destructive', onPress: onDelete },
+    ]);
+  };
+
+  const renderRightActions = () => (
+    <View style={{ width: 80, justifyContent: 'center', paddingLeft: 8, paddingRight: 8 }}>
+      <RectButton
+        onPress={confirmDelete}
+        style={{
+          backgroundColor: '#ef4444',
+          borderRadius: 8,
+          paddingVertical: 16,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: '600' }}>Usuń</Text>
+      </RectButton>
+    </View>
+  );
+
+  return (
+    <Swipeable ref={swipeRef} renderRightActions={renderRightActions} overshootRight={false}>
+      <Pressable onPress={onPress} className="bg-white px-4 py-3 border-b border-gray-100">
+        <Text className="text-base font-medium">{template.name}</Text>
+        <Text className="text-sm text-gray-500">{template.exerciseCount} ćwiczeń</Text>
+      </Pressable>
+    </Swipeable>
+  );
+};
+
 export const TemplatesListScreen = () => {
   const navigation = useNavigation<NavProp>();
   const { data, isLoading } = useTemplates();
   const { mutate: remove } = useDeleteTemplate();
-
-  const confirmDelete = (id: string, name: string) =>
-    Alert.alert('Usuń szablon', `Na pewno usunąć „${name}"?`, [
-      { text: 'Anuluj', style: 'cancel' },
-      { text: 'Usuń', style: 'destructive', onPress: () => remove(id) },
-    ]);
 
   if (isLoading) {
     return (
@@ -32,14 +72,11 @@ export const TemplatesListScreen = () => {
         data={data}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Pressable
+          <TemplateRow
+            template={item}
             onPress={() => navigation.navigate('TemplateDetail', { templateId: item.id })}
-            onLongPress={() => confirmDelete(item.id, item.name)}
-            className="px-4 py-3 border-b border-gray-100"
-          >
-            <Text className="text-base font-medium">{item.name}</Text>
-            <Text className="text-sm text-gray-500">{item.exerciseCount} ćwiczeń</Text>
-          </Pressable>
+            onDelete={() => remove(item.id)}
+          />
         )}
         ListEmptyComponent={
           <View className="items-center justify-center p-10">

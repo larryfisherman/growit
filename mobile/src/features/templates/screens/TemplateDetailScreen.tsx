@@ -9,25 +9,76 @@ import { useTemplate } from '../hooks/useTemplate';
 import { useCreateTemplate } from '../hooks/useCreateTemplate';
 import { useUpdateTemplate } from '../hooks/useUpdateTemplate';
 import { useRemoveExerciseFromTemplate } from '../hooks/useRemoveExerciseFromTemplate';
+import { useUpdateTemplateExercise } from '../hooks/useUpdateTemplateExercise';
 
 type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplateDetail'>;
 type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateDetail'>;
 
 type ExerciseRowProps = {
   exercise: TemplateExerciseDetail;
-  onEdit: () => void;
+  templateId: string;
   onDelete: () => void;
 };
 
-const ExerciseRow = ({ exercise, onEdit, onDelete }: ExerciseRowProps) => {
-  const ref = useRef<Swipeable>(null);
+const ExerciseRow = ({ exercise, templateId, onDelete }: ExerciseRowProps) => {
+  const swipeRef = useRef<Swipeable>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { mutate: update } = useUpdateTemplateExercise(templateId);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [targets, setTargets] = useState({
+    sets: String(exercise.targetSets),
+    reps: String(exercise.targetReps),
+    rest: String(exercise.restSeconds),
+  });
+
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const targetSets = parseInt(targets.sets, 10);
+    const targetReps = parseInt(targets.reps, 10);
+    const restSeconds = parseInt(targets.rest, 10);
+    if (!targetSets || !targetReps || isNaN(restSeconds)) return;
+
+    const unchanged =
+      targetSets === exercise.targetSets &&
+      targetReps === exercise.targetReps &&
+      restSeconds === exercise.restSeconds;
+    if (unchanged) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      update({
+        templateExerciseId: exercise.id,
+        targetSets,
+        targetReps,
+        restSeconds,
+        orderIndex: exercise.orderIndex,
+      });
+    }, 600);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [targets, isEditing]);
+
+  const openEdit = () => {
+    setTargets({
+      sets: String(exercise.targetSets),
+      reps: String(exercise.targetReps),
+      rest: String(exercise.restSeconds),
+    });
+    setIsEditing(true);
+  };
+
+  const setTarget = (key: 'sets' | 'reps' | 'rest', value: string) =>
+    setTargets((prev) => ({ ...prev, [key]: value }));
 
   const renderRightActions = () => (
     <View style={{ width: 80, justifyContent: 'center', paddingLeft: 8 }}>
       <RectButton
         onPress={() => {
-          console.log('[delete] button pressed, exercise:', exercise.id);
-          ref.current?.close();
+          swipeRef.current?.close();
           onDelete();
         }}
         style={{
@@ -42,9 +93,48 @@ const ExerciseRow = ({ exercise, onEdit, onDelete }: ExerciseRowProps) => {
     </View>
   );
 
+  if (isEditing) {
+    return (
+      <View className="bg-gray-50 rounded-lg p-3 gap-3">
+        <Pressable onPress={() => setIsEditing(false)}>
+          <Text className="text-base font-medium">{exercise.exerciseName}</Text>
+        </Pressable>
+        <View className="flex-row gap-2">
+          <View className="flex-1">
+            <Text className="text-xs text-gray-500 mb-1">Serie</Text>
+            <TextInput
+              value={targets.sets}
+              onChangeText={(t) => setTarget('sets', t)}
+              keyboardType="number-pad"
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-base bg-white"
+            />
+          </View>
+          <View className="flex-1">
+            <Text className="text-xs text-gray-500 mb-1">Powtórzenia</Text>
+            <TextInput
+              value={targets.reps}
+              onChangeText={(t) => setTarget('reps', t)}
+              keyboardType="number-pad"
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-base bg-white"
+            />
+          </View>
+          <View className="flex-1">
+            <Text className="text-xs text-gray-500 mb-1">Przerwa (s)</Text>
+            <TextInput
+              value={targets.rest}
+              onChangeText={(t) => setTarget('rest', t)}
+              keyboardType="number-pad"
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-base bg-white"
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <Swipeable ref={ref} renderRightActions={renderRightActions} overshootRight={false}>
-      <Pressable onPress={onEdit} className="bg-gray-50 rounded-lg p-3">
+    <Swipeable ref={swipeRef} renderRightActions={renderRightActions} overshootRight={false}>
+      <Pressable onPress={openEdit} className="bg-gray-50 rounded-lg p-3">
         <Text className="text-base font-medium">{exercise.exerciseName}</Text>
         <Text className="text-sm text-gray-500">
           {exercise.targetSets} × {exercise.targetReps} · przerwa {exercise.restSeconds}s
@@ -61,11 +151,12 @@ export const TemplateDetailScreen = () => {
 
   const { data: template, isLoading } = useTemplate(templateId);
   const { mutate: create, isPending: isCreating } = useCreateTemplate();
-  const { mutate: update, isPending: isUpdating } = useUpdateTemplate(templateId ?? '');
+  const { mutate: update } = useUpdateTemplate(templateId ?? '');
   const removeExercise = useRemoveExerciseFromTemplate(templateId ?? '');
 
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (template) {
@@ -76,16 +167,30 @@ export const TemplateDetailScreen = () => {
 
   const isNew = templateId === null;
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (isNew || !template) return;
     if (!name.trim()) return;
-    const payload = { name: name.trim(), notes: notes.trim() || null };
-    if (isNew) {
-      create(payload, {
-        onSuccess: ({ id }) => navigation.setParams({ templateId: id }),
-      });
-    } else {
-      update(payload);
-    }
+
+    const trimmedNotes = notes.trim() || null;
+    const unchanged = name.trim() === template.name && trimmedNotes === (template.notes ?? null);
+    if (unchanged) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      update({ name: name.trim(), notes: trimmedNotes });
+    }, 600);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [name, notes, template, isNew]);
+
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    create(
+      { name: name.trim(), notes: notes.trim() || null },
+      { onSuccess: ({ id }) => navigation.setParams({ templateId: id }) }
+    );
   };
 
   if (isLoading) {
@@ -119,19 +224,19 @@ export const TemplateDetailScreen = () => {
         />
       </View>
 
-      <Pressable
-        onPress={handleSave}
-        disabled={isCreating || isUpdating || !name.trim()}
-        className="bg-black rounded-xl py-4 items-center disabled:opacity-40"
-      >
-        {isCreating || isUpdating ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white text-base font-semibold">
-            {isNew ? 'Utwórz szablon' : 'Zapisz zmiany'}
-          </Text>
-        )}
-      </Pressable>
+      {isNew && (
+        <Pressable
+          onPress={handleCreate}
+          disabled={isCreating || !name.trim()}
+          className="bg-black rounded-xl py-4 items-center disabled:opacity-40"
+        >
+          {isCreating ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text className="text-white text-base font-semibold">Utwórz szablon</Text>
+          )}
+        </Pressable>
+      )}
 
       {!isNew && template && (
         <View className="mt-2">
@@ -146,17 +251,7 @@ export const TemplateDetailScreen = () => {
                 <ExerciseRow
                   key={ex.id}
                   exercise={ex}
-                  onEdit={() =>
-                    navigation.navigate('TemplateExerciseEdit', {
-                      templateId: templateId!,
-                      templateExerciseId: ex.id,
-                      exerciseName: ex.exerciseName,
-                      targetSets: ex.targetSets,
-                      targetReps: ex.targetReps,
-                      restSeconds: ex.restSeconds,
-                      orderIndex: ex.orderIndex,
-                    })
-                  }
+                  templateId={templateId!}
                   onDelete={() => removeExercise.mutate(ex.id)}
                 />
               ))}

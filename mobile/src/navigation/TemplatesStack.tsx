@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TemplatesListScreen } from '../features/templates/screens/TemplatesListScreen';
 import { TemplateDetailScreen } from '../features/templates/screens/TemplateDetailScreen';
 import { TemplateExercisePickerScreen } from '../features/templates/screens/TemplateExercisePickerScreen';
-import { TemplateExerciseEditScreen } from '../features/templates/screens/TemplateExerciseEditScreen';
 import { TemplatesStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<TemplatesStackParamList>();
@@ -15,11 +14,6 @@ export const TemplatesStack = () => (
       name="TemplateExercisePicker"
       component={TemplateExercisePickerScreen}
       options={{ title: 'Wybierz ćwiczenie', presentation: 'modal' }}
-    />
-    <Stack.Screen
-      name="TemplateExerciseEdit"
-      component={TemplateExerciseEditScreen}
-      options={{ title: 'Edytuj ćwiczenie', presentation: 'modal' }}
     />
   </Stack.Navigator>
 );
