@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Contracts.Workouts.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 

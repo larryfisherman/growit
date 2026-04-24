@@ -1,16 +1,37 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import { TodayStackParamList } from '../../../navigation/types';
-import { useTodayWorkout } from '../hooks/useTodayWorkout';
-import { useCreateWorkout } from '../hooks/useCreateWorkout';
+import {
+  useGetApiWorkoutsUserIdByDate,
+  usePostApiWorkouts,
+  getGetApiWorkoutsUserIdByDateQueryKey,
+} from '../../../api/generated/workouts/workouts';
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
+const getToday = () => new Date().toISOString().split('T')[0];
 
 export const WorkoutsScreen = () => {
-  const { data: workout, isLoading } = useTodayWorkout();
-  const { mutate: createWorkout, isPending } = useCreateWorkout();
   const navigation = useNavigation<NativeStackNavigationProp<TodayStackParamList>>();
+  const queryClient = useQueryClient();
+  const today = getToday();
 
-  const today = new Date().toLocaleDateString('pl-PL', {
+  const { data: workout, isLoading } = useGetApiWorkoutsUserIdByDate(
+    USER_ID,
+    { date: today },
+    { query: { retry: false } }
+  );
+  const { mutate: createWorkout, isPending } = usePostApiWorkouts({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: getGetApiWorkoutsUserIdByDateQueryKey(USER_ID, { date: today }),
+        }),
+    },
+  });
+
+  const todayLabel = new Date().toLocaleDateString('pl-PL', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -26,7 +47,7 @@ export const WorkoutsScreen = () => {
 
   return (
     <View className="flex-1 p-6">
-      <Text className="text-xl font-semibold mb-6 capitalize">{today}</Text>
+      <Text className="text-xl font-semibold mb-6 capitalize">{todayLabel}</Text>
 
       {workout ? (
         <TouchableOpacity
@@ -50,7 +71,16 @@ export const WorkoutsScreen = () => {
           </TouchableOpacity>
           <TouchableOpacity
             className="bg-gray-100 rounded-xl py-4 items-center"
-            onPress={() => createWorkout()}
+            onPress={() =>
+              createWorkout({
+                data: {
+                  userId: USER_ID,
+                  name: `Trening ${new Date().toLocaleDateString('pl-PL')}`,
+                  performedAt: today,
+                  notes: null,
+                },
+              })
+            }
             disabled={isPending}
           >
             {isPending ? (

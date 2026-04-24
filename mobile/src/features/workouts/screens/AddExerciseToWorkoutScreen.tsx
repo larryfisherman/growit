@@ -1,17 +1,32 @@
 import { View, FlatList, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import { TodayStackParamList } from '../../../navigation/types';
-import { useExercises } from '../../exercises/hooks/useExercises';
-import { useAddExerciseToWorkout } from '../hooks/useAddExerciseToWorkout';
+import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
+import {
+  usePostApiWorkoutsWorkoutIdExercises,
+  getGetApiWorkoutsWorkoutIdQueryKey,
+} from '../../../api/generated/workouts/workouts';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'AddExerciseToWorkout'>;
 
 export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
   const { workoutId } = route.params;
-  const { data: exercises, isLoading } = useExercises();
-  const { mutate: addExercise, isPending } = useAddExerciseToWorkout(workoutId, () =>
-    navigation.goBack()
-  );
+  const queryClient = useQueryClient();
+
+  const { data: exercises, isLoading } = useGetApiExercises({
+    query: { staleTime: Infinity },
+  });
+  const { mutate: addExercise, isPending } = usePostApiWorkoutsWorkoutIdExercises({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getGetApiWorkoutsWorkoutIdQueryKey(workoutId),
+        });
+        navigation.goBack();
+      },
+    },
+  });
 
   if (isLoading) {
     return (
@@ -28,7 +43,7 @@ export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
       renderItem={({ item }) => (
         <TouchableOpacity
           className="bg-gray-100 rounded-lg px-4 py-3"
-          onPress={() => addExercise(item.id)}
+          onPress={() => addExercise({ workoutId, data: { exerciseId: item.id } })}
           disabled={isPending}
         >
           <Text className="text-base font-semibold">{item.name}</Text>

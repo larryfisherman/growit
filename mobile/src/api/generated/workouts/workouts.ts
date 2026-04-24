@@ -24,12 +24,19 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AddExerciseRequest,
-  CreateWorkoutCommand,
+  AddExerciseToWorkoutRequest,
+  AddExerciseToWorkoutResponse,
   CreateWorkoutFromTemplateRequest,
+  CreateWorkoutFromTemplateResponse,
+  CreateWorkoutRequest,
+  CreateWorkoutResponse,
   GetApiWorkoutsUserIdByDateParams,
   GetApiWorkoutsUserIdByMonthParams,
-  GetApiWorkoutsUserIdHistoryParams
+  GetApiWorkoutsUserIdHistoryParams,
+  WorkoutByDateResponse,
+  WorkoutHistoryResponse,
+  WorkoutResponse,
+  WorkoutSummaryResponse
 } from '../schemas';
 
 import { customInstance } from '../../axios';
@@ -38,15 +45,15 @@ import { customInstance } from '../../axios';
 
 
 export const postApiWorkouts = (
-    createWorkoutCommand: CreateWorkoutCommand,
+    createWorkoutRequest: CreateWorkoutRequest,
  signal?: AbortSignal
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<CreateWorkoutResponse>(
       {url: `/api/Workouts`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: createWorkoutCommand, signal
+      data: createWorkoutRequest, signal
     },
       );
     }
@@ -54,8 +61,8 @@ export const postApiWorkouts = (
 
 
 export const getPostApiWorkoutsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkouts>>, TError,{data: CreateWorkoutCommand}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postApiWorkouts>>, TError,{data: CreateWorkoutCommand}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkouts>>, TError,{data: CreateWorkoutRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postApiWorkouts>>, TError,{data: CreateWorkoutRequest}, TContext> => {
 
 const mutationKey = ['postApiWorkouts'];
 const {mutation: mutationOptions} = options ?
@@ -67,7 +74,7 @@ const {mutation: mutationOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiWorkouts>>, {data: CreateWorkoutCommand}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiWorkouts>>, {data: CreateWorkoutRequest}> = (props) => {
           const {data} = props ?? {};
 
           return  postApiWorkouts(data,)
@@ -81,15 +88,15 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PostApiWorkoutsMutationResult = NonNullable<Awaited<ReturnType<typeof postApiWorkouts>>>
-    export type PostApiWorkoutsMutationBody = CreateWorkoutCommand
+    export type PostApiWorkoutsMutationBody = CreateWorkoutRequest
     export type PostApiWorkoutsMutationError = unknown
 
     export const usePostApiWorkouts = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkouts>>, TError,{data: CreateWorkoutCommand}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkouts>>, TError,{data: CreateWorkoutRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postApiWorkouts>>,
         TError,
-        {data: CreateWorkoutCommand},
+        {data: CreateWorkoutRequest},
         TContext
       > => {
       return useMutation(getPostApiWorkoutsMutationOptions(options), queryClient);
@@ -101,7 +108,7 @@ const {mutation: mutationOptions} = options ?
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<WorkoutHistoryResponse>(
       {url: `/api/Workouts/${userId}/history`, method: 'GET',
         params, signal
     },
@@ -194,7 +201,7 @@ export const getApiWorkoutsWorkoutId = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<WorkoutResponse>(
       {url: `/api/Workouts/${workoutId}`, method: 'GET', signal
     },
       );
@@ -281,7 +288,7 @@ export const getApiWorkoutsUserIdByDate = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<WorkoutByDateResponse>(
       {url: `/api/Workouts/${userId}/by-date`, method: 'GET',
         params, signal
     },
@@ -375,7 +382,7 @@ export const getApiWorkoutsUserIdByMonth = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<WorkoutSummaryResponse[]>(
       {url: `/api/Workouts/${userId}/by-month`, method: 'GET',
         params, signal
     },
@@ -464,15 +471,15 @@ export function useGetApiWorkoutsUserIdByMonth<TData = Awaited<ReturnType<typeof
 
 export const postApiWorkoutsWorkoutIdExercises = (
     workoutId: string,
-    addExerciseRequest: AddExerciseRequest,
+    addExerciseToWorkoutRequest: AddExerciseToWorkoutRequest,
  signal?: AbortSignal
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<AddExerciseToWorkoutResponse>(
       {url: `/api/Workouts/${workoutId}/exercises`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: addExerciseRequest, signal
+      data: addExerciseToWorkoutRequest, signal
     },
       );
     }
@@ -480,8 +487,8 @@ export const postApiWorkoutsWorkoutIdExercises = (
 
 
 export const getPostApiWorkoutsWorkoutIdExercisesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, TError,{workoutId: string;data: AddExerciseRequest}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, TError,{workoutId: string;data: AddExerciseRequest}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, TError,{workoutId: string;data: AddExerciseToWorkoutRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, TError,{workoutId: string;data: AddExerciseToWorkoutRequest}, TContext> => {
 
 const mutationKey = ['postApiWorkoutsWorkoutIdExercises'];
 const {mutation: mutationOptions} = options ?
@@ -493,7 +500,7 @@ const {mutation: mutationOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, {workoutId: string;data: AddExerciseRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, {workoutId: string;data: AddExerciseToWorkoutRequest}> = (props) => {
           const {workoutId,data} = props ?? {};
 
           return  postApiWorkoutsWorkoutIdExercises(workoutId,data,)
@@ -507,15 +514,15 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PostApiWorkoutsWorkoutIdExercisesMutationResult = NonNullable<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>>
-    export type PostApiWorkoutsWorkoutIdExercisesMutationBody = AddExerciseRequest
+    export type PostApiWorkoutsWorkoutIdExercisesMutationBody = AddExerciseToWorkoutRequest
     export type PostApiWorkoutsWorkoutIdExercisesMutationError = unknown
 
     export const usePostApiWorkoutsWorkoutIdExercises = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, TError,{workoutId: string;data: AddExerciseRequest}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>, TError,{workoutId: string;data: AddExerciseToWorkoutRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postApiWorkoutsWorkoutIdExercises>>,
         TError,
-        {workoutId: string;data: AddExerciseRequest},
+        {workoutId: string;data: AddExerciseToWorkoutRequest},
         TContext
       > => {
       return useMutation(getPostApiWorkoutsWorkoutIdExercisesMutationOptions(options), queryClient);
@@ -526,7 +533,7 @@ const {mutation: mutationOptions} = options ?
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<CreateWorkoutFromTemplateResponse>(
       {url: `/api/Workouts/from-template`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createWorkoutFromTemplateRequest, signal

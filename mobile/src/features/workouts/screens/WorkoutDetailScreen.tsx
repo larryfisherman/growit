@@ -1,12 +1,12 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TodayStackParamList } from '../../../navigation/types';
-import { useWorkoutDetail } from '../hooks/useWorkoutDetail';
-import { WorkoutExerciseDetail } from '../../../api/types';
+import { useGetApiWorkoutsWorkoutId } from '../../../api/generated/workouts/workouts';
+import { WorkoutExerciseResponse } from '../../../api/generated/schemas';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'WorkoutDetail'>;
 
-const ExerciseCard = ({ item }: { item: WorkoutExerciseDetail }) => (
+const ExerciseCard = ({ item }: { item: WorkoutExerciseResponse }) => (
   <View className="bg-gray-100 rounded-xl p-4">
     <Text className="text-base font-semibold">{item.exerciseName}</Text>
     {item.category && <Text className="text-sm text-gray-500 mt-0.5">{item.category}</Text>}
@@ -30,7 +30,7 @@ const ExerciseCard = ({ item }: { item: WorkoutExerciseDetail }) => (
 
 export const WorkoutDetailScreen = ({ route, navigation }: Props) => {
   const { workoutId } = route.params;
-  const { data: workout, isLoading } = useWorkoutDetail(workoutId);
+  const { data: workout, isLoading } = useGetApiWorkoutsWorkoutId(workoutId);
 
   if (isLoading) {
     return (

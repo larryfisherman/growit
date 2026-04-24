@@ -5,15 +5,31 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export * from './addExerciseRequest';
 export * from './addExerciseToTemplateRequest';
-export * from './createTemplateCommand';
-export * from './createWorkoutCommand';
+export * from './addExerciseToTemplateResponse';
+export * from './addExerciseToWorkoutRequest';
+export * from './addExerciseToWorkoutResponse';
+export * from './createTemplateRequest';
+export * from './createTemplateResponse';
 export * from './createWorkoutFromTemplateRequest';
+export * from './createWorkoutFromTemplateResponse';
+export * from './createWorkoutRequest';
+export * from './createWorkoutResponse';
+export * from './exerciseResponse';
 export * from './getApiTemplatesParams';
 export * from './getApiWorkoutsUserIdByDateParams';
 export * from './getApiWorkoutsUserIdByMonthParams';
 export * from './getApiWorkoutsUserIdHistoryParams';
 export * from './logSetRequest';
+export * from './logSetResponse';
+export * from './setResponse';
+export * from './templateExerciseResponse';
+export * from './templateResponse';
+export * from './templateSummaryResponse';
 export * from './updateTemplateExerciseRequest';
 export * from './updateTemplateRequest';
+export * from './workoutByDateResponse';
+export * from './workoutExerciseResponse';
+export * from './workoutHistoryResponse';
+export * from './workoutResponse';
+export * from './workoutSummaryResponse';

@@ -24,7 +24,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  LogSetRequest
+  ExerciseResponse,
+  LogSetRequest,
+  LogSetResponse
 } from '../schemas';
 
 import { customInstance } from '../../axios';
@@ -38,7 +40,7 @@ export const getApiExercises = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<ExerciseResponse[]>(
       {url: `/api/Exercises`, method: 'GET', signal
     },
       );
@@ -125,7 +127,7 @@ export const postApiExercisesWorkoutExerciseIdSets = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<LogSetResponse>(
       {url: `/api/Exercises/${workoutExerciseId}/sets`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: logSetRequest, signal

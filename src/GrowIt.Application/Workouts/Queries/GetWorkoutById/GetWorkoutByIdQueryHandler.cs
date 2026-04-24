@@ -1,24 +1,25 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Contracts.Workouts.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Application.Workouts.Queries.GetWorkoutById;
 
 public class GetWorkoutByIdQueryHandler(IApplicationDbContext dbContext)
-    : IRequestHandler<GetWorkoutByIdQuery, WorkoutDetailResponse?>
+    : IRequestHandler<GetWorkoutByIdQuery, WorkoutResponse?>
 {
-    public async Task<WorkoutDetailResponse?> Handle(GetWorkoutByIdQuery request, CancellationToken cancellationToken)
+    public async Task<WorkoutResponse?> Handle(GetWorkoutByIdQuery request, CancellationToken cancellationToken)
     {
         return await dbContext.Workouts
             .Where(w => w.Id == request.WorkoutId)
-            .Select(w => new WorkoutDetailResponse(
+            .Select(w => new WorkoutResponse(
                 w.Id,
                 w.Name,
                 w.PerformedAt,
                 w.Notes,
                 w.WorkoutExercises
                     .OrderBy(we => we.OrderIndex)
-                    .Select(we => new WorkoutExerciseDetail(
+                    .Select(we => new WorkoutExerciseResponse(
                         we.Id,
                         we.ExerciseId,
                         we.Exercise != null ? we.Exercise.Name : we.CustomExerciseName!,
@@ -29,7 +30,7 @@ public class GetWorkoutByIdQueryHandler(IApplicationDbContext dbContext)
                         we.OrderIndex,
                         we.Sets
                             .OrderBy(s => s.OrderIndex)
-                            .Select(s => new SetDetail(s.Id, s.WeightKg, s.Reps, s.OrderIndex))
+                            .Select(s => new SetResponse(s.Id, s.WeightKg, s.Reps, s.OrderIndex))
                             .ToList()))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);

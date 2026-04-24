@@ -3,19 +3,26 @@ import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 
 import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import { TemplatesStackParamList } from '../../../navigation/types';
-import { TemplateExerciseDetail } from '../../../api/types';
-import { useTemplate } from '../hooks/useTemplate';
-import { useCreateTemplate } from '../hooks/useCreateTemplate';
-import { useUpdateTemplate } from '../hooks/useUpdateTemplate';
-import { useRemoveExerciseFromTemplate } from '../hooks/useRemoveExerciseFromTemplate';
-import { useUpdateTemplateExercise } from '../hooks/useUpdateTemplateExercise';
+import {
+  useGetApiTemplatesTemplateId,
+  usePostApiTemplates,
+  usePutApiTemplatesTemplateId,
+  useDeleteApiTemplatesExercisesTemplateExerciseId,
+  usePutApiTemplatesExercisesTemplateExerciseId,
+  getGetApiTemplatesTemplateIdQueryKey,
+  getGetApiTemplatesQueryKey,
+} from '../../../api/generated/templates/templates';
+import { TemplateExerciseResponse } from '../../../api/generated/schemas';
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplateDetail'>;
 type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateDetail'>;
 
 type ExerciseRowProps = {
-  exercise: TemplateExerciseDetail;
+  exercise: TemplateExerciseResponse;
   templateId: string;
   onDelete: () => void;
 };
@@ -23,7 +30,16 @@ type ExerciseRowProps = {
 const ExerciseRow = ({ exercise, templateId, onDelete }: ExerciseRowProps) => {
   const swipeRef = useRef<Swipeable>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { mutate: update } = useUpdateTemplateExercise(templateId);
+  const queryClient = useQueryClient();
+
+  const { mutate: update } = usePutApiTemplatesExercisesTemplateExerciseId({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
+        }),
+    },
+  });
 
   const [isEditing, setIsEditing] = useState(false);
   const [targets, setTargets] = useState({
@@ -50,10 +66,12 @@ const ExerciseRow = ({ exercise, templateId, onDelete }: ExerciseRowProps) => {
     saveTimerRef.current = setTimeout(() => {
       update({
         templateExerciseId: exercise.id,
-        targetSets,
-        targetReps,
-        restSeconds,
-        orderIndex: exercise.orderIndex,
+        data: {
+          targetSets,
+          targetReps,
+          restSeconds,
+          orderIndex: exercise.orderIndex,
+        },
       });
     }, 600);
 
@@ -148,11 +166,41 @@ export const TemplateDetailScreen = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteParams>();
   const templateId = route.params.templateId;
+  const queryClient = useQueryClient();
 
-  const { data: template, isLoading } = useTemplate(templateId);
-  const { mutate: create, isPending: isCreating } = useCreateTemplate();
-  const { mutate: update } = useUpdateTemplate(templateId ?? '');
-  const removeExercise = useRemoveExerciseFromTemplate(templateId ?? '');
+  const isNew = templateId === null;
+
+  const { data: template, isLoading } = useGetApiTemplatesTemplateId(templateId ?? '', {
+    query: { enabled: !isNew },
+  });
+  const { mutate: create, isPending: isCreating } = usePostApiTemplates({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: getGetApiTemplatesQueryKey({ userId: USER_ID }) }),
+    },
+  });
+  const { mutate: update } = usePutApiTemplatesTemplateId({
+    mutation: {
+      onSuccess: () => {
+        if (templateId) {
+          queryClient.invalidateQueries({
+            queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
+          });
+        }
+      },
+    },
+  });
+  const { mutate: removeExercise } = useDeleteApiTemplatesExercisesTemplateExerciseId({
+    mutation: {
+      onSettled: () => {
+        if (templateId) {
+          queryClient.invalidateQueries({
+            queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
+          });
+        }
+      },
+    },
+  });
 
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
@@ -165,10 +213,8 @@ export const TemplateDetailScreen = () => {
     }
   }, [template]);
 
-  const isNew = templateId === null;
-
   useEffect(() => {
-    if (isNew || !template) return;
+    if (isNew || !template || !templateId) return;
     if (!name.trim()) return;
 
     const trimmedNotes = notes.trim() || null;
@@ -177,23 +223,23 @@ export const TemplateDetailScreen = () => {
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      update({ name: name.trim(), notes: trimmedNotes });
+      update({ templateId, data: { name: name.trim(), notes: trimmedNotes } });
     }, 600);
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [name, notes, template, isNew]);
+  }, [name, notes, template, isNew, templateId]);
 
   const handleCreate = () => {
     if (!name.trim()) return;
     create(
-      { name: name.trim(), notes: notes.trim() || null },
+      { data: { userId: USER_ID, name: name.trim(), notes: notes.trim() || null } },
       { onSuccess: ({ id }) => navigation.setParams({ templateId: id }) }
     );
   };
 
-  if (isLoading) {
+  if (!isNew && isLoading) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator />
@@ -252,7 +298,7 @@ export const TemplateDetailScreen = () => {
                   key={ex.id}
                   exercise={ex}
                   templateId={templateId!}
-                  onDelete={() => removeExercise.mutate(ex.id)}
+                  onDelete={() => removeExercise({ templateExerciseId: ex.id })}
                 />
               ))}
             </View>

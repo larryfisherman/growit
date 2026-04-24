@@ -25,8 +25,12 @@ import type {
 
 import type {
   AddExerciseToTemplateRequest,
-  CreateTemplateCommand,
+  AddExerciseToTemplateResponse,
+  CreateTemplateRequest,
+  CreateTemplateResponse,
   GetApiTemplatesParams,
+  TemplateResponse,
+  TemplateSummaryResponse,
   UpdateTemplateExerciseRequest,
   UpdateTemplateRequest
 } from '../schemas';
@@ -37,15 +41,15 @@ import { customInstance } from '../../axios';
 
 
 export const postApiTemplates = (
-    createTemplateCommand: CreateTemplateCommand,
+    createTemplateRequest: CreateTemplateRequest,
  signal?: AbortSignal
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<CreateTemplateResponse>(
       {url: `/api/Templates`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: createTemplateCommand, signal
+      data: createTemplateRequest, signal
     },
       );
     }
@@ -53,8 +57,8 @@ export const postApiTemplates = (
 
 
 export const getPostApiTemplatesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiTemplates>>, TError,{data: CreateTemplateCommand}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postApiTemplates>>, TError,{data: CreateTemplateCommand}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiTemplates>>, TError,{data: CreateTemplateRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postApiTemplates>>, TError,{data: CreateTemplateRequest}, TContext> => {
 
 const mutationKey = ['postApiTemplates'];
 const {mutation: mutationOptions} = options ?
@@ -66,7 +70,7 @@ const {mutation: mutationOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiTemplates>>, {data: CreateTemplateCommand}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiTemplates>>, {data: CreateTemplateRequest}> = (props) => {
           const {data} = props ?? {};
 
           return  postApiTemplates(data,)
@@ -80,15 +84,15 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PostApiTemplatesMutationResult = NonNullable<Awaited<ReturnType<typeof postApiTemplates>>>
-    export type PostApiTemplatesMutationBody = CreateTemplateCommand
+    export type PostApiTemplatesMutationBody = CreateTemplateRequest
     export type PostApiTemplatesMutationError = unknown
 
     export const usePostApiTemplates = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiTemplates>>, TError,{data: CreateTemplateCommand}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiTemplates>>, TError,{data: CreateTemplateRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postApiTemplates>>,
         TError,
-        {data: CreateTemplateCommand},
+        {data: CreateTemplateRequest},
         TContext
       > => {
       return useMutation(getPostApiTemplatesMutationOptions(options), queryClient);
@@ -99,7 +103,7 @@ const {mutation: mutationOptions} = options ?
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<TemplateSummaryResponse[]>(
       {url: `/api/Templates`, method: 'GET',
         params, signal
     },
@@ -186,7 +190,7 @@ export const getApiTemplatesTemplateId = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<TemplateResponse>(
       {url: `/api/Templates/${templateId}`, method: 'GET', signal
     },
       );
@@ -386,7 +390,7 @@ const {mutation: mutationOptions} = options ?
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<AddExerciseToTemplateResponse>(
       {url: `/api/Templates/${templateId}/exercises`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: addExerciseToTemplateRequest, signal

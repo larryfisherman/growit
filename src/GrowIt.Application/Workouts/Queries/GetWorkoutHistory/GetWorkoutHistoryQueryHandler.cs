@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Contracts.Workouts.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,7 +19,7 @@ public class GetWorkoutHistoryQueryHandler(IApplicationDbContext dbContext)
         var items = await query
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(w => new WorkoutSummary(
+            .Select(w => new WorkoutSummaryResponse(
                 w.Id,
                 w.Name,
                 w.PerformedAt,

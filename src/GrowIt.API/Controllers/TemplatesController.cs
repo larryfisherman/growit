@@ -1,4 +1,3 @@
-using GrowIt.API.Models;
 using GrowIt.Application.Templates.Commands.AddExerciseToTemplate;
 using GrowIt.Application.Templates.Commands.CreateTemplate;
 using GrowIt.Application.Templates.Commands.DeleteTemplate;
@@ -7,6 +6,8 @@ using GrowIt.Application.Templates.Commands.UpdateTemplate;
 using GrowIt.Application.Templates.Commands.UpdateTemplateExercise;
 using GrowIt.Application.Templates.Queries.GetTemplateById;
 using GrowIt.Application.Templates.Queries.GetTemplates;
+using GrowIt.Contracts.Templates.Requests;
+using GrowIt.Contracts.Templates.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,21 +18,23 @@ namespace GrowIt.API.Controllers;
 public class TemplatesController(IMediator mediator) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> CreateTemplate([FromBody] CreateTemplateCommand command, CancellationToken ct)
+    public async Task<ActionResult<CreateTemplateResponse>> CreateTemplate(
+        [FromBody] CreateTemplateRequest request, CancellationToken ct)
     {
-        var id = await mediator.Send(command, ct);
-        return Ok(new { id });
+        var id = await mediator.Send(new CreateTemplateCommand(request.UserId, request.Name, request.Notes), ct);
+        return Ok(new CreateTemplateResponse(id));
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTemplates([FromQuery] Guid userId, CancellationToken ct)
+    public async Task<ActionResult<List<TemplateSummaryResponse>>> GetTemplates(
+        [FromQuery] Guid userId, CancellationToken ct)
     {
         var result = await mediator.Send(new GetTemplatesQuery(userId), ct);
         return Ok(result);
     }
 
     [HttpGet("{templateId:guid}")]
-    public async Task<IActionResult> GetTemplate(Guid templateId, CancellationToken ct)
+    public async Task<ActionResult<TemplateResponse>> GetTemplate(Guid templateId, CancellationToken ct)
     {
         var result = await mediator.Send(new GetTemplateByIdQuery(templateId), ct);
         if (result is null) return NotFound();
@@ -39,13 +42,16 @@ public class TemplatesController(IMediator mediator) : ControllerBase
     }
 
     [HttpPut("{templateId:guid}")]
-    public async Task<IActionResult> UpdateTemplate(Guid templateId, [FromBody] UpdateTemplateRequest request, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdateTemplate(
+        Guid templateId, [FromBody] UpdateTemplateRequest request, CancellationToken ct)
     {
         await mediator.Send(new UpdateTemplateCommand(templateId, request.Name, request.Notes), ct);
         return NoContent();
     }
 
     [HttpDelete("{templateId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteTemplate(Guid templateId, CancellationToken ct)
     {
         await mediator.Send(new DeleteTemplateCommand(templateId), ct);
@@ -53,7 +59,8 @@ public class TemplatesController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{templateId:guid}/exercises")]
-    public async Task<IActionResult> AddExercise(Guid templateId, [FromBody] AddExerciseToTemplateRequest request, CancellationToken ct)
+    public async Task<ActionResult<AddExerciseToTemplateResponse>> AddExercise(
+        Guid templateId, [FromBody] AddExerciseToTemplateRequest request, CancellationToken ct)
     {
         var id = await mediator.Send(new AddExerciseToTemplateCommand(
             templateId,
@@ -62,11 +69,13 @@ public class TemplatesController(IMediator mediator) : ControllerBase
             request.TargetSets,
             request.TargetReps,
             request.RestSeconds), ct);
-        return Ok(new { id });
+        return Ok(new AddExerciseToTemplateResponse(id));
     }
 
     [HttpPut("exercises/{templateExerciseId:guid}")]
-    public async Task<IActionResult> UpdateExercise(Guid templateExerciseId, [FromBody] UpdateTemplateExerciseRequest request, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdateExercise(
+        Guid templateExerciseId, [FromBody] UpdateTemplateExerciseRequest request, CancellationToken ct)
     {
         await mediator.Send(new UpdateTemplateExerciseCommand(
             templateExerciseId,
@@ -78,6 +87,7 @@ public class TemplatesController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("exercises/{templateExerciseId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RemoveExercise(Guid templateExerciseId, CancellationToken ct)
     {
         await mediator.Send(new RemoveExerciseFromTemplateCommand(templateExerciseId), ct);

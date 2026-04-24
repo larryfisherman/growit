@@ -1,8 +1,10 @@
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
-import { useExercises } from '../hooks/useExercises';
+import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
 
 export const ExercisesScreen = () => {
-  const { data, isLoading, isError } = useExercises();
+  const { data, isLoading, isError } = useGetApiExercises({
+    query: { staleTime: Infinity },
+  });
 
   if (isLoading) {
     return (

@@ -3,9 +3,11 @@ import { View, Text, FlatList, Pressable } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useWorkoutsByMonth } from '../hooks/useWorkoutsByMonth';
+import { useGetApiWorkoutsUserIdByMonth } from '../../../api/generated/workouts/workouts';
 import { CalendarStackParamList } from '../../../navigation/types';
-import { WorkoutSummary } from '../../../api/types';
+import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type NavProp = NativeStackNavigationProp<CalendarStackParamList, 'CalendarHome'>;
 
@@ -21,7 +23,7 @@ export const CalendarScreen = () => {
   const [{ year, month }, setMonth] = useState(getInitial);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { data: workouts } = useWorkoutsByMonth(year, month);
+  const { data: workouts } = useGetApiWorkoutsUserIdByMonth(USER_ID, { year, month });
 
   const markedDates = useMemo(() => {
     const acc: Record<string, { marked?: boolean; dotColor?: string; selected?: boolean; selectedColor?: string }> = {};
@@ -49,7 +51,7 @@ export const CalendarScreen = () => {
     return workouts.filter((w) => w.performedAt === selectedDate);
   }, [workouts, selectedDate]);
 
-  const renderItem = ({ item }: { item: WorkoutSummary }) => (
+  const renderItem = ({ item }: { item: WorkoutSummaryResponse }) => (
     <Pressable
       onPress={() => navigation.navigate('WorkoutDetail', { workoutId: item.id })}
       className="border-b border-gray-200 px-4 py-3"

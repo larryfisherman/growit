@@ -3,15 +3,21 @@ import { View, Text, Pressable, FlatList, ActivityIndicator, Alert } from 'react
 import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import { TemplatesStackParamList } from '../../../navigation/types';
-import { TemplateSummary } from '../../../api/types';
-import { useTemplates } from '../hooks/useTemplates';
-import { useDeleteTemplate } from '../hooks/useDeleteTemplate';
+import {
+  useGetApiTemplates,
+  useDeleteApiTemplatesTemplateId,
+  getGetApiTemplatesQueryKey,
+} from '../../../api/generated/templates/templates';
+import { TemplateSummaryResponse } from '../../../api/generated/schemas';
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplatesList'>;
 
 type TemplateRowProps = {
-  template: TemplateSummary;
+  template: TemplateSummaryResponse;
   onPress: () => void;
   onDelete: () => void;
 };
@@ -55,8 +61,14 @@ const TemplateRow = ({ template, onPress, onDelete }: TemplateRowProps) => {
 
 export const TemplatesListScreen = () => {
   const navigation = useNavigation<NavProp>();
-  const { data, isLoading } = useTemplates();
-  const { mutate: remove } = useDeleteTemplate();
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useGetApiTemplates({ userId: USER_ID });
+  const { mutate: remove } = useDeleteApiTemplatesTemplateId({
+    mutation: {
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: getGetApiTemplatesQueryKey({ userId: USER_ID }) }),
+    },
+  });
 
   if (isLoading) {
     return (
@@ -75,7 +87,7 @@ export const TemplatesListScreen = () => {
           <TemplateRow
             template={item}
             onPress={() => navigation.navigate('TemplateDetail', { templateId: item.id })}
-            onDelete={() => remove(item.id)}
+            onDelete={() => remove({ templateId: item.id })}
           />
         )}
         ListEmptyComponent={

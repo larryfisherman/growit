@@ -1,23 +1,38 @@
 import { View, Text, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import { TodayStackParamList } from '../../../navigation/types';
-import { useTemplates } from '../../templates/hooks/useTemplates';
-import { useCreateWorkoutFromTemplate } from '../hooks/useCreateWorkoutFromTemplate';
+import { useGetApiTemplates } from '../../../api/generated/templates/templates';
+import {
+  usePostApiWorkoutsFromTemplate,
+  getGetApiWorkoutsUserIdByDateQueryKey,
+} from '../../../api/generated/workouts/workouts';
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
+const getToday = () => new Date().toISOString().split('T')[0];
 
 type NavProp = NativeStackNavigationProp<TodayStackParamList, 'StartFromTemplate'>;
 
 export const StartFromTemplateScreen = () => {
   const navigation = useNavigation<NavProp>();
-  const { data: templates, isLoading } = useTemplates();
-  const { mutate: start, isPending } = useCreateWorkoutFromTemplate();
+  const queryClient = useQueryClient();
+  const today = getToday();
 
-  const handleStart = (templateId: string) => {
-    start(templateId, {
+  const { data: templates, isLoading } = useGetApiTemplates({ userId: USER_ID });
+  const { mutate: start, isPending } = usePostApiWorkoutsFromTemplate({
+    mutation: {
       onSuccess: ({ id }) => {
+        queryClient.invalidateQueries({
+          queryKey: getGetApiWorkoutsUserIdByDateQueryKey(USER_ID, { date: today }),
+        });
         navigation.replace('WorkoutDetail', { workoutId: id });
       },
-    });
+    },
+  });
+
+  const handleStart = (templateId: string) => {
+    start({ data: { userId: USER_ID, templateId, performedAt: today } });
   };
 
   if (isLoading) {

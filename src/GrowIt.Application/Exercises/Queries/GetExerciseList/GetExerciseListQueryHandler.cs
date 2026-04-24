@@ -1,18 +1,17 @@
-using MediatR;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Contracts.Exercises.Responses;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
-
 
 namespace GrowIt.Application.Exercises.Queries.GetExerciseList;
 
 public class GetExerciseListQueryHandler(IApplicationDbContext dbContext)
-    : IRequestHandler<GetExerciseListQuery, List<ExerciseDto>>
+    : IRequestHandler<GetExerciseListQuery, List<ExerciseResponse>>
 {
-    public async Task<List<ExerciseDto>> Handle(GetExerciseListQuery request, CancellationToken cancellationToken)
+    public async Task<List<ExerciseResponse>> Handle(GetExerciseListQuery request, CancellationToken cancellationToken)
     {
-        var query = dbContext.Exercises;
-
-        return await query.Select(e => 
-            new ExerciseDto(e.Id, e.Name, e.Category, e.MuscleGroup)).ToListAsync(cancellationToken);
+        return await dbContext.Exercises
+            .Select(e => new ExerciseResponse(e.Id, e.Name, e.Category, e.MuscleGroup))
+            .ToListAsync(cancellationToken);
     }
 }

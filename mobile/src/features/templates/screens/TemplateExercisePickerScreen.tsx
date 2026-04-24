@@ -1,8 +1,12 @@
 import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { TemplatesStackParamList } from '../../../navigation/types';
-import { useExercises } from '../../exercises/hooks/useExercises';
-import { useAddExerciseToTemplate } from '../hooks/useAddExerciseToTemplate';
+import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
+import {
+  usePostApiTemplatesTemplateIdExercises,
+  getGetApiTemplatesTemplateIdQueryKey,
+} from '../../../api/generated/templates/templates';
 import { useTemplateExerciseForm } from '../hooks/useTemplateExerciseForm';
 
 type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateExercisePicker'>;
@@ -11,11 +15,24 @@ export const TemplateExercisePickerScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteParams>();
   const { templateId } = route.params;
-  const { data: exercises, isLoading } = useExercises();
-  const { mutate: add, isPending } = useAddExerciseToTemplate(templateId);
+  const queryClient = useQueryClient();
+
+  const { data: exercises, isLoading } = useGetApiExercises({
+    query: { staleTime: Infinity },
+  });
+  const { mutate: add, isPending } = usePostApiTemplatesTemplateIdExercises({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
+        });
+        navigation.goBack();
+      },
+    },
+  });
 
   const { selection, setSelection, targets, setTarget, handleSubmit } = useTemplateExerciseForm(
-    (payload) => add(payload, { onSuccess: () => navigation.goBack() })
+    (payload) => add({ templateId, data: payload })
   );
 
   const isLibrary = selection?.exerciseId != null;
