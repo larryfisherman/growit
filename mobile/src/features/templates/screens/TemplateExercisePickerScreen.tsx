@@ -6,7 +6,10 @@ import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
 import {
   usePostApiTemplatesTemplateIdExercises,
   getGetApiTemplatesTemplateIdQueryKey,
+  getGetApiTemplatesQueryKey,
 } from '../../../api/generated/templates/templates';
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
 import { useTemplateExerciseForm } from '../hooks/useTemplateExerciseForm';
 
 type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateExercisePicker'>;
@@ -25,6 +28,9 @@ export const TemplateExercisePickerScreen = () => {
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getGetApiTemplatesQueryKey({ userId: USER_ID }),
         });
         navigation.goBack();
       },

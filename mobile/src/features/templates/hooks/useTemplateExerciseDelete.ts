@@ -2,12 +2,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   useDeleteApiTemplatesExercisesTemplateExerciseId,
   getGetApiTemplatesTemplateIdQueryKey,
+  getGetApiTemplatesQueryKey,
 } from '../../../api/generated/templates/templates';
 import { TemplateResponse } from '../../../api/generated/schemas';
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 export const useTemplateExerciseDelete = (templateId: string) => {
   const queryClient = useQueryClient();
   const queryKey = getGetApiTemplatesTemplateIdQueryKey(templateId);
+  const listKey = getGetApiTemplatesQueryKey({ userId: USER_ID });
 
   return useDeleteApiTemplatesExercisesTemplateExerciseId({
     mutation: {
@@ -22,7 +26,10 @@ export const useTemplateExerciseDelete = (templateId: string) => {
       onError: (_err, _vars, context) => {
         if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
       },
-      onSettled: () => queryClient.invalidateQueries({ queryKey }),
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey });
+        queryClient.invalidateQueries({ queryKey: listKey });
+      },
     },
   });
 };
