@@ -12,6 +12,8 @@ import {
 } from '../../../api/generated/templates/templates';
 import { TemplateSummaryResponse } from '../../../api/generated/schemas';
 
+type TemplatesQueryKey = ReturnType<typeof getGetApiTemplatesQueryKey>;
+
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplatesList'>;
@@ -63,10 +65,29 @@ export const TemplatesListScreen = () => {
   const navigation = useNavigation<NavProp>();
   const queryClient = useQueryClient();
   const { data, isLoading } = useGetApiTemplates({ userId: USER_ID });
+  const templatesKey: TemplatesQueryKey = getGetApiTemplatesQueryKey({ userId: USER_ID });
+
   const { mutate: remove } = useDeleteApiTemplatesTemplateId({
     mutation: {
-      onSuccess: () =>
-        queryClient.invalidateQueries({ queryKey: getGetApiTemplatesQueryKey({ userId: USER_ID }) }),
+      // 1. uruchamiamy przed requestem — modyfikujemy cache lokalnie
+      onMutate: async ({ templateId }) => {
+        // anuluj pending refetche, żeby nie nadpisały naszej zmiany gdy zwrócą po sukcesie
+        await queryClient.cancelQueries({ queryKey: templatesKey });
+        // snapshot stanu przed zmianą — do rollbacku
+        const previous = queryClient.getQueryData<TemplateSummaryResponse[]>(templatesKey);
+        // od razu usuwamy z cache → UI od razu rerenderuje listę bez tego itemu
+        queryClient.setQueryData<TemplateSummaryResponse[]>(templatesKey, (old) =>
+          old?.filter((t) => t.id !== templateId)
+        );
+        // context dla onError
+        return { previous };
+      },
+      // 2. backend padł → przywracamy snapshot z onMutate
+      onError: (_err, _vars, context) => {
+        if (context?.previous) queryClient.setQueryData(templatesKey, context.previous);
+      },
+      // 3. niezależnie od wyniku — resync z serwerem (pewność zgodności z DB)
+      onSettled: () => queryClient.invalidateQueries({ queryKey: templatesKey }),
     },
   });
 

@@ -14,7 +14,7 @@ import {
   getGetApiTemplatesTemplateIdQueryKey,
   getGetApiTemplatesQueryKey,
 } from '../../../api/generated/templates/templates';
-import { TemplateExerciseResponse } from '../../../api/generated/schemas';
+import { TemplateExerciseResponse, TemplateResponse } from '../../../api/generated/schemas';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -32,12 +32,38 @@ const ExerciseRow = ({ exercise, templateId, onDelete }: ExerciseRowProps) => {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryClient = useQueryClient();
 
+  const templateKey = getGetApiTemplatesTemplateIdQueryKey(templateId);
+
   const { mutate: update } = usePutApiTemplatesExercisesTemplateExerciseId({
     mutation: {
-      onSuccess: () =>
-        queryClient.invalidateQueries({
-          queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
-        }),
+      onMutate: async ({ templateExerciseId, data }) => {
+        await queryClient.cancelQueries({ queryKey: templateKey });
+        const previous = queryClient.getQueryData<TemplateResponse>(templateKey);
+        // podmieniamy pola targetu dla tego jednego ćwiczenia w cache
+        queryClient.setQueryData<TemplateResponse>(templateKey, (old) =>
+          old
+            ? {
+                ...old,
+                exercises: old.exercises.map((e) =>
+                  e.id === templateExerciseId
+                    ? {
+                        ...e,
+                        targetSets: data.targetSets,
+                        targetReps: data.targetReps,
+                        restSeconds: data.restSeconds,
+                        orderIndex: data.orderIndex,
+                      }
+                    : e
+                ),
+              }
+            : old
+        );
+        return { previous };
+      },
+      onError: (_err, _vars, context) => {
+        if (context?.previous) queryClient.setQueryData(templateKey, context.previous);
+      },
+      onSettled: () => queryClient.invalidateQueries({ queryKey: templateKey }),
     },
   });
 
@@ -173,31 +199,57 @@ export const TemplateDetailScreen = () => {
   const { data: template, isLoading } = useGetApiTemplatesTemplateId(templateId ?? '', {
     query: { enabled: !isNew },
   });
+  const templateKey = templateId ? getGetApiTemplatesTemplateIdQueryKey(templateId) : null;
+
   const { mutate: create, isPending: isCreating } = usePostApiTemplates({
     mutation: {
       onSuccess: () =>
         queryClient.invalidateQueries({ queryKey: getGetApiTemplatesQueryKey({ userId: USER_ID }) }),
     },
   });
+
   const { mutate: update } = usePutApiTemplatesTemplateId({
     mutation: {
-      onSuccess: () => {
-        if (templateId) {
-          queryClient.invalidateQueries({
-            queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
-          });
+      onMutate: async ({ data }) => {
+        if (!templateKey) return;
+        await queryClient.cancelQueries({ queryKey: templateKey });
+        const previous = queryClient.getQueryData<TemplateResponse>(templateKey);
+        // podmieniamy nazwę/notatki natychmiast — reszta (ćwiczenia) zostaje nietknięta
+        queryClient.setQueryData<TemplateResponse>(templateKey, (old) =>
+          old ? { ...old, name: data.name, notes: data.notes ?? null } : old
+        );
+        return { previous };
+      },
+      onError: (_err, _vars, context) => {
+        if (templateKey && context?.previous) {
+          queryClient.setQueryData(templateKey, context.previous);
         }
+      },
+      onSettled: () => {
+        if (templateKey) queryClient.invalidateQueries({ queryKey: templateKey });
       },
     },
   });
+
   const { mutate: removeExercise } = useDeleteApiTemplatesExercisesTemplateExerciseId({
     mutation: {
-      onSettled: () => {
-        if (templateId) {
-          queryClient.invalidateQueries({
-            queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
-          });
+      onMutate: async ({ templateExerciseId }) => {
+        if (!templateKey) return;
+        await queryClient.cancelQueries({ queryKey: templateKey });
+        const previous = queryClient.getQueryData<TemplateResponse>(templateKey);
+        // usuwamy ćwiczenie z cache od razu — UI przestaje je pokazywać
+        queryClient.setQueryData<TemplateResponse>(templateKey, (old) =>
+          old ? { ...old, exercises: old.exercises.filter((e) => e.id !== templateExerciseId) } : old
+        );
+        return { previous };
+      },
+      onError: (_err, _vars, context) => {
+        if (templateKey && context?.previous) {
+          queryClient.setQueryData(templateKey, context.previous);
         }
+      },
+      onSettled: () => {
+        if (templateKey) queryClient.invalidateQueries({ queryKey: templateKey });
       },
     },
   });
