@@ -1,5 +1,7 @@
 using GrowIt.Application;
 using GrowIt.Infrastructure;
+using GrowIt.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +24,12 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<GrowItDbContext>();
+    await db.Database.MigrateAsync();
 }
 
 app.UseCors();
