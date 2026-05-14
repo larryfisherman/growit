@@ -36,7 +36,7 @@ export const ExerciseRow = ({ exercise, templateId, onDelete }: Props) => {
       targetSets === exercise.targetSets &&
       targetReps === exercise.targetReps &&
       restSeconds === exercise.restSeconds;
-    if (unchanged) return;
+    if (unchanged) { return };
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
