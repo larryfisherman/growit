@@ -10,4 +10,8 @@ export interface WorkoutSummaryResponse {
   name: string;
   performedAt: string;
   exerciseCount: number;
+  /** @nullable */
+  templateId: string | null;
+  /** @nullable */
+  templateName: string | null;
 }

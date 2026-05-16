@@ -9,11 +9,13 @@ import { SocialButton } from '../../../theme/components/SocialButton';
 import { Divider } from '../../../theme/components/Divider';
 import { BackButton } from '../../../theme/components/BackButton';
 import { AuthStackParamList } from '../../../navigation/AuthStack';
+import { useAuth } from '../../../auth/AuthContext';
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
 export const RegisterScreen = () => {
   const navigation = useNavigation<NavProp>();
+  const { signIn } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +25,7 @@ export const RegisterScreen = () => {
   const handleSubmit = () => {
     // TODO: hook up to backend auth when ready
     console.log('register', { name, email, password });
+    signIn();
   };
 
   return (
@@ -97,11 +100,11 @@ export const RegisterScreen = () => {
             <View className="gap-2">
               <SocialButton
                 provider="apple"
-                onPress={() => {/* TODO: expo-apple-authentication */}}
+                onPress={signIn /* TODO: expo-apple-authentication */}
               />
               <SocialButton
                 provider="google"
-                onPress={() => {/* TODO: expo-auth-session google */}}
+                onPress={signIn /* TODO: expo-auth-session google */}
               />
             </View>
           </View>

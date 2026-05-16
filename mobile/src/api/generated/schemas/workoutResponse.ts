@@ -12,5 +12,9 @@ export interface WorkoutResponse {
   performedAt: string;
   /** @nullable */
   notes: string | null;
+  /** @nullable */
+  templateId: string | null;
+  /** @nullable */
+  templateName: string | null;
   exercises: WorkoutExerciseResponse[];
 }

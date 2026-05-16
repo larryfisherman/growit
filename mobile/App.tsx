@@ -15,6 +15,7 @@ import {
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { AuthProvider } from './src/auth/AuthContext';
 
 const queryClient = new QueryClient();
 
@@ -32,8 +33,10 @@ export const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" />
-        <RootNavigator />
+        <AuthProvider>
+          <StatusBar style="light" />
+          <RootNavigator />
+        </AuthProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
@@ -8,6 +7,7 @@ import { CalendarStack } from './CalendarStack';
 import { TemplatesStack } from './TemplatesStack';
 import { AuthStack } from './AuthStack';
 import { tokens } from '../theme/tokens';
+import { useAuth } from '../auth/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const Root = createNativeStackNavigator();
@@ -55,8 +55,7 @@ const navigationTheme = {
 };
 
 export const RootNavigator = () => {
-  // TODO: replace with real auth state (Context / Zustand / SecureStore-backed)
-  const [isAuthed] = useState(false);
+  const { isAuthed } = useAuth();
 
   return (
     <NavigationContainer theme={navigationTheme}>
