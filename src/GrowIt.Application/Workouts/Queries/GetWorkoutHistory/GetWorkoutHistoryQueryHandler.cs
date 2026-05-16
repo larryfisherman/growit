@@ -23,7 +23,9 @@ public class GetWorkoutHistoryQueryHandler(IApplicationDbContext dbContext)
                 w.Id,
                 w.Name,
                 w.PerformedAt,
-                w.WorkoutExercises.Count))
+                w.WorkoutExercises.Count,
+                w.TemplateId,
+                w.Template != null ? w.Template.Name : null))
             .ToListAsync(cancellationToken);
 
         return new WorkoutHistoryResponse(items, totalCount);

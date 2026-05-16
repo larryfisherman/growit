@@ -22,6 +22,7 @@ public class CreateWorkoutFromTemplateCommandHandler(IApplicationDbContext dbCon
             Name = template.Name,
             PerformedAt = request.PerformedAt,
             CreatedAt = DateTime.UtcNow,
+            TemplateId = template.Id,
             WorkoutExercises = template.TemplateExercises
                 .OrderBy(te => te.OrderIndex)
                 .Select(te => new WorkoutExercise
