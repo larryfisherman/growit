@@ -5,6 +5,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
+import { SocialButton } from '../../../theme/components/SocialButton';
+import { Divider } from '../../../theme/components/Divider';
+import { BackButton } from '../../../theme/components/BackButton';
 import { AuthStackParamList } from '../../../navigation/AuthStack';
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -33,13 +36,9 @@ export const RegisterScreen = () => {
           contentContainerClassName="px-7 pb-7 grow"
           keyboardShouldPersistTaps="handled"
         >
-          {/* logo mark + wordmark */}
-          <View className="flex-row items-center gap-2 mt-4">
-            <View
-              className="w-3 h-3 bg-lime rounded-sm"
-              style={{ transform: [{ rotate: '45deg' }] }}
-            />
-            <Text className="text-fg font-sans-b text-base tracking-tight">growit</Text>
+          {/* back to welcome */}
+          <View className="mt-4">
+            <BackButton />
           </View>
 
           {/* hero */}
@@ -61,7 +60,7 @@ export const RegisterScreen = () => {
               onChangeText={setName}
               autoCapitalize="words"
               autoComplete="given-name"
-              placeholder="Jak ci mówić?"
+              placeholder="Jak masz na imię?"
             />
             <Input
               label="Email"
@@ -82,21 +81,38 @@ export const RegisterScreen = () => {
             />
           </View>
 
-          {/* CTAs */}
-          <View className="gap-2 mt-auto pt-10">
+          {/* primary CTA */}
+          <View className="mt-auto pt-10">
             <Button
               label="Załóż konto →"
               variant="primary"
               onPress={handleSubmit}
               disabled={!canSubmit}
             />
-            <Pressable onPress={() => navigation.navigate('Login')}>
-              <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase text-center mt-3">
-                Masz już konto?{' '}
-                <Text className="text-fg">Zaloguj się</Text>
-              </Text>
-            </Pressable>
           </View>
+
+          {/* social alternatives */}
+          <View className="gap-4 mt-8">
+            <Divider label="lub" />
+            <View className="gap-2">
+              <SocialButton
+                provider="apple"
+                onPress={() => {/* TODO: expo-apple-authentication */}}
+              />
+              <SocialButton
+                provider="google"
+                onPress={() => {/* TODO: expo-auth-session google */}}
+              />
+            </View>
+          </View>
+
+          {/* link to login */}
+          <Pressable onPress={() => navigation.replace('Login')} className="mt-8">
+            <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase text-center">
+              Masz już konto?{' '}
+              <Text className="text-fg">Zaloguj się</Text>
+            </Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
