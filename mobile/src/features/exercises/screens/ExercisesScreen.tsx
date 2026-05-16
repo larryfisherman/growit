@@ -1,5 +1,6 @@
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
+import { tokens } from '../../../theme/tokens';
 
 export const ExercisesScreen = () => {
   const { data, isLoading, isError } = useGetApiExercises({
@@ -8,28 +9,33 @@ export const ExercisesScreen = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text>Błąd ładowania ćwiczeń</Text>
+      <View className="flex-1 bg-bg items-center justify-center">
+        <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+          [ BŁĄD ŁADOWANIA ]
+        </Text>
       </View>
     );
   }
 
   return (
     <FlatList
+      className="bg-bg"
       data={data}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <View className="bg-gray-100 rounded-lg px-4 py-3">
-          <Text className="text-base font-semibold">{item.name}</Text>
-          <Text className="text-sm text-gray-500 mt-0.5">{item.category}</Text>
+        <View className="bg-surface rounded-md p-4 border border-line">
+          <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
+          <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+            {item.category}
+          </Text>
         </View>
       )}
       contentContainerClassName="p-4 gap-2"

@@ -11,6 +11,8 @@ import {
   getGetApiTemplatesQueryKey,
 } from '../../../api/generated/templates/templates';
 import { TemplateSummaryResponse } from '../../../api/generated/schemas';
+import { Button } from '../../../theme/components/Button';
+import { tokens } from '../../../theme/tokens';
 
 type TemplatesQueryKey = ReturnType<typeof getGetApiTemplatesQueryKey>;
 
@@ -36,26 +38,30 @@ const TemplateRow = ({ template, onPress, onDelete }: TemplateRowProps) => {
   };
 
   const renderRightActions = () => (
-    <View style={{ width: 80, justifyContent: 'center', paddingLeft: 8, paddingRight: 8 }}>
+    <View style={{ width: 88, justifyContent: 'center', paddingLeft: tokens.space[2], paddingRight: tokens.space[4] }}>
       <RectButton
         onPress={confirmDelete}
         style={{
-          backgroundColor: '#ef4444',
-          borderRadius: 8,
-          paddingVertical: 16,
+          backgroundColor: tokens.color.danger,
+          borderRadius: tokens.radius.md,
+          paddingVertical: tokens.space[4],
           alignItems: 'center',
         }}
       >
-        <Text style={{ color: 'white', fontWeight: '600' }}>Usuń</Text>
+        <Text style={{ color: tokens.color.fg, fontFamily: tokens.font.sansBold, fontSize: 13, letterSpacing: 1.8, textTransform: 'uppercase' }}>
+          Usuń
+        </Text>
       </RectButton>
     </View>
   );
 
   return (
     <Swipeable ref={swipeRef} renderRightActions={renderRightActions} overshootRight={false}>
-      <Pressable onPress={onPress} className="bg-white px-4 py-3 border-b border-gray-100">
-        <Text className="text-base font-medium">{template.name}</Text>
-        <Text className="text-sm text-gray-500">{template.exerciseCount} ćwiczeń</Text>
+      <Pressable onPress={onPress} className="bg-bg px-4 py-4 border-b border-line">
+        <Text className="text-fg font-sans-sb text-body-lg">{template.name}</Text>
+        <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+          {template.exerciseCount} ćwiczeń
+        </Text>
       </Pressable>
     </Swipeable>
   );
@@ -69,38 +75,31 @@ export const TemplatesListScreen = () => {
 
   const { mutate: remove } = useDeleteApiTemplatesTemplateId({
     mutation: {
-      // 1. uruchamiamy przed requestem — modyfikujemy cache lokalnie
       onMutate: async ({ templateId }) => {
-        // anuluj pending refetche, żeby nie nadpisały naszej zmiany gdy zwrócą po sukcesie
         await queryClient.cancelQueries({ queryKey: templatesKey });
-        // snapshot stanu przed zmianą — do rollbacku
         const previous = queryClient.getQueryData<TemplateSummaryResponse[]>(templatesKey);
-        // od razu usuwamy z cache → UI od razu rerenderuje listę bez tego itemu
         queryClient.setQueryData<TemplateSummaryResponse[]>(templatesKey, (old) =>
           old?.filter((t) => t.id !== templateId)
         );
-        // context dla onError
         return { previous };
       },
-      // 2. backend padł → przywracamy snapshot z onMutate
       onError: (_err, _vars, context) => {
         if (context?.previous) queryClient.setQueryData(templatesKey, context.previous);
       },
-      // 3. niezależnie od wyniku — resync z serwerem (pewność zgodności z DB)
       onSettled: () => queryClient.invalidateQueries({ queryKey: templatesKey }),
     },
   });
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-bg">
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}
@@ -113,20 +112,21 @@ export const TemplatesListScreen = () => {
         )}
         ListEmptyComponent={
           <View className="items-center justify-center p-10">
-            <Text className="text-gray-500 text-center">
-              Brak szablonów. Stwórz pierwszy, żeby zacząć.
+            <Text className="text-muted font-mono-md text-label tracking-label uppercase text-center">
+              [ BRAK SZABLONÓW ]
+            </Text>
+            <Text className="text-fg font-sans-md text-body mt-3 text-center">
+              Stwórz pierwszy, żeby zacząć.
             </Text>
           </View>
         }
-        contentContainerClassName="py-2"
       />
-      <View className="p-4 border-t border-gray-200">
-        <Pressable
+      <View className="px-4 pt-4 pb-6 border-t border-line">
+        <Button
+          label="+ Nowy szablon"
+          variant="primary"
           onPress={() => navigation.navigate('TemplateDetail', { templateId: null })}
-          className="bg-black rounded-xl py-4 items-center"
-        >
-          <Text className="text-white text-base font-semibold">Nowy szablon</Text>
-        </Pressable>
+        />
       </View>
     </View>
   );

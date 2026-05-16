@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,8 @@ import {
   usePostApiWorkouts,
   getGetApiWorkoutsUserIdByDateQueryKey,
 } from '../../../api/generated/workouts/workouts';
+import { Button } from '../../../theme/components/Button';
+import { tokens } from '../../../theme/tokens';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 const getToday = () => new Date().toISOString().split('T')[0];
@@ -39,38 +41,45 @@ export const WorkoutsScreen = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 p-6">
-      <Text className="text-xl font-semibold mb-6 capitalize">{todayLabel}</Text>
+    <View className="flex-1 bg-bg p-6">
+      <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-2">
+        [ DZISIAJ ]
+      </Text>
+      <Text className="text-fg font-sans-b text-h1 capitalize" style={{ letterSpacing: -1 }}>
+        {todayLabel}
+      </Text>
 
       {workout ? (
-        <TouchableOpacity
-          className="bg-gray-100 rounded-xl p-5"
+        <Pressable
+          className="bg-surface rounded-md p-5 border border-line mt-8"
           onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
         >
-          <Text className="text-lg font-semibold">{workout.name}</Text>
-          <Text className="text-sm text-gray-500 mt-1">
+          <Text className="text-fg font-sans-sb text-h3">{workout.name}</Text>
+          <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-2">
             {workout.exerciseCount === 0
               ? 'Brak ćwiczeń'
               : `${workout.exerciseCount} ćwiczenie${workout.exerciseCount > 1 ? 'ń' : ''}`}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       ) : (
-        <View className="gap-3">
-          <TouchableOpacity
-            className="bg-black rounded-xl py-4 items-center"
+        <View className="gap-3 mt-8">
+          <Button
+            label="Rozpocznij z szablonu →"
+            variant="primary"
             onPress={() => navigation.navigate('StartFromTemplate')}
-          >
-            <Text className="text-white text-base font-semibold">Rozpocznij z szablonu</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="bg-gray-100 rounded-xl py-4 items-center"
+          />
+          <Button
+            label="Pusty trening"
+            variant="secondary"
+            loading={isPending}
+            disabled={isPending}
             onPress={() =>
               createWorkout({
                 data: {
@@ -81,14 +90,7 @@ export const WorkoutsScreen = () => {
                 },
               })
             }
-            disabled={isPending}
-          >
-            {isPending ? (
-              <ActivityIndicator />
-            ) : (
-              <Text className="text-base font-semibold">Rozpocznij pusty trening</Text>
-            )}
-          </TouchableOpacity>
+          />
         </View>
       )}
     </View>

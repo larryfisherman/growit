@@ -6,11 +6,12 @@ import { StartFromTemplateScreen } from '../features/workouts/screens/StartFromT
 import { TemplateDetailScreen } from '../features/templates/screens/TemplateDetailScreen';
 import { TemplateExercisePickerScreen } from '../features/templates/screens/TemplateExercisePickerScreen';
 import { TodayStackParamList } from './types';
+import { darkStackOptions } from './screenOptions';
 
 const Stack = createNativeStackNavigator<TodayStackParamList>();
 
 export const TodayStack = () => (
-  <Stack.Navigator>
+  <Stack.Navigator screenOptions={darkStackOptions}>
     <Stack.Screen name="TodayWorkout" component={WorkoutsScreen} options={{ title: 'Dzisiaj' }} />
     <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} options={{ title: 'Trening' }} />
     <Stack.Screen name="AddExerciseToWorkout" component={AddExerciseToWorkoutScreen} options={{ title: 'Dodaj ćwiczenie' }} />

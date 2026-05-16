@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { TemplateExerciseResponse } from '../../../api/generated/schemas';
 import { useTemplateExerciseUpdate } from '../hooks/useTemplateExerciseUpdate';
+import { Input } from '../../../theme/components/Input';
+import { tokens } from '../../../theme/tokens';
 
 type Props = {
   exercise: TemplateExerciseResponse;
@@ -36,7 +38,7 @@ export const ExerciseRow = ({ exercise, templateId, onDelete }: Props) => {
       targetSets === exercise.targetSets &&
       targetReps === exercise.targetReps &&
       restSeconds === exercise.restSeconds;
-    if (unchanged) { return };
+    if (unchanged) return;
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
@@ -64,56 +66,55 @@ export const ExerciseRow = ({ exercise, templateId, onDelete }: Props) => {
     setTargets((prev) => ({ ...prev, [key]: value }));
 
   const renderRightActions = () => (
-    <View style={{ width: 80, justifyContent: 'center', paddingLeft: 8 }}>
+    <View style={{ width: 88, justifyContent: 'center', paddingLeft: tokens.space[2] }}>
       <RectButton
         onPress={() => {
           swipeRef.current?.close();
           onDelete();
         }}
         style={{
-          backgroundColor: '#ef4444',
-          borderRadius: 8,
-          paddingVertical: 16,
+          backgroundColor: tokens.color.danger,
+          borderRadius: tokens.radius.md,
+          paddingVertical: tokens.space[4],
           alignItems: 'center',
         }}
       >
-        <Text style={{ color: 'white', fontWeight: '600' }}>Usuń</Text>
+        <Text style={{ color: tokens.color.fg, fontFamily: tokens.font.sansBold, fontSize: 13, letterSpacing: 1.8, textTransform: 'uppercase' }}>
+          Usuń
+        </Text>
       </RectButton>
     </View>
   );
 
   if (isEditing) {
     return (
-      <View className="bg-gray-50 rounded-lg p-3 gap-3">
+      <View className="bg-surface rounded-md p-4 gap-3 border border-line">
         <Pressable onPress={() => setIsEditing(false)}>
-          <Text className="text-base font-medium">{exercise.exerciseName}</Text>
+          <Text className="text-fg font-sans-sb text-body-lg">{exercise.exerciseName}</Text>
         </Pressable>
         <View className="flex-row gap-2">
           <View className="flex-1">
-            <Text className="text-xs text-gray-500 mb-1">Serie</Text>
-            <TextInput
+            <Input
+              label="Serie"
               value={targets.sets}
               onChangeText={(t) => setTarget('sets', t)}
               keyboardType="number-pad"
-              className="border border-gray-300 rounded-md px-2 py-1.5 text-base bg-white"
             />
           </View>
           <View className="flex-1">
-            <Text className="text-xs text-gray-500 mb-1">Powtórzenia</Text>
-            <TextInput
+            <Input
+              label="Powt."
               value={targets.reps}
               onChangeText={(t) => setTarget('reps', t)}
               keyboardType="number-pad"
-              className="border border-gray-300 rounded-md px-2 py-1.5 text-base bg-white"
             />
           </View>
           <View className="flex-1">
-            <Text className="text-xs text-gray-500 mb-1">Przerwa (s)</Text>
-            <TextInput
+            <Input
+              label="Przerwa"
               value={targets.rest}
               onChangeText={(t) => setTarget('rest', t)}
               keyboardType="number-pad"
-              className="border border-gray-300 rounded-md px-2 py-1.5 text-base bg-white"
             />
           </View>
         </View>
@@ -123,10 +124,10 @@ export const ExerciseRow = ({ exercise, templateId, onDelete }: Props) => {
 
   return (
     <Swipeable ref={swipeRef} renderRightActions={renderRightActions} overshootRight={false}>
-      <Pressable onPress={openEdit} className="bg-gray-50 rounded-lg p-3">
-        <Text className="text-base font-medium">{exercise.exerciseName}</Text>
-        <Text className="text-sm text-gray-500">
-          {exercise.targetSets} × {exercise.targetReps} · przerwa {exercise.restSeconds}s
+      <Pressable onPress={openEdit} className="bg-surface rounded-md p-4 border border-line">
+        <Text className="text-fg font-sans-sb text-body-lg">{exercise.exerciseName}</Text>
+        <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+          {exercise.targetSets} × {exercise.targetReps} · {exercise.restSeconds}s
         </Text>
       </Pressable>
     </Swipeable>

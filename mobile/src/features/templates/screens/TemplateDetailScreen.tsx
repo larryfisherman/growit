@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,9 @@ import {
 import { ExerciseRow } from '../components/ExerciseRow';
 import { useTemplateAutoSave } from '../hooks/useTemplateAutoSave';
 import { useTemplateExerciseDelete } from '../hooks/useTemplateExerciseDelete';
+import { Button } from '../../../theme/components/Button';
+import { Input } from '../../../theme/components/Input';
+import { tokens } from '../../../theme/tokens';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -61,58 +64,50 @@ export const TemplateDetailScreen = () => {
 
   if (!isNew && isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerClassName="p-4 gap-4">
-      <View>
-        <Text className="text-sm font-medium text-gray-700 mb-1">Nazwa</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="np. Push Day A"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-base"
-        />
-      </View>
+    <ScrollView className="flex-1 bg-bg" contentContainerClassName="p-4 gap-5">
+      <Input
+        label="Nazwa"
+        value={name}
+        onChangeText={setName}
+        placeholder="np. Push Day A"
+      />
 
-      <View>
-        <Text className="text-sm font-medium text-gray-700 mb-1">Notatki</Text>
-        <TextInput
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Opcjonalnie"
-          multiline
-          className="border border-gray-300 rounded-lg px-3 py-2 text-base min-h-[80px]"
-        />
-      </View>
+      <Input
+        label="Notatki"
+        value={notes}
+        onChangeText={setNotes}
+        placeholder="Opcjonalnie"
+        multiline
+      />
 
       {isNew && (
-        <Pressable
-          onPress={handleCreate}
+        <Button
+          label={isCreating ? 'Tworzenie...' : 'Utwórz szablon →'}
+          variant="primary"
+          loading={isCreating}
           disabled={isCreating || !name.trim()}
-          className="bg-black rounded-xl py-4 items-center disabled:opacity-40"
-        >
-          {isCreating ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white text-base font-semibold">Utwórz szablon</Text>
-          )}
-        </Pressable>
+          onPress={handleCreate}
+        />
       )}
 
       {!isNew && template && (
         <View className="mt-2">
-          <Text className="text-base font-semibold mb-2">Ćwiczenia</Text>
+          <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-3">
+            [ ĆWICZENIA ]
+          </Text>
           {template.exercises.length === 0 ? (
-            <View className="items-center justify-center py-6">
-              <Text className="text-gray-500">Brak ćwiczeń w szablonie</Text>
+            <View className="items-center justify-center py-8 border border-line rounded-md">
+              <Text className="text-muted font-sans-md text-body">Brak ćwiczeń w szablonie</Text>
             </View>
           ) : (
-            <View className="gap-2 mb-2">
+            <View className="gap-2 mb-3">
               {template.exercises.map((ex) => (
                 <ExerciseRow
                   key={ex.id}
@@ -125,9 +120,11 @@ export const TemplateDetailScreen = () => {
           )}
           <Pressable
             onPress={() => navigation.navigate('TemplateExercisePicker', { templateId: templateId! })}
-            className="bg-gray-100 rounded-xl py-3 items-center"
+            className="border border-line rounded-md py-4 items-center"
           >
-            <Text className="text-base font-medium">+ Dodaj ćwiczenie</Text>
+            <Text className="text-fg font-sans-sb text-body-sm tracking-label uppercase">
+              + Dodaj ćwiczenie
+            </Text>
           </Pressable>
         </View>
       )}

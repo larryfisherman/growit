@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { TemplatesStackParamList } from '../../../navigation/types';
@@ -8,9 +8,12 @@ import {
   getGetApiTemplatesTemplateIdQueryKey,
   getGetApiTemplatesQueryKey,
 } from '../../../api/generated/templates/templates';
+import { useTemplateExerciseForm } from '../hooks/useTemplateExerciseForm';
+import { Button } from '../../../theme/components/Button';
+import { Input } from '../../../theme/components/Input';
+import { tokens } from '../../../theme/tokens';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
-import { useTemplateExerciseForm } from '../hooks/useTemplateExerciseForm';
 
 type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateExercisePicker'>;
 
@@ -46,80 +49,74 @@ export const TemplateExercisePickerScreen = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   const renderHeader = () => (
-    <View className="p-4 gap-4 border-b border-gray-200">
-      <View>
-        <Text className="text-sm font-medium text-gray-700 mb-1">Własne ćwiczenie</Text>
-        <TextInput
-          value={customName}
-          onChangeText={(t) => setSelection(t.trim() ? { exerciseId: null, name: t } : null)}
-          placeholder="Nazwa"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-base"
-        />
-      </View>
+    <View className="p-4 gap-4 border-b border-line">
+      <Input
+        label="Własne ćwiczenie"
+        value={customName}
+        onChangeText={(t) => setSelection(t.trim() ? { exerciseId: null, name: t } : null)}
+        placeholder="Nazwa"
+      />
 
       <View className="flex-row gap-2">
         <View className="flex-1">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Serie</Text>
-          <TextInput
+          <Input
+            label="Serie"
             value={targets.sets}
             onChangeText={(t) => setTarget('sets', t)}
             keyboardType="number-pad"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-base"
           />
         </View>
         <View className="flex-1">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Powtórzenia</Text>
-          <TextInput
+          <Input
+            label="Powt."
             value={targets.reps}
             onChangeText={(t) => setTarget('reps', t)}
             keyboardType="number-pad"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-base"
           />
         </View>
         <View className="flex-1">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Przerwa (s)</Text>
-          <TextInput
+          <Input
+            label="Przerwa"
             value={targets.rest}
             onChangeText={(t) => setTarget('rest', t)}
             keyboardType="number-pad"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-base"
           />
         </View>
       </View>
 
       {isLibrary && selection && (
-        <View className="bg-blue-50 rounded-lg p-3">
-          <Text className="text-sm text-gray-600">Wybrane ćwiczenie</Text>
-          <Text className="text-base font-medium">{selection.name}</Text>
+        <View className="bg-surface rounded-md p-3 border border-line">
+          <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase">
+            Wybrane
+          </Text>
+          <Text className="text-fg font-sans-sb text-body-lg mt-1">{selection.name}</Text>
         </View>
       )}
 
-      <Pressable
-        onPress={handleSubmit}
+      <Button
+        label="Dodaj do szablonu →"
+        variant="primary"
+        loading={isPending}
         disabled={!selection || isPending}
-        className="bg-black rounded-xl py-3 items-center disabled:opacity-40"
-      >
-        {isPending ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white font-semibold">Dodaj do szablonu</Text>
-        )}
-      </Pressable>
+        onPress={handleSubmit}
+      />
 
-      <Text className="text-sm font-medium text-gray-700 mt-2">Lub wybierz z biblioteki</Text>
+      <Text className="text-muted font-mono-md text-label tracking-label uppercase mt-2">
+        [ LUB Z BIBLIOTEKI ]
+      </Text>
     </View>
   );
 
   return (
     <FlatList
-      className="bg-white"
+      className="bg-bg"
       data={exercises}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={renderHeader()}
@@ -128,10 +125,12 @@ export const TemplateExercisePickerScreen = () => {
         return (
           <Pressable
             onPress={() => setSelection({ exerciseId: item.id, name: item.name })}
-            className={`px-4 py-3 border-b border-gray-100 ${isSelected ? 'bg-blue-50' : ''}`}
+            className={`px-4 py-4 border-b border-line ${isSelected ? 'bg-surface2' : ''}`}
           >
-            <Text className="text-base font-medium">{item.name}</Text>
-            <Text className="text-sm text-gray-500">{item.category}</Text>
+            <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
+            <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+              {item.category}
+            </Text>
           </Pressable>
         );
       }}

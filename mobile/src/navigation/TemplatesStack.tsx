@@ -3,11 +3,12 @@ import { TemplatesListScreen } from '../features/templates/screens/TemplatesList
 import { TemplateDetailScreen } from '../features/templates/screens/TemplateDetailScreen';
 import { TemplateExercisePickerScreen } from '../features/templates/screens/TemplateExercisePickerScreen';
 import { TemplatesStackParamList } from './types';
+import { darkStackOptions } from './screenOptions';
 
 const Stack = createNativeStackNavigator<TemplatesStackParamList>();
 
 export const TemplatesStack = () => (
-  <Stack.Navigator>
+  <Stack.Navigator screenOptions={darkStackOptions}>
     <Stack.Screen name="TemplatesList" component={TemplatesListScreen} options={{ title: 'Szablony' }} />
     <Stack.Screen name="TemplateDetail" component={TemplateDetailScreen} options={{ title: 'Szablon' }} />
     <Stack.Screen

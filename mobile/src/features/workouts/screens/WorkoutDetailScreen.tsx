@@ -1,26 +1,32 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TodayStackParamList } from '../../../navigation/types';
 import { useGetApiWorkoutsWorkoutId } from '../../../api/generated/workouts/workouts';
 import { WorkoutExerciseResponse } from '../../../api/generated/schemas';
+import { Button } from '../../../theme/components/Button';
+import { tokens } from '../../../theme/tokens';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'WorkoutDetail'>;
 
 const ExerciseCard = ({ item }: { item: WorkoutExerciseResponse }) => (
-  <View className="bg-gray-100 rounded-xl p-4">
-    <Text className="text-base font-semibold">{item.exerciseName}</Text>
-    {item.category && <Text className="text-sm text-gray-500 mt-0.5">{item.category}</Text>}
+  <View className="bg-surface rounded-md p-4 border border-line">
+    <Text className="text-fg font-sans-sb text-body-lg">{item.exerciseName}</Text>
+    {item.category && (
+      <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+        {item.category}
+      </Text>
+    )}
     {item.targetSets != null && item.targetReps != null && (
-      <Text className="text-sm text-gray-600 mt-1">
+      <Text className="text-muted font-sans-md text-body-sm mt-2">
         Cel: {item.targetSets} × {item.targetReps}
         {item.restSeconds != null ? ` · przerwa ${item.restSeconds}s` : ''}
       </Text>
     )}
     {item.sets.length > 0 && (
-      <View className="mt-2 gap-0.5">
+      <View className="mt-3 gap-1 pt-3 border-t border-line">
         {item.sets.map((set, i) => (
-          <Text key={set.id} className="text-sm text-gray-700">
-            Seria {i + 1}: {set.weightKg} kg × {set.reps}
+          <Text key={set.id} className="text-fg font-mono-md text-body-sm">
+            <Text className="text-muted">SERIA {i + 1}</Text> · {set.weightKg} kg × {set.reps}
           </Text>
         ))}
       </View>
@@ -34,37 +40,45 @@ export const WorkoutDetailScreen = ({ route, navigation }: Props) => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   if (!workout) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text>Nie znaleziono treningu</Text>
+      <View className="flex-1 bg-bg items-center justify-center">
+        <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+          [ NIE ZNALEZIONO ]
+        </Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-bg">
       <FlatList
         data={workout.exercises}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <Text className="text-center text-gray-500 mt-10">Brak ćwiczeń — dodaj pierwsze</Text>
+          <View className="items-center justify-center py-10">
+            <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+              [ BRAK ĆWICZEŃ ]
+            </Text>
+            <Text className="text-fg font-sans-md text-body mt-3">Dodaj pierwsze poniżej.</Text>
+          </View>
         }
         renderItem={({ item }) => <ExerciseCard item={item} />}
         contentContainerClassName="p-4 gap-3 pb-28"
       />
-      <TouchableOpacity
-        className="absolute bottom-8 left-4 right-4 bg-black rounded-xl py-4 items-center"
-        onPress={() => navigation.navigate('AddExerciseToWorkout', { workoutId })}
-      >
-        <Text className="text-white text-base font-semibold">+ Dodaj ćwiczenie</Text>
-      </TouchableOpacity>
+      <View className="absolute bottom-6 left-4 right-4">
+        <Button
+          label="+ Dodaj ćwiczenie"
+          variant="primary"
+          onPress={() => navigation.navigate('AddExerciseToWorkout', { workoutId })}
+        />
+      </View>
     </View>
   );
 };

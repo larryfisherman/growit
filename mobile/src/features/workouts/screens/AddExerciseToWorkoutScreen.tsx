@@ -1,4 +1,4 @@
-import { View, FlatList, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, FlatList, Text, Pressable, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { TodayStackParamList } from '../../../navigation/types';
@@ -7,6 +7,7 @@ import {
   usePostApiWorkoutsWorkoutIdExercises,
   getGetApiWorkoutsWorkoutIdQueryKey,
 } from '../../../api/generated/workouts/workouts';
+import { tokens } from '../../../theme/tokens';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'AddExerciseToWorkout'>;
 
@@ -30,25 +31,28 @@ export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   return (
     <FlatList
+      className="bg-bg"
       data={exercises}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <TouchableOpacity
-          className="bg-gray-100 rounded-lg px-4 py-3"
+        <Pressable
+          className="bg-surface rounded-md p-4 border border-line"
           onPress={() => addExercise({ workoutId, data: { exerciseId: item.id } })}
           disabled={isPending}
         >
-          <Text className="text-base font-semibold">{item.name}</Text>
-          <Text className="text-sm text-gray-500 mt-0.5">{item.category}</Text>
-        </TouchableOpacity>
+          <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
+          <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+            {item.category}
+          </Text>
+        </Pressable>
       )}
       contentContainerClassName="p-4 gap-2"
     />

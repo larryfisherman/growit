@@ -8,6 +8,8 @@ import {
   usePostApiWorkoutsFromTemplate,
   getGetApiWorkoutsUserIdByDateQueryKey,
 } from '../../../api/generated/workouts/workouts';
+import { Button } from '../../../theme/components/Button';
+import { tokens } from '../../../theme/tokens';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 const getToday = () => new Date().toISOString().split('T')[0];
@@ -37,14 +39,14 @@ export const StartFromTemplateScreen = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-bg">
       <FlatList
         data={templates}
         keyExtractor={(item) => item.id}
@@ -52,21 +54,26 @@ export const StartFromTemplateScreen = () => {
           <Pressable
             onPress={() => handleStart(item.id)}
             disabled={isPending}
-            className="px-4 py-3 border-b border-gray-100"
+            className="bg-surface rounded-md p-4 border border-line"
           >
-            <Text className="text-base font-medium">{item.name}</Text>
-            <Text className="text-sm text-gray-500">{item.exerciseCount} ćwiczeń</Text>
+            <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
+            <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+              {item.exerciseCount} ćwiczeń
+            </Text>
           </Pressable>
         )}
+        contentContainerClassName="p-4 gap-2"
         ListEmptyComponent={
           <View className="items-center justify-center p-10 gap-4">
-            <Text className="text-gray-500 text-center">Brak szablonów.</Text>
-            <Pressable
+            <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+              [ BRAK SZABLONÓW ]
+            </Text>
+            <Button
+              label="+ Dodaj szablon"
+              variant="primary"
+              fullWidth={false}
               onPress={() => navigation.navigate('TemplateDetail', { templateId: null })}
-              className="bg-black rounded-xl py-3 px-6"
-            >
-              <Text className="text-white text-base font-semibold">Dodaj szablon</Text>
-            </Pressable>
+            />
           </View>
         }
       />
