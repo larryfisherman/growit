@@ -3,26 +3,47 @@
 // Mirror this file to tailwind.config.js (colors/fontFamily/spacing).
 // Use `tokens.color.lime` inline when className isn't enough.
 
-export const tokens = {
-  color: {
-    // surfaces
+const palettes = {
+  dark: {
     bg:         '#0a0a0a',
     surface:    '#141414',
     surface2:   '#1c1c1c',
-    // text
     fg:         '#f5f5f3',
     muted:      '#8a8a86',
     dim:        '#5a5a56',
-    // accent
     lime:       '#d4ff3a',
     limeInk:    '#0a0a0a',
-    // semantic
-    success:    '#52d97c',
-    danger:     '#ff5a4e',
-    warning:    '#ffb84e',
-    // strokes
     line:       'rgba(255,255,255,0.08)',
     lineStrong: 'rgba(255,255,255,0.16)',
+  },
+  light: {
+    bg:         '#fafaf7',
+    surface:    '#ffffff',
+    surface2:   '#f3f3ee',
+    fg:         '#0a0a0a',
+    muted:      '#6a6a66',
+    dim:        '#a0a09a',
+    lime:       '#a3cc1f',
+    limeInk:    '#0a0a0a',
+    line:       'rgba(0,0,0,0.08)',
+    lineStrong: 'rgba(0,0,0,0.16)',
+  },
+} as const;
+
+const semantic = {
+  success: '#52d97c',
+  danger:  '#ff5a4e',
+  warning: '#ffb84e',
+} as const;
+
+export { palettes, semantic };
+export type ThemeMode = keyof typeof palettes;
+export type PaletteColors = typeof palettes.dark;
+
+export const tokens = {
+  color: {
+    ...palettes.dark,
+    ...semantic,
   },
 
   font: {
