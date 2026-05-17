@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Swipeable, RectButton } from 'react-native-gesture-handler';
+import { RectButton } from 'react-native-gesture-handler';
+import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { Ionicons } from '@expo/vector-icons';
 import { TemplateExerciseResponse } from '../../../api/generated/schemas';
 import { useTemplateExerciseUpdate } from '../hooks/useTemplateExerciseUpdate';
 import { Input } from '../../../theme/components/Input';
@@ -15,7 +17,7 @@ type Props = {
 const SAVE_DELAY_MS = 600;
 
 export const ExerciseRow = ({ exercise, templateId, onDelete }: Props) => {
-  const swipeRef = useRef<Swipeable>(null);
+  const swipeRef = useRef<SwipeableMethods>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { mutate: update } = useTemplateExerciseUpdate(templateId);
 
@@ -66,22 +68,21 @@ export const ExerciseRow = ({ exercise, templateId, onDelete }: Props) => {
     setTargets((prev) => ({ ...prev, [key]: value }));
 
   const renderRightActions = () => (
-    <View style={{ width: 88, justifyContent: 'center', paddingLeft: tokens.space[2] }}>
+    <View style={{ width: 72, paddingLeft: tokens.space[2] }}>
       <RectButton
         onPress={() => {
           swipeRef.current?.close();
           onDelete();
         }}
         style={{
+          flex: 1,
           backgroundColor: tokens.color.danger,
-          borderRadius: tokens.radius.md,
-          paddingVertical: tokens.space[4],
+          borderRadius: tokens.radius.lg,
           alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Text style={{ color: tokens.color.fg, fontFamily: tokens.font.sansBold, fontSize: 13, letterSpacing: 1.8, textTransform: 'uppercase' }}>
-          Usuń
-        </Text>
+        <Ionicons name="trash-outline" size={22} color={tokens.color.fg} />
       </RectButton>
     </View>
   );

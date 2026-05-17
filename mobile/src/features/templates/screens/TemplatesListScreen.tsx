@@ -1,6 +1,8 @@
 import { useRef } from 'react';
 import { View, Text, Pressable, FlatList, ActivityIndicator, Alert } from 'react-native';
-import { Swipeable, RectButton } from 'react-native-gesture-handler';
+import { RectButton } from 'react-native-gesture-handler';
+import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,7 +29,7 @@ type TemplateRowProps = {
 };
 
 const TemplateRow = ({ template, onPress, onDelete }: TemplateRowProps) => {
-  const swipeRef = useRef<Swipeable>(null);
+  const swipeRef = useRef<SwipeableMethods>(null);
 
   const confirmDelete = () => {
     swipeRef.current?.close();
@@ -38,19 +40,18 @@ const TemplateRow = ({ template, onPress, onDelete }: TemplateRowProps) => {
   };
 
   const renderRightActions = () => (
-    <View style={{ width: 88, justifyContent: 'center', paddingLeft: tokens.space[2], paddingRight: tokens.space[4] }}>
+    <View style={{ width: 72, paddingLeft: tokens.space[2], paddingRight: tokens.space[2], paddingVertical: tokens.space[2] }}>
       <RectButton
         onPress={confirmDelete}
         style={{
+          flex: 1,
           backgroundColor: tokens.color.danger,
-          borderRadius: tokens.radius.md,
-          paddingVertical: tokens.space[4],
+          borderRadius: tokens.radius.lg,
           alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Text style={{ color: tokens.color.fg, fontFamily: tokens.font.sansBold, fontSize: 13, letterSpacing: 1.8, textTransform: 'uppercase' }}>
-          Usuń
-        </Text>
+        <Ionicons name="trash-outline" size={22} color={tokens.color.fg} />
       </RectButton>
     </View>
   );
