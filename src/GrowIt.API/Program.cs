@@ -35,5 +35,6 @@ using (var scope = app.Services.CreateScope())
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
