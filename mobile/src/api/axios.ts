@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 
 const API_PORT = 5053;
 
-// Production: EXPO_PUBLIC_API_URL from .env.production.
+// Production: EXPO_PUBLIC_API_URL from .env / .env.production.
 // Dev on device: LAN IP from Expo dev server.
 // Web / fallback: localhost.
 const resolveBaseUrl = (): string => {
@@ -16,9 +16,9 @@ const resolveBaseUrl = (): string => {
   return `http://localhost:${API_PORT}`;
 };
 
-const AXIOS_INSTANCE = axios.create({
-  baseURL: resolveBaseUrl(),
-});
+const baseURL = resolveBaseUrl();
+
+const AXIOS_INSTANCE = axios.create({ baseURL });
 
 export const customInstance = <T>(config: AxiosRequestConfig): Promise<T> =>
   AXIOS_INSTANCE(config).then(({ data }) => data);
