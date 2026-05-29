@@ -1,3 +1,4 @@
+using GrowIt.API.Authorization;
 using GrowIt.Application.Workouts.Commands.AddExerciseToWorkout;
 using GrowIt.Application.Workouts.Commands.CreateWorkout;
 using GrowIt.Application.Workouts.Commands.CreateWorkoutFromTemplate;
@@ -8,11 +9,13 @@ using GrowIt.Application.Workouts.Queries.GetWorkoutsByMonth;
 using GrowIt.Contracts.Workouts.Requests;
 using GrowIt.Contracts.Workouts.Responses;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GrowIt.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class WorkoutsController(IMediator mediator) : ControllerBase
 {
@@ -20,8 +23,9 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<CreateWorkoutResponse>> CreateWorkout(
         [FromBody] CreateWorkoutRequest request, CancellationToken ct)
     {
+        var userId = HttpContext.GetUserId();
         var id = await mediator.Send(new CreateWorkoutCommand(
-            request.UserId, request.Name, request.PerformedAt, request.Notes), ct);
+            userId, request.Name, request.PerformedAt, request.Notes), ct);
         return Ok(new CreateWorkoutResponse(id));
     }
 
@@ -29,7 +33,8 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<WorkoutHistoryResponse>> GetHistory(
         Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetWorkoutHistoryQuery(userId, page, pageSize), ct);
+        var authenticatedUserId = HttpContext.GetUserId();
+        var result = await mediator.Send(new GetWorkoutHistoryQuery(authenticatedUserId, page, pageSize), ct);
         return Ok(result);
     }
 
@@ -45,7 +50,8 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<WorkoutByDateResponse>> GetWorkoutByDate(
         Guid userId, [FromQuery] DateOnly date, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetWorkoutByDateQuery(userId, date), ct);
+        var authenticatedUserId = HttpContext.GetUserId();
+        var result = await mediator.Send(new GetWorkoutByDateQuery(authenticatedUserId, date), ct);
         if (result is null) return NotFound();
         return Ok(result);
     }
@@ -54,7 +60,8 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<List<WorkoutSummaryResponse>>> GetWorkoutsByMonth(
         Guid userId, [FromQuery] int year, [FromQuery] int month, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetWorkoutsByMonthQuery(userId, year, month), ct);
+        var authenticatedUserId = HttpContext.GetUserId();
+        var result = await mediator.Send(new GetWorkoutsByMonthQuery(authenticatedUserId, year, month), ct);
         return Ok(result);
     }
 
@@ -70,8 +77,9 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<CreateWorkoutFromTemplateResponse>> CreateFromTemplate(
         [FromBody] CreateWorkoutFromTemplateRequest request, CancellationToken ct)
     {
+        var userId = HttpContext.GetUserId();
         var id = await mediator.Send(new CreateWorkoutFromTemplateCommand(
-            request.UserId, request.TemplateId, request.PerformedAt), ct);
+            userId, request.TemplateId, request.PerformedAt), ct);
         return Ok(new CreateWorkoutFromTemplateResponse(id));
     }
 }

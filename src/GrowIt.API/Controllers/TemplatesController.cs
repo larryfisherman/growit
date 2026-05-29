@@ -1,3 +1,4 @@
+using GrowIt.API.Authorization;
 using GrowIt.Application.Templates.Commands.AddExerciseToTemplate;
 using GrowIt.Application.Templates.Commands.CreateTemplate;
 using GrowIt.Application.Templates.Commands.DeleteTemplate;
@@ -9,11 +10,13 @@ using GrowIt.Application.Templates.Queries.GetTemplates;
 using GrowIt.Contracts.Templates.Requests;
 using GrowIt.Contracts.Templates.Responses;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GrowIt.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class TemplatesController(IMediator mediator) : ControllerBase
 {
@@ -21,7 +24,8 @@ public class TemplatesController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<CreateTemplateResponse>> CreateTemplate(
         [FromBody] CreateTemplateRequest request, CancellationToken ct)
     {
-        var id = await mediator.Send(new CreateTemplateCommand(request.UserId, request.Name, request.Notes), ct);
+        var userId = HttpContext.GetUserId();
+        var id = await mediator.Send(new CreateTemplateCommand(userId, request.Name, request.Notes), ct);
         return Ok(new CreateTemplateResponse(id));
     }
 
@@ -29,7 +33,8 @@ public class TemplatesController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<List<TemplateSummaryResponse>>> GetTemplates(
         [FromQuery] Guid userId, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetTemplatesQuery(userId), ct);
+        var authenticatedUserId = HttpContext.GetUserId();
+        var result = await mediator.Send(new GetTemplatesQuery(authenticatedUserId), ct);
         return Ok(result);
     }
 

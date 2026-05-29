@@ -3,11 +3,13 @@ using GrowIt.Application.Workouts.Commands.LogSet;
 using GrowIt.Contracts.Exercises.Requests;
 using GrowIt.Contracts.Exercises.Responses;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GrowIt.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ExercisesController(IMediator mediator) : ControllerBase
 {
