@@ -38,7 +38,7 @@ const semantic = {
 
 export { palettes, semantic };
 export type ThemeMode = keyof typeof palettes;
-export type PaletteColors = typeof palettes.dark;
+export type PaletteColors = Record<keyof typeof palettes.dark, string>;
 
 export const tokens = {
   color: {

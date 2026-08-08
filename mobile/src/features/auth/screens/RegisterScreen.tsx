@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
 import { SocialButton } from '../../../theme/components/SocialButton';
@@ -10,22 +9,27 @@ import { Divider } from '../../../theme/components/Divider';
 import { BackButton } from '../../../theme/components/BackButton';
 import { AuthStackParamList } from '../../../navigation/AuthStack';
 import { useAuth } from '../../../auth/AuthContext';
+import { useSignUp } from '../hooks/useSignUp';
 
-type NavProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
-export const RegisterScreen = () => {
-  const navigation = useNavigation<NavProp>();
+export const RegisterScreen = ({ navigation }: Props) => {
   const { signIn } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const canSubmit = name.trim().length > 0 && email.trim().length > 0 && password.length >= 6;
+  const signUp = useSignUp();
+
+  const canSubmit =
+    name.trim().length > 0 && email.trim().length > 0 && password.length >= 8 && !signUp.isPending;
 
   const handleSubmit = () => {
-    // TODO: hook up to backend auth when ready
-    console.log('register', { name, email, password });
-    signIn();
+    const trimmedEmail = email.trim().toLowerCase();
+    signUp.mutate(
+      { email: trimmedEmail, password },
+      { onSuccess: () => navigation.replace('ConfirmSignUp', { email: trimmedEmail }) },
+    );
   };
 
   return (
@@ -80,14 +84,20 @@ export const RegisterScreen = () => {
               onChangeText={setPassword}
               secureTextEntry
               autoComplete="password-new"
-              placeholder="min. 6 znaków"
+              placeholder="min. 8 znaków, wielka, mała, cyfra, znak"
             />
           </View>
+
+          {signUp.error && (
+            <Text className="text-danger font-mono-md text-label-sm tracking-label uppercase mt-4">
+              {signUp.error.message}
+            </Text>
+          )}
 
           {/* primary CTA */}
           <View className="mt-auto pt-10">
             <Button
-              label="Załóż konto →"
+              label={signUp.isPending ? 'Zakładam konto...' : 'Załóż konto →'}
               variant="primary"
               onPress={handleSubmit}
               disabled={!canSubmit}
@@ -112,8 +122,7 @@ export const RegisterScreen = () => {
           {/* link to login */}
           <Pressable onPress={() => navigation.replace('Login')} className="mt-8">
             <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase text-center">
-              Masz już konto?{' '}
-              <Text className="text-fg">Zaloguj się</Text>
+              Masz już konto? <Text className="text-fg">Zaloguj się</Text>
             </Text>
           </Pressable>
         </ScrollView>

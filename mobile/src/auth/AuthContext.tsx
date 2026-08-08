@@ -1,5 +1,5 @@
-// Placeholder auth state — flipping isAuthed swaps RootNavigator between AuthStack and MainTabs.
-// When real auth lands, replace internals with token storage (SecureStore) + user info.
+// Session state only — sign-up / confirm flows live in features/auth/hooks (react-query).
+// Real token handling (SecureStore) lands together with sign-in.
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
