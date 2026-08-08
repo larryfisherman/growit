@@ -8,6 +8,7 @@ import { CalendarStackParamList } from '../../../navigation/types';
 import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
 import { useTheme } from '../../../theme/useTheme';
 import { tokens } from '../../../theme/tokens';
+import { exerciseCountLabel } from '../../../lib/plurals';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -86,7 +87,7 @@ export const CalendarScreen = () => {
         {item.name}
       </Text>
       <Text className="text-sm" style={{ color: colors.muted }}>
-        {item.exerciseCount} ćwiczeń
+        {exerciseCountLabel(item.exerciseCount)}
       </Text>
     </Pressable>
   );

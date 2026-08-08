@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { TemplatesStackParamList } from '../../../navigation/types';
 import {
@@ -18,13 +17,10 @@ import { tokens } from '../../../theme/tokens';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
-type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplateDetail'>;
-type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateDetail'>;
+type Props = NativeStackScreenProps<TemplatesStackParamList, 'TemplateDetail'>;
 
-export const TemplateDetailScreen = () => {
-  const navigation = useNavigation<NavProp>();
-  const route = useRoute<RouteParams>();
-  const templateId = route.params.templateId;
+export const TemplateDetailScreen = ({ route, navigation }: Props) => {
+  const { templateId } = route.params;
   const queryClient = useQueryClient();
 
   const isNew = templateId === null;
@@ -97,7 +93,7 @@ export const TemplateDetailScreen = () => {
         />
       )}
 
-      {!isNew && template && (
+      {templateId !== null && template && (
         <View className="mt-2">
           <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-3">
             [ ĆWICZENIA ]
@@ -112,14 +108,14 @@ export const TemplateDetailScreen = () => {
                 <ExerciseRow
                   key={ex.id}
                   exercise={ex}
-                  templateId={templateId!}
+                  templateId={templateId}
                   onDelete={() => removeExercise({ templateExerciseId: ex.id })}
                 />
               ))}
             </View>
           )}
           <Pressable
-            onPress={() => navigation.navigate('TemplateExercisePicker', { templateId: templateId! })}
+            onPress={() => navigation.navigate('TemplateExercisePicker', { templateId })}
             className="border border-line rounded-md py-4 items-center"
           >
             <Text className="text-fg font-sans-sb text-body-sm tracking-label uppercase">

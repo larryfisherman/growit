@@ -10,9 +10,10 @@ import {
 } from '../../../api/generated/workouts/workouts';
 import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
+import { getToday } from '../../../lib/date';
+import { exerciseCountLabel } from '../../../lib/plurals';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
-const getToday = () => new Date().toISOString().split('T')[0];
 
 type NavProp = NativeStackNavigationProp<TodayStackParamList, 'StartFromTemplate'>;
 
@@ -58,7 +59,7 @@ export const StartFromTemplateScreen = () => {
           >
             <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
             <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-              {item.exerciseCount} ćwiczeń
+              {exerciseCountLabel(item.exerciseCount)}
             </Text>
           </Pressable>
         )}

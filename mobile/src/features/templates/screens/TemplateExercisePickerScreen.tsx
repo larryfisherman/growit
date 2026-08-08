@@ -1,5 +1,5 @@
 import { View, Text, Pressable, FlatList, ActivityIndicator } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { TemplatesStackParamList } from '../../../navigation/types';
 import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
@@ -15,11 +15,9 @@ import { tokens } from '../../../theme/tokens';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 
-type RouteParams = RouteProp<TemplatesStackParamList, 'TemplateExercisePicker'>;
+type Props = NativeStackScreenProps<TemplatesStackParamList, 'TemplateExercisePicker'>;
 
-export const TemplateExercisePickerScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute<RouteParams>();
+export const TemplateExercisePickerScreen = ({ route, navigation }: Props) => {
   const { templateId } = route.params;
   const queryClient = useQueryClient();
 

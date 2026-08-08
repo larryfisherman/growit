@@ -15,6 +15,7 @@ import {
 import { TemplateSummaryResponse } from '../../../api/generated/schemas';
 import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
+import { exerciseCountLabel } from '../../../lib/plurals';
 
 type TemplatesQueryKey = ReturnType<typeof getGetApiTemplatesQueryKey>;
 
@@ -61,7 +62,7 @@ const TemplateRow = ({ template, onPress, onDelete }: TemplateRowProps) => {
       <Pressable onPress={onPress} className="bg-bg px-4 py-4 border-b border-line">
         <Text className="text-fg font-sans-sb text-body-lg">{template.name}</Text>
         <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-          {template.exerciseCount} ćwiczeń
+          {exerciseCountLabel(template.exerciseCount)}
         </Text>
       </Pressable>
     </Swipeable>

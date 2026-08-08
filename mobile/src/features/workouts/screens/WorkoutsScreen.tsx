@@ -12,25 +12,11 @@ import {
 import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
 import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
+import { getToday, formatWeekdayDayMonth, formatDayMonth, formatShortDate } from '../../../lib/date';
+import { exerciseCountLabel } from '../../../lib/plurals';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 const USER_NAME = 'Albert';
-const getToday = () => new Date().toISOString().split('T')[0];
-
-const formatTodayHeader = () =>
-  new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
-
-const formatWorkoutDate = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
-};
-
-const exerciseCountLabel = (n: number) => {
-  if (n === 0) return 'Brak ćwiczeń';
-  if (n === 1) return '1 ćwiczenie';
-  if (n >= 2 && n <= 4) return `${n} ćwiczenia`;
-  return `${n} ćwiczeń`;
-};
 
 const LastWorkoutCard = ({
   workout,
@@ -48,7 +34,7 @@ const LastWorkoutCard = ({
       {workout.templateName ? `Z szablonu · ${workout.templateName}` : 'Bez szablonu'}
     </Text>
     <Text className="text-muted font-sans-md text-body-sm mt-2">
-      {formatWorkoutDate(workout.performedAt)} · {exerciseCountLabel(workout.exerciseCount)}
+      {formatDayMonth(workout.performedAt)} · {exerciseCountLabel(workout.exerciseCount)}
     </Text>
   </Pressable>
 );
@@ -96,7 +82,7 @@ export const WorkoutsScreen = () => {
           Cześć, <Text className="text-lime">{USER_NAME}</Text> 👋
         </Text>
         <Text className="text-muted font-sans-md text-body-lg mt-2 capitalize">
-          {formatTodayHeader()}
+          {formatWeekdayDayMonth()}
         </Text>
       </View>
 
@@ -143,7 +129,7 @@ export const WorkoutsScreen = () => {
               createWorkout({
                 data: {
                   userId: USER_ID,
-                  name: `Trening ${new Date().toLocaleDateString('pl-PL')}`,
+                  name: `Trening ${formatShortDate()}`,
                   performedAt: today,
                   notes: null,
                 },
