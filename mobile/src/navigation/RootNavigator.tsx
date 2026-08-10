@@ -1,3 +1,4 @@
+import { View, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
@@ -6,11 +7,14 @@ import { TodayStack } from './TodayStack';
 import { CalendarStack } from './CalendarStack';
 import { TemplatesStack } from './TemplatesStack';
 import { AuthStack } from './AuthStack';
+import { SettingsScreen } from '../features/settings/screens/SettingsScreen';
+import { RootStackParamList } from './types';
+import { darkStackOptions } from './screenOptions';
 import { tokens } from '../theme/tokens';
 import { useAuth } from '../auth/AuthContext';
 
 const Tab = createBottomTabNavigator();
-const Root = createNativeStackNavigator();
+const Root = createNativeStackNavigator<RootStackParamList>();
 
 type TabIconName = 'flash' | 'calendar' | 'document-text';
 
@@ -55,13 +59,36 @@ const navigationTheme = {
 };
 
 export const RootNavigator = () => {
-  const { isAuthed } = useAuth();
+  const { isAuthed, isBootstrapping } = useAuth();
+
+  // Hold the splash until the stored session is read, otherwise a returning user
+  // sees the auth stack flash before being dropped into the tabs.
+  if (isBootstrapping) {
+    return (
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ActivityIndicator color={tokens.color.lime} />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer theme={navigationTheme}>
       <Root.Navigator screenOptions={{ headerShown: false }}>
         {isAuthed ? (
-          <Root.Screen name="Main" component={MainTabs} />
+          <>
+            <Root.Screen name="Main" component={MainTabs} />
+            {/* Root-level so every tab can open it without registering its own copy. */}
+            <Root.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{
+                ...darkStackOptions,
+                headerShown: true,
+                title: 'Ustawienia',
+                presentation: 'modal',
+              }}
+            />
+          </>
         ) : (
           <Root.Screen name="Auth" component={AuthStack} />
         )}

@@ -16,10 +16,10 @@ import { TemplateSummaryResponse } from '../../../api/generated/schemas';
 import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
 import { exerciseCountLabel } from '../../../lib/plurals';
+import { useUserId } from '../../../auth/AuthContext';
 
 type TemplatesQueryKey = ReturnType<typeof getGetApiTemplatesQueryKey>;
 
-const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type NavProp = NativeStackNavigationProp<TemplatesStackParamList, 'TemplatesList'>;
 
@@ -71,9 +71,10 @@ const TemplateRow = ({ template, onPress, onDelete }: TemplateRowProps) => {
 
 export const TemplatesListScreen = () => {
   const navigation = useNavigation<NavProp>();
+  const userId = useUserId();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useGetApiTemplates({ userId: USER_ID });
-  const templatesKey: TemplatesQueryKey = getGetApiTemplatesQueryKey({ userId: USER_ID });
+  const { data, isLoading } = useGetApiTemplates({ userId: userId });
+  const templatesKey: TemplatesQueryKey = getGetApiTemplatesQueryKey({ userId: userId });
 
   const { mutate: remove } = useDeleteApiTemplatesTemplateId({
     mutation: {

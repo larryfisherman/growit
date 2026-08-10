@@ -9,8 +9,8 @@ import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
 import { useTheme } from '../../../theme/useTheme';
 import { tokens } from '../../../theme/tokens';
 import { exerciseCountLabel } from '../../../lib/plurals';
+import { useUserId } from '../../../auth/AuthContext';
 
-const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type NavProp = NativeStackNavigationProp<CalendarStackParamList, 'CalendarHome'>;
 
@@ -21,11 +21,12 @@ const getInitial = () => {
 
 export const CalendarScreen = () => {
   const navigation = useNavigation<NavProp>();
+  const userId = useUserId();
   const { mode, colors } = useTheme();
   const [{ year, month }, setMonth] = useState(getInitial);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { data: workouts } = useGetApiWorkoutsUserIdByMonth(USER_ID, { year, month });
+  const { data: workouts } = useGetApiWorkoutsUserIdByMonth(userId, { year, month });
 
   const markedDates = useMemo(() => {
     const acc: Record<string, { marked?: boolean; dotColor?: string; selected?: boolean; selectedColor?: string }> = {};

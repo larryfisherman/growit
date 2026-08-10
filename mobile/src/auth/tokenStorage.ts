@@ -1,23 +1,34 @@
 import * as SecureStore from 'expo-secure-store';
+import { Session } from './cognito';
 
 const ACCESS_TOKEN_KEY = 'growit.accessToken';
 const ID_TOKEN_KEY = 'growit.idToken';
 const REFRESH_TOKEN_KEY = 'growit.refreshToken';
 const EMAIL_KEY = 'growit.email';
+const USER_ID_KEY = 'growit.userId';
 
-export type StoredTokens = {
-  accessToken: string;
-  idToken: string;
-  refreshToken: string;
+export const saveSession = async (session: Session): Promise<void> => {
+  await Promise.all([
+    SecureStore.setItemAsync(ACCESS_TOKEN_KEY, session.tokens.accessToken),
+    SecureStore.setItemAsync(ID_TOKEN_KEY, session.tokens.idToken),
+    SecureStore.setItemAsync(REFRESH_TOKEN_KEY, session.tokens.refreshToken),
+    SecureStore.setItemAsync(EMAIL_KEY, session.email),
+    SecureStore.setItemAsync(USER_ID_KEY, session.userId),
+  ]);
 };
 
-export const saveTokens = async (tokens: StoredTokens, email: string): Promise<void> => {
-  await Promise.all([
-    SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken),
-    SecureStore.setItemAsync(ID_TOKEN_KEY, tokens.idToken),
-    SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken),
-    SecureStore.setItemAsync(EMAIL_KEY, email),
+export const loadSession = async (): Promise<Session | null> => {
+  const [accessToken, idToken, refreshToken, email, userId] = await Promise.all([
+    SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
+    SecureStore.getItemAsync(ID_TOKEN_KEY),
+    SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+    SecureStore.getItemAsync(EMAIL_KEY),
+    SecureStore.getItemAsync(USER_ID_KEY),
   ]);
+
+  if (!accessToken || !idToken || !refreshToken || !email || !userId) return null;
+
+  return { userId, email, tokens: { accessToken, idToken, refreshToken } };
 };
 
 export const getAccessToken = (): Promise<string | null> =>
@@ -26,17 +37,14 @@ export const getAccessToken = (): Promise<string | null> =>
 export const getRefreshToken = (): Promise<string | null> =>
   SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 
-export const getIdToken = (): Promise<string | null> =>
-  SecureStore.getItemAsync(ID_TOKEN_KEY);
+export const getStoredEmail = (): Promise<string | null> => SecureStore.getItemAsync(EMAIL_KEY);
 
-export const getStoredEmail = (): Promise<string | null> =>
-  SecureStore.getItemAsync(EMAIL_KEY);
-
-export const clearTokens = async (): Promise<void> => {
+export const clearSession = async (): Promise<void> => {
   await Promise.all([
     SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
     SecureStore.deleteItemAsync(ID_TOKEN_KEY),
     SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
     SecureStore.deleteItemAsync(EMAIL_KEY),
+    SecureStore.deleteItemAsync(USER_ID_KEY),
   ]);
 };

@@ -5,13 +5,13 @@ import {
   getGetApiTemplatesQueryKey,
 } from '../../../api/generated/templates/templates';
 import { TemplateResponse } from '../../../api/generated/schemas';
-
-const USER_ID = '00000000-0000-0000-0000-000000000001';
+import { useUserId } from '../../../auth/AuthContext';
 
 export const useTemplateExerciseDelete = (templateId: string) => {
   const queryClient = useQueryClient();
+  const userId = useUserId();
   const queryKey = getGetApiTemplatesTemplateIdQueryKey(templateId);
-  const listKey = getGetApiTemplatesQueryKey({ userId: USER_ID });
+  const listKey = getGetApiTemplatesQueryKey({ userId });
 
   return useDeleteApiTemplatesExercisesTemplateExerciseId({
     mutation: {

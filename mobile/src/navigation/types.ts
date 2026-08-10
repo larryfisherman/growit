@@ -17,3 +17,9 @@ export type TemplatesStackParamList = {
   TemplateDetail: { templateId: string | null };
   TemplateExercisePicker: { templateId: string };
 };
+
+export type RootStackParamList = {
+  Main: undefined;
+  Settings: undefined;
+  Auth: undefined;
+};

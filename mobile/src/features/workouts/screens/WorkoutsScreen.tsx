@@ -14,9 +14,7 @@ import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
 import { getToday, formatWeekdayDayMonth, formatDayMonth, formatShortDate } from '../../../lib/date';
 import { exerciseCountLabel } from '../../../lib/plurals';
-
-const USER_ID = '00000000-0000-0000-0000-000000000001';
-const USER_NAME = 'Albert';
+import { useAuth, useUserId } from '../../../auth/AuthContext';
 
 const LastWorkoutCard = ({
   workout,
@@ -41,21 +39,25 @@ const LastWorkoutCard = ({
 
 export const WorkoutsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<TodayStackParamList>>();
+  const userId = useUserId();
+  const { email } = useAuth();
   const queryClient = useQueryClient();
   const today = getToday();
 
+  const displayName = email?.split('@')[0] ?? '';
+
   const { data: workout, isLoading } = useGetApiWorkoutsUserIdByDate(
-    USER_ID,
+    userId,
     { date: today },
     { query: { retry: false } }
   );
-  const { data: history } = useGetApiWorkoutsUserIdHistory(USER_ID, { page: 1, pageSize: 2 });
+  const { data: history } = useGetApiWorkoutsUserIdHistory(userId, { page: 1, pageSize: 2 });
 
   const { mutate: createWorkout, isPending } = usePostApiWorkouts({
     mutation: {
       onSuccess: () =>
         queryClient.invalidateQueries({
-          queryKey: getGetApiWorkoutsUserIdByDateQueryKey(USER_ID, { date: today }),
+          queryKey: getGetApiWorkoutsUserIdByDateQueryKey(userId, { date: today }),
         }),
     },
   });
@@ -79,7 +81,8 @@ export const WorkoutsScreen = () => {
           [ DZISIAJ ]
         </Text>
         <Text className="text-fg font-sans-b text-h1" style={{ letterSpacing: -1 }}>
-          Cześć, <Text className="text-lime">{USER_NAME}</Text> 👋
+          Cześć{displayName ? ', ' : ''}
+          <Text className="text-lime">{displayName}</Text> 👋
         </Text>
         <Text className="text-muted font-sans-md text-body-lg mt-2 capitalize">
           {formatWeekdayDayMonth()}
@@ -128,7 +131,7 @@ export const WorkoutsScreen = () => {
             onPress={() =>
               createWorkout({
                 data: {
-                  userId: USER_ID,
+                  userId: userId,
                   name: `Trening ${formatShortDate()}`,
                   performedAt: today,
                   notes: null,

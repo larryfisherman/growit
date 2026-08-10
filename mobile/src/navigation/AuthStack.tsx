@@ -11,7 +11,7 @@ export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
-  ConfirmSignUp: { email: string };
+  ConfirmSignUp: { email: string; password?: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();

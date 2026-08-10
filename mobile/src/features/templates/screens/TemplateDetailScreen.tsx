@@ -14,13 +14,14 @@ import { useTemplateExerciseDelete } from '../hooks/useTemplateExerciseDelete';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
 import { tokens } from '../../../theme/tokens';
+import { useUserId } from '../../../auth/AuthContext';
 
-const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type Props = NativeStackScreenProps<TemplatesStackParamList, 'TemplateDetail'>;
 
 export const TemplateDetailScreen = ({ route, navigation }: Props) => {
   const { templateId } = route.params;
+  const userId = useUserId();
   const queryClient = useQueryClient();
 
   const isNew = templateId === null;
@@ -32,7 +33,7 @@ export const TemplateDetailScreen = ({ route, navigation }: Props) => {
   const { mutate: create, isPending: isCreating } = usePostApiTemplates({
     mutation: {
       onSuccess: () =>
-        queryClient.invalidateQueries({ queryKey: getGetApiTemplatesQueryKey({ userId: USER_ID }) }),
+        queryClient.invalidateQueries({ queryKey: getGetApiTemplatesQueryKey({ userId: userId }) }),
     },
   });
 
@@ -53,7 +54,7 @@ export const TemplateDetailScreen = ({ route, navigation }: Props) => {
   const handleCreate = () => {
     if (!name.trim()) return;
     create(
-      { data: { userId: USER_ID, name: name.trim(), notes: notes.trim() || null } },
+      { data: { userId: userId, name: name.trim(), notes: notes.trim() || null } },
       { onSuccess: ({ id }) => navigation.setParams({ templateId: id }) }
     );
   };

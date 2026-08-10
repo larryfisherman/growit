@@ -12,22 +12,23 @@ import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
 import { getToday } from '../../../lib/date';
 import { exerciseCountLabel } from '../../../lib/plurals';
+import { useUserId } from '../../../auth/AuthContext';
 
-const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type NavProp = NativeStackNavigationProp<TodayStackParamList, 'StartFromTemplate'>;
 
 export const StartFromTemplateScreen = () => {
   const navigation = useNavigation<NavProp>();
+  const userId = useUserId();
   const queryClient = useQueryClient();
   const today = getToday();
 
-  const { data: templates, isLoading } = useGetApiTemplates({ userId: USER_ID });
+  const { data: templates, isLoading } = useGetApiTemplates({ userId: userId });
   const { mutate: start, isPending } = usePostApiWorkoutsFromTemplate({
     mutation: {
       onSuccess: ({ id }) => {
         queryClient.invalidateQueries({
-          queryKey: getGetApiWorkoutsUserIdByDateQueryKey(USER_ID, { date: today }),
+          queryKey: getGetApiWorkoutsUserIdByDateQueryKey(userId, { date: today }),
         });
         navigation.replace('WorkoutDetail', { workoutId: id });
       },
@@ -35,7 +36,7 @@ export const StartFromTemplateScreen = () => {
   });
 
   const handleStart = (templateId: string) => {
-    start({ data: { userId: USER_ID, templateId, performedAt: today } });
+    start({ data: { userId: userId, templateId, performedAt: today } });
   };
 
   if (isLoading) {

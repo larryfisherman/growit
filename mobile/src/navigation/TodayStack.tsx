@@ -7,12 +7,17 @@ import { TemplateDetailScreen } from '../features/templates/screens/TemplateDeta
 import { TemplateExercisePickerScreen } from '../features/templates/screens/TemplateExercisePickerScreen';
 import { TodayStackParamList } from './types';
 import { darkStackOptions } from './screenOptions';
+import { SettingsButton } from '../theme/components/SettingsButton';
 
 const Stack = createNativeStackNavigator<TodayStackParamList>();
 
 export const TodayStack = () => (
   <Stack.Navigator screenOptions={darkStackOptions}>
-    <Stack.Screen name="TodayWorkout" component={WorkoutsScreen} options={{ title: 'Dzisiaj' }} />
+    <Stack.Screen
+      name="TodayWorkout"
+      component={WorkoutsScreen}
+      options={{ title: 'Dzisiaj', headerRight: () => <SettingsButton /> }}
+    />
     <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} options={{ title: 'Trening' }} />
     <Stack.Screen name="AddExerciseToWorkout" component={AddExerciseToWorkoutScreen} options={{ title: 'Dodaj ćwiczenie' }} />
     <Stack.Screen name="StartFromTemplate" component={StartFromTemplateScreen} options={{ title: 'Wybierz szablon' }} />

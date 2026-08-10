@@ -12,13 +12,14 @@ import { useTemplateExerciseForm } from '../hooks/useTemplateExerciseForm';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
 import { tokens } from '../../../theme/tokens';
+import { useUserId } from '../../../auth/AuthContext';
 
-const USER_ID = '00000000-0000-0000-0000-000000000001';
 
 type Props = NativeStackScreenProps<TemplatesStackParamList, 'TemplateExercisePicker'>;
 
 export const TemplateExercisePickerScreen = ({ route, navigation }: Props) => {
   const { templateId } = route.params;
+  const userId = useUserId();
   const queryClient = useQueryClient();
 
   const { data: exercises, isLoading } = useGetApiExercises({
@@ -31,7 +32,7 @@ export const TemplateExercisePickerScreen = ({ route, navigation }: Props) => {
           queryKey: getGetApiTemplatesTemplateIdQueryKey(templateId),
         });
         queryClient.invalidateQueries({
-          queryKey: getGetApiTemplatesQueryKey({ userId: USER_ID }),
+          queryKey: getGetApiTemplatesQueryKey({ userId: userId }),
         });
         navigation.goBack();
       },
