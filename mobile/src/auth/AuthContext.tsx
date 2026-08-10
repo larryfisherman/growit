@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { signIn as cognitoSignIn, signOut as cognitoSignOut, Session } from './cognito';
+import { signIn as cognitoSignIn, revokeRefreshToken, Session } from './cognito';
 import { saveSession, loadSession, clearSession } from './tokenStorage';
 
 type AuthState = {
@@ -36,14 +36,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     const current = session;
+    // Drop the session first: the user asked to leave, and a failure further down
+    // must not leave them stuck inside. Clearing the cache stops the next account
+    // from seeing the previous one's workouts.
     setSession(null);
     queryClient.clear();
-    if (current) cognitoSignOut(current.email);
 
     try {
       await clearSession();
+      // Best effort: invalidating the token server-side is worth doing, but the
+      // user is already out either way, so a network failure changes nothing.
+      if (current) await revokeRefreshToken(current.tokens.refreshToken);
     } catch (err) {
-      console.error('Failed to clear the stored session', err);
+      console.error('Sign-out cleanup failed', err);
     }
   };
 
