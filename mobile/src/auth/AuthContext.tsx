@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { useQueryClient } from '@tanstack/react-query';
 import { signIn as cognitoSignIn, revokeRefreshToken, Session } from './cognito';
 import { saveSession, loadSession, clearSession } from './tokenStorage';
+import { setSessionExpiredHandler } from './sessionExpiry';
 
 type AuthState = {
   isBootstrapping: boolean;
@@ -27,6 +28,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .then(setSession)
       .finally(() => setIsBootstrapping(false));
   }, []);
+
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setSession(null);
+      queryClient.clear();
+      void clearSession();
+    });
+
+    return () => setSessionExpiredHandler(null);
+  }, [queryClient]);
 
   const signIn = async (email: string, password: string) => {
     const next = await cognitoSignIn(email, password);
