@@ -54,7 +54,6 @@ const refreshAccessToken = (): Promise<string | null> => {
 
 type RetriableConfig = InternalAxiosRequestConfig & { retried?: boolean };
 
-/
 AXIOS_INSTANCE.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
