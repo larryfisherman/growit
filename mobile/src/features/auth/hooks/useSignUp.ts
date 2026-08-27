@@ -1,9 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
 import { signUp } from '../../../auth/cognito';
 
-type Args = { email: string; password: string };
+type Args = { email: string; password: string; name: string };
 
 export const useSignUp = () =>
   useMutation({
-    mutationFn: ({ email, password }: Args) => signUp(email, password),
+    mutationFn: ({ email, password, name }: Args) => signUp(email, password, name),
   });

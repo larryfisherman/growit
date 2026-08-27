@@ -25,7 +25,7 @@ export const RegisterScreen = ({ navigation }: Props) => {
   const handleSubmit = () => {
     const trimmedEmail = email.trim().toLowerCase();
     signUp.mutate(
-      { email: trimmedEmail, password },
+      { email: trimmedEmail, password, name: name.trim() },
       {
         onSuccess: () =>
           navigation.replace('ConfirmSignUp', {

@@ -40,11 +40,9 @@ const LastWorkoutCard = ({
 export const WorkoutsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<TodayStackParamList>>();
   const userId = useUserId();
-  const { email } = useAuth();
+  const { name } = useAuth();
   const queryClient = useQueryClient();
   const today = getToday();
-
-  const displayName = email?.split('@')[0] ?? '';
 
   const { data: workout, isLoading } = useGetApiWorkoutsUserIdByDate(
     userId,
@@ -81,8 +79,8 @@ export const WorkoutsScreen = () => {
           [ DZISIAJ ]
         </Text>
         <Text className="text-fg font-sans-b text-h1" style={{ letterSpacing: -1 }}>
-          Cześć{displayName ? ', ' : ''}
-          <Text className="text-lime">{displayName}</Text> 👋
+          Cześć{name ? ', ' : ''}
+          <Text className="text-lime">{name}</Text> 👋
         </Text>
         <Text className="text-muted font-sans-md text-body-lg mt-2 capitalize">
           {formatWeekdayDayMonth()}

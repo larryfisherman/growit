@@ -11,6 +11,7 @@ type AuthState = {
   isBootstrapping: boolean;
   isAuthed: boolean;
   userId: string | null;
+  name: string | null;
   email: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isBootstrapping,
         isAuthed: session !== null,
         userId: session?.userId ?? null,
+        name: session?.name ?? null,
         email: session?.email ?? null,
         signIn,
         signOut,

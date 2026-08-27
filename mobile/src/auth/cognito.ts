@@ -56,6 +56,7 @@ export type Tokens = {
 
 export type Session = {
   userId: string;
+  name: string;
   email: string;
   tokens: Tokens;
 };
@@ -69,7 +70,7 @@ type AuthenticationResult = {
 
 // Reads the claims out of the ID token. No signature check here on purpose — the
 // token comes straight from Cognito over TLS, and the backend is what verifies it.
-const decodeIdToken = (idToken: string): { sub: string; email: string } => {
+const decodeIdToken = (idToken: string): { sub: string; name: string; email: string } => {
   const segment = idToken.split('.')[1];
   if (!segment) throw new Error('Nieprawidłowy token tożsamości');
 
@@ -87,24 +88,37 @@ const decodeIdToken = (idToken: string): { sub: string; email: string } => {
   );
 
   const claims = JSON.parse(json);
-  return { sub: String(claims.sub), email: String(claims.email ?? '') };
+  const email = String(claims.email ?? '');
+
+  return {
+    sub: String(claims.sub),
+    email,
+    // Sign-up always sends a name, but accounts created another way (the admin API,
+    // or anything predating this) may lack it. The greeting then drops the name
+    // rather than falling back to the email address.
+    name: String(claims.name ?? ''),
+  };
 };
 
 const toSession = (result: AuthenticationResult, refreshToken: string): Session => {
-  const { sub, email } = decodeIdToken(result.IdToken);
+  const { sub, name, email } = decodeIdToken(result.IdToken);
   return {
     userId: sub,
+    name,
     email,
     tokens: { accessToken: result.AccessToken, idToken: result.IdToken, refreshToken },
   };
 };
 
-export const signUp = (email: string, password: string): Promise<void> =>
+export const signUp = (email: string, password: string, name: string): Promise<void> =>
   call('SignUp', {
     ClientId: clientId,
     Username: email,
     Password: password,
-    UserAttributes: [{ Name: 'email', Value: email }],
+    UserAttributes: [
+      { Name: 'email', Value: email },
+      { Name: 'name', Value: name },
+    ],
   }).then(() => undefined);
 
 export const confirmSignUp = (email: string, code: string): Promise<void> =>

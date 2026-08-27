@@ -3,6 +3,7 @@ using GrowIt.Infrastructure;
 using GrowIt.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,22 +16,42 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var cognitoAuthority = builder.Configuration["Cognito:Authority"]
     ?? throw new InvalidOperationException("Cognito:Authority is not configured");
-var cognitoAudience = builder.Configuration["Cognito:Audience"]
-    ?? throw new InvalidOperationException("Cognito:Audience is not configured");
+var cognitoClientId = builder.Configuration["Cognito:ClientId"]
+    ?? throw new InvalidOperationException("Cognito:ClientId is not configured");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = cognitoAuthority;
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidIssuer = cognitoAuthority,
-            ValidateAudience = true,
-            ValidAudience = cognitoAudience,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var principal = context.Principal;
+
+                if (principal?.FindFirst("token_use")?.Value != "access")
+                {
+                    context.Fail("Expected an access token");
+                    return Task.CompletedTask;
+                }
+
+                if (principal.FindFirst("client_id")?.Value != cognitoClientId)
+                {
+                    context.Fail("Token was issued for a different app client");
+                }
+
+                return Task.CompletedTask;
+            },
         };
     });
 
