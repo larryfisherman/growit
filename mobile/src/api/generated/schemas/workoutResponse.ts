@@ -13,8 +13,8 @@ export interface WorkoutResponse {
   /** @nullable */
   notes: string | null;
   /** @nullable */
-  templateId: string | null;
+  planDayId: string | null;
   /** @nullable */
-  templateName: string | null;
+  planDayName: string | null;
   exercises: WorkoutExerciseResponse[];
 }

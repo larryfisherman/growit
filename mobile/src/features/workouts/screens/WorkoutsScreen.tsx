@@ -7,8 +7,13 @@ import {
   useGetApiWorkoutsUserIdByDate,
   useGetApiWorkoutsUserIdHistory,
   usePostApiWorkouts,
+  usePostApiWorkoutsFromPlanDay,
   getGetApiWorkoutsUserIdByDateQueryKey,
 } from '../../../api/generated/workouts/workouts';
+import {
+  useGetApiTrainingPlansNextDay,
+  getGetApiTrainingPlansNextDayQueryKey,
+} from '../../../api/generated/training-plans/training-plans';
 import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
 import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
@@ -23,13 +28,10 @@ const LastWorkoutCard = ({
   workout: WorkoutSummaryResponse;
   onPress: () => void;
 }) => (
-  <Pressable
-    className="bg-surface rounded-md p-4 border border-line"
-    onPress={onPress}
-  >
+  <Pressable className="bg-surface rounded-md p-4 border border-line" onPress={onPress}>
     <Text className="text-fg font-sans-sb text-body-lg">{workout.name}</Text>
     <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-      {workout.templateName ? `Z szablonu · ${workout.templateName}` : 'Bez szablonu'}
+      {workout.planDayName ? `Z planu · ${workout.planDayName}` : 'Poza planem'}
     </Text>
     <Text className="text-muted font-sans-md text-body-sm mt-2">
       {formatDayMonth(workout.performedAt)} · {exerciseCountLabel(workout.exerciseCount)}
@@ -47,16 +49,31 @@ export const WorkoutsScreen = () => {
   const { data: workout, isLoading } = useGetApiWorkoutsUserIdByDate(
     userId,
     { date: today },
-    { query: { retry: false } }
+    { query: { retry: false } },
   );
   const { data: history } = useGetApiWorkoutsUserIdHistory(userId, { page: 1, pageSize: 2 });
 
-  const { mutate: createWorkout, isPending } = usePostApiWorkouts({
+  // The endpoint answers 204 when there is no active plan, which axios hands over as
+  // an empty string - falsy either way, so the check below covers both.
+  const { data: nextDay } = useGetApiTrainingPlansNextDay();
+
+  const invalidateToday = () => {
+    queryClient.invalidateQueries({
+      queryKey: getGetApiWorkoutsUserIdByDateQueryKey(userId, { date: today }),
+    });
+    queryClient.invalidateQueries({ queryKey: getGetApiTrainingPlansNextDayQueryKey() });
+  };
+
+  const { mutate: createWorkout, isPending: isCreatingEmpty } = usePostApiWorkouts({
+    mutation: { onSuccess: invalidateToday },
+  });
+
+  const { mutate: startFromDay, isPending: isStartingDay } = usePostApiWorkoutsFromPlanDay({
     mutation: {
-      onSuccess: () =>
-        queryClient.invalidateQueries({
-          queryKey: getGetApiWorkoutsUserIdByDateQueryKey(userId, { date: today }),
-        }),
+      onSuccess: ({ id }) => {
+        invalidateToday();
+        navigation.navigate('WorkoutDetail', { workoutId: id });
+      },
     },
   });
 
@@ -87,7 +104,7 @@ export const WorkoutsScreen = () => {
         </Text>
       </View>
 
-      {/* today's workout — if exists */}
+      {/* today's workout - if it already exists */}
       {workout && (
         <View className="gap-3">
           <Text className="text-muted font-mono-md text-label tracking-label uppercase">
@@ -98,9 +115,9 @@ export const WorkoutsScreen = () => {
             onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
           >
             <Text className="text-fg font-sans-sb text-h3">{workout.name}</Text>
-            {workout.templateName && (
+            {workout.planDayName && (
               <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-                Z szablonu · {workout.templateName}
+                Z planu · {workout.planDayName}
               </Text>
             )}
             <Text className="text-muted font-sans-md text-body-sm mt-2">
@@ -110,26 +127,54 @@ export const WorkoutsScreen = () => {
         </View>
       )}
 
-      {/* start options — only when no workout today */}
+      {/* nothing logged yet - suggest where the rotation left off */}
       {!workout && (
         <View className="gap-3">
           <Text className="text-muted font-mono-md text-label tracking-label uppercase">
             [ ROZPOCZNIJ ]
           </Text>
-          <Button
-            label="Rozpocznij z szablonu →"
-            variant="primary"
-            onPress={() => navigation.navigate('StartFromTemplate')}
-          />
+
+          {nextDay ? (
+            <>
+              <View className="bg-surface rounded-md p-5 border border-line">
+                <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase">
+                  Następny w planie
+                </Text>
+                <Text className="text-fg font-sans-sb text-h3 mt-1">{nextDay.name}</Text>
+                <Text className="text-muted font-sans-md text-body-sm mt-2">
+                  {exerciseCountLabel(nextDay.exerciseCount)}
+                </Text>
+              </View>
+              <Button
+                label={isStartingDay ? 'Zaczynam...' : `Zacznij ${nextDay.name} →`}
+                variant="primary"
+                loading={isStartingDay}
+                disabled={isStartingDay}
+                onPress={() => startFromDay({ data: { planDayId: nextDay.id, performedAt: today } })}
+              />
+              <Button
+                label="Wybierz inny dzień"
+                variant="secondary"
+                onPress={() => navigation.navigate('StartFromPlanDay')}
+              />
+            </>
+          ) : (
+            <Button
+              label="Ułóż plan treningowy →"
+              variant="primary"
+              onPress={() => navigation.navigate('PlanDetail', { planId: null })}
+            />
+          )}
+
           <Button
             label="Pusty trening"
             variant="secondary"
-            loading={isPending}
-            disabled={isPending}
+            loading={isCreatingEmpty}
+            disabled={isCreatingEmpty}
             onPress={() =>
               createWorkout({
                 data: {
-                  userId: userId,
+                  userId,
                   name: `Trening ${formatShortDate()}`,
                   performedAt: today,
                   notes: null,
@@ -140,7 +185,7 @@ export const WorkoutsScreen = () => {
         </View>
       )}
 
-      {/* last workout — informational */}
+      {/* last workout - informational */}
       {lastWorkout && (
         <View className="gap-3">
           <Text className="text-muted font-mono-md text-label tracking-label uppercase">

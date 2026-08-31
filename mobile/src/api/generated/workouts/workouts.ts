@@ -26,8 +26,8 @@ import type {
 import type {
   AddExerciseToWorkoutRequest,
   AddExerciseToWorkoutResponse,
-  CreateWorkoutFromTemplateRequest,
-  CreateWorkoutFromTemplateResponse,
+  CreateWorkoutFromPlanDayRequest,
+  CreateWorkoutFromPlanDayResponse,
   CreateWorkoutRequest,
   CreateWorkoutResponse,
   GetApiWorkoutsUserIdByDateParams,
@@ -527,27 +527,27 @@ const {mutation: mutationOptions} = options ?
       > => {
       return useMutation(getPostApiWorkoutsWorkoutIdExercisesMutationOptions(options), queryClient);
     }
-    export const postApiWorkoutsFromTemplate = (
-    createWorkoutFromTemplateRequest: CreateWorkoutFromTemplateRequest,
+    export const postApiWorkoutsFromPlanDay = (
+    createWorkoutFromPlanDayRequest: CreateWorkoutFromPlanDayRequest,
  signal?: AbortSignal
 ) => {
 
 
-      return customInstance<CreateWorkoutFromTemplateResponse>(
-      {url: `/api/Workouts/from-template`, method: 'POST',
+      return customInstance<CreateWorkoutFromPlanDayResponse>(
+      {url: `/api/Workouts/from-plan-day`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: createWorkoutFromTemplateRequest, signal
+      data: createWorkoutFromPlanDayRequest, signal
     },
       );
     }
 
 
 
-export const getPostApiWorkoutsFromTemplateMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsFromTemplate>>, TError,{data: CreateWorkoutFromTemplateRequest}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsFromTemplate>>, TError,{data: CreateWorkoutFromTemplateRequest}, TContext> => {
+export const getPostApiWorkoutsFromPlanDayMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsFromPlanDay>>, TError,{data: CreateWorkoutFromPlanDayRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsFromPlanDay>>, TError,{data: CreateWorkoutFromPlanDayRequest}, TContext> => {
 
-const mutationKey = ['postApiWorkoutsFromTemplate'];
+const mutationKey = ['postApiWorkoutsFromPlanDay'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -557,10 +557,10 @@ const {mutation: mutationOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiWorkoutsFromTemplate>>, {data: CreateWorkoutFromTemplateRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiWorkoutsFromPlanDay>>, {data: CreateWorkoutFromPlanDayRequest}> = (props) => {
           const {data} = props ?? {};
 
-          return  postApiWorkoutsFromTemplate(data,)
+          return  postApiWorkoutsFromPlanDay(data,)
         }
 
 
@@ -570,17 +570,17 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostApiWorkoutsFromTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof postApiWorkoutsFromTemplate>>>
-    export type PostApiWorkoutsFromTemplateMutationBody = CreateWorkoutFromTemplateRequest
-    export type PostApiWorkoutsFromTemplateMutationError = unknown
+    export type PostApiWorkoutsFromPlanDayMutationResult = NonNullable<Awaited<ReturnType<typeof postApiWorkoutsFromPlanDay>>>
+    export type PostApiWorkoutsFromPlanDayMutationBody = CreateWorkoutFromPlanDayRequest
+    export type PostApiWorkoutsFromPlanDayMutationError = unknown
 
-    export const usePostApiWorkoutsFromTemplate = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsFromTemplate>>, TError,{data: CreateWorkoutFromTemplateRequest}, TContext>, }
+    export const usePostApiWorkoutsFromPlanDay = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiWorkoutsFromPlanDay>>, TError,{data: CreateWorkoutFromPlanDayRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postApiWorkoutsFromTemplate>>,
+        Awaited<ReturnType<typeof postApiWorkoutsFromPlanDay>>,
         TError,
-        {data: CreateWorkoutFromTemplateRequest},
+        {data: CreateWorkoutFromPlanDayRequest},
         TContext
       > => {
-      return useMutation(getPostApiWorkoutsFromTemplateMutationOptions(options), queryClient);
+      return useMutation(getPostApiWorkoutsFromPlanDayMutationOptions(options), queryClient);
     }

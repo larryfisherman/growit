@@ -11,3 +11,6 @@ const pluralPl = (count: number, one: string, few: string, many: string) => {
 
 export const exerciseCountLabel = (count: number) =>
   count === 0 ? 'Brak ćwiczeń' : `${count} ${pluralPl(count, 'ćwiczenie', 'ćwiczenia', 'ćwiczeń')}`;
+
+export const dayCountLabel = (count: number) =>
+  count === 0 ? 'Brak dni' : `${count} ${pluralPl(count, 'dzień', 'dni', 'dni')}`;

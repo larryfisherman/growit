@@ -5,13 +5,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface WorkoutByDateResponse {
+export interface PlanDaySummaryResponse {
   id: string;
   name: string;
-  performedAt: string;
+  orderIndex: number;
   exerciseCount: number;
-  /** @nullable */
-  planDayId: string | null;
-  /** @nullable */
-  planDayName: string | null;
 }

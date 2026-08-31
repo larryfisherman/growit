@@ -11,7 +11,7 @@ export interface WorkoutSummaryResponse {
   performedAt: string;
   exerciseCount: number;
   /** @nullable */
-  templateId: string | null;
+  planDayId: string | null;
   /** @nullable */
-  templateName: string | null;
+  planDayName: string | null;
 }

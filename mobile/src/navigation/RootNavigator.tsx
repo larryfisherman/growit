@@ -5,7 +5,7 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { TodayStack } from './TodayStack';
 import { CalendarStack } from './CalendarStack';
-import { TemplatesStack } from './TemplatesStack';
+import { PlansStack } from './PlansStack';
 import { AuthStack } from './AuthStack';
 import { SettingsScreen } from '../features/settings/screens/SettingsScreen';
 import { RootStackParamList } from './types';
@@ -16,7 +16,7 @@ import { useAuth } from '../auth/AuthContext';
 const Tab = createBottomTabNavigator();
 const Root = createNativeStackNavigator<RootStackParamList>();
 
-type TabIconName = 'flash' | 'calendar' | 'document-text';
+type TabIconName = 'flash' | 'calendar' | 'list';
 
 const tabIcon = (name: TabIconName) => ({ color, size }: { color: string; size: number }) =>
   <Ionicons name={name} size={size} color={color} />;
@@ -42,7 +42,7 @@ const MainTabs = () => (
   >
     <Tab.Screen name="Dzisiaj" component={TodayStack} options={{ tabBarIcon: tabIcon('flash') }} />
     <Tab.Screen name="Kalendarz" component={CalendarStack} options={{ tabBarIcon: tabIcon('calendar') }} />
-    <Tab.Screen name="Szablony" component={TemplatesStack} options={{ tabBarIcon: tabIcon('document-text') }} />
+    <Tab.Screen name="Plany" component={PlansStack} options={{ tabBarIcon: tabIcon('list') }} />
   </Tab.Navigator>
 );
 

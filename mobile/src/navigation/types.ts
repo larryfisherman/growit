@@ -2,9 +2,10 @@ export type TodayStackParamList = {
   TodayWorkout: undefined;
   WorkoutDetail: { workoutId: string };
   AddExerciseToWorkout: { workoutId: string };
-  StartFromTemplate: undefined;
-  TemplateDetail: { templateId: string | null };
-  TemplateExercisePicker: { templateId: string };
+  StartFromPlanDay: undefined;
+  PlanDetail: { planId: string | null };
+  PlanDay: { dayId: string };
+  PlanDayExercisePicker: { dayId: string; planId: string };
 };
 
 export type CalendarStackParamList = {
@@ -12,10 +13,11 @@ export type CalendarStackParamList = {
   WorkoutDetail: { workoutId: string };
 };
 
-export type TemplatesStackParamList = {
-  TemplatesList: undefined;
-  TemplateDetail: { templateId: string | null };
-  TemplateExercisePicker: { templateId: string };
+export type PlansStackParamList = {
+  PlansList: undefined;
+  PlanDetail: { planId: string | null };
+  PlanDay: { dayId: string };
+  PlanDayExercisePicker: { dayId: string; planId: string };
 };
 
 export type RootStackParamList = {
