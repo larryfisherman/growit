@@ -9,8 +9,8 @@ public class Workout
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    public Guid? TemplateId { get; set; }
-    public WorkoutTemplate? Template { get; set; }
+    public Guid? PlanDayId { get; set; }
+    public TrainingPlanDay? PlanDay { get; set; }
 
     public ICollection<WorkoutExercise> WorkoutExercises { get; set; } = [];
 }

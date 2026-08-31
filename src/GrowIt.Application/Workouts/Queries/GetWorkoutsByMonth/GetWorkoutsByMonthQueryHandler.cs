@@ -20,8 +20,8 @@ public class GetWorkoutsByMonthQueryHandler(IApplicationDbContext dbContext)
                 w.Name,
                 w.PerformedAt,
                 w.WorkoutExercises.Count,
-                w.TemplateId,
-                w.Template != null ? w.Template.Name : null))
+                w.PlanDayId,
+                w.PlanDay != null ? w.PlanDay.Name : null))
             .ToListAsync(cancellationToken);
     }
 }

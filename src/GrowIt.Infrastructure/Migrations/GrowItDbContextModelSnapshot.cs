@@ -203,7 +203,63 @@ namespace GrowIt.Infrastructure.Migrations
                     b.ToTable("Sets");
                 });
 
-            modelBuilder.Entity("GrowIt.Domain.Entities.TemplateExercise", b =>
+            modelBuilder.Entity("GrowIt.Domain.Entities.TrainingPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TrainingPlans");
+                });
+
+            modelBuilder.Entity("GrowIt.Domain.Entities.TrainingPlanDay", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId");
+
+                    b.ToTable("TrainingPlanDays");
+                });
+
+            modelBuilder.Entity("GrowIt.Domain.Entities.TrainingPlanDayExercise", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -218,6 +274,9 @@ namespace GrowIt.Infrastructure.Migrations
                     b.Property<int>("OrderIndex")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("PlanDayId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("RestSeconds")
                         .HasColumnType("integer");
 
@@ -227,16 +286,13 @@ namespace GrowIt.Infrastructure.Migrations
                     b.Property<int>("TargetSets")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("TemplateId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ExerciseId");
 
-                    b.HasIndex("TemplateId");
+                    b.HasIndex("PlanDayId");
 
-                    b.ToTable("TemplateExercises");
+                    b.ToTable("TrainingPlanDayExercises");
                 });
 
             modelBuilder.Entity("GrowIt.Domain.Entities.Workout", b =>
@@ -258,7 +314,7 @@ namespace GrowIt.Infrastructure.Migrations
                     b.Property<DateOnly>("PerformedAt")
                         .HasColumnType("date");
 
-                    b.Property<Guid?>("TemplateId")
+                    b.Property<Guid?>("PlanDayId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
@@ -266,7 +322,7 @@ namespace GrowIt.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TemplateId");
+                    b.HasIndex("PlanDayId");
 
                     b.ToTable("Workouts");
                 });
@@ -307,30 +363,6 @@ namespace GrowIt.Infrastructure.Migrations
                     b.ToTable("WorkoutExercises");
                 });
 
-            modelBuilder.Entity("GrowIt.Domain.Entities.WorkoutTemplate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("WorkoutTemplates");
-                });
-
             modelBuilder.Entity("GrowIt.Domain.Entities.Set", b =>
                 {
                     b.HasOne("GrowIt.Domain.Entities.WorkoutExercise", "WorkoutExercise")
@@ -342,30 +374,41 @@ namespace GrowIt.Infrastructure.Migrations
                     b.Navigation("WorkoutExercise");
                 });
 
-            modelBuilder.Entity("GrowIt.Domain.Entities.TemplateExercise", b =>
+            modelBuilder.Entity("GrowIt.Domain.Entities.TrainingPlanDay", b =>
+                {
+                    b.HasOne("GrowIt.Domain.Entities.TrainingPlan", "Plan")
+                        .WithMany("Days")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Plan");
+                });
+
+            modelBuilder.Entity("GrowIt.Domain.Entities.TrainingPlanDayExercise", b =>
                 {
                     b.HasOne("GrowIt.Domain.Entities.Exercise", "Exercise")
                         .WithMany()
                         .HasForeignKey("ExerciseId");
 
-                    b.HasOne("GrowIt.Domain.Entities.WorkoutTemplate", "Template")
-                        .WithMany("TemplateExercises")
-                        .HasForeignKey("TemplateId")
+                    b.HasOne("GrowIt.Domain.Entities.TrainingPlanDay", "PlanDay")
+                        .WithMany("Exercises")
+                        .HasForeignKey("PlanDayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Exercise");
 
-                    b.Navigation("Template");
+                    b.Navigation("PlanDay");
                 });
 
             modelBuilder.Entity("GrowIt.Domain.Entities.Workout", b =>
                 {
-                    b.HasOne("GrowIt.Domain.Entities.WorkoutTemplate", "Template")
+                    b.HasOne("GrowIt.Domain.Entities.TrainingPlanDay", "PlanDay")
                         .WithMany()
-                        .HasForeignKey("TemplateId");
+                        .HasForeignKey("PlanDayId");
 
-                    b.Navigation("Template");
+                    b.Navigation("PlanDay");
                 });
 
             modelBuilder.Entity("GrowIt.Domain.Entities.WorkoutExercise", b =>
@@ -390,6 +433,16 @@ namespace GrowIt.Infrastructure.Migrations
                     b.Navigation("WorkoutExercises");
                 });
 
+            modelBuilder.Entity("GrowIt.Domain.Entities.TrainingPlan", b =>
+                {
+                    b.Navigation("Days");
+                });
+
+            modelBuilder.Entity("GrowIt.Domain.Entities.TrainingPlanDay", b =>
+                {
+                    b.Navigation("Exercises");
+                });
+
             modelBuilder.Entity("GrowIt.Domain.Entities.Workout", b =>
                 {
                     b.Navigation("WorkoutExercises");
@@ -398,11 +451,6 @@ namespace GrowIt.Infrastructure.Migrations
             modelBuilder.Entity("GrowIt.Domain.Entities.WorkoutExercise", b =>
                 {
                     b.Navigation("Sets");
-                });
-
-            modelBuilder.Entity("GrowIt.Domain.Entities.WorkoutTemplate", b =>
-                {
-                    b.Navigation("TemplateExercises");
                 });
 #pragma warning restore 612, 618
         }

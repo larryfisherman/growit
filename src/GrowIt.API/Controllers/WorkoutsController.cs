@@ -1,7 +1,7 @@
 using GrowIt.API.Authorization;
 using GrowIt.Application.Workouts.Commands.AddExerciseToWorkout;
 using GrowIt.Application.Workouts.Commands.CreateWorkout;
-using GrowIt.Application.Workouts.Commands.CreateWorkoutFromTemplate;
+using GrowIt.Application.Workouts.Commands.CreateWorkoutFromPlanDay;
 using GrowIt.Application.Workouts.Queries.GetWorkoutByDate;
 using GrowIt.Application.Workouts.Queries.GetWorkoutById;
 using GrowIt.Application.Workouts.Queries.GetWorkoutHistory;
@@ -73,13 +73,13 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
         return Ok(new AddExerciseToWorkoutResponse(id));
     }
 
-    [HttpPost("from-template")]
-    public async Task<ActionResult<CreateWorkoutFromTemplateResponse>> CreateFromTemplate(
-        [FromBody] CreateWorkoutFromTemplateRequest request, CancellationToken ct)
+    [HttpPost("from-plan-day")]
+    public async Task<ActionResult<CreateWorkoutFromPlanDayResponse>> CreateFromPlanDay(
+        [FromBody] CreateWorkoutFromPlanDayRequest request, CancellationToken ct)
     {
         var userId = HttpContext.GetUserId();
-        var id = await mediator.Send(new CreateWorkoutFromTemplateCommand(
-            userId, request.TemplateId, request.PerformedAt), ct);
-        return Ok(new CreateWorkoutFromTemplateResponse(id));
+        var id = await mediator.Send(new CreateWorkoutFromPlanDayCommand(
+            userId, request.PlanDayId, request.PerformedAt), ct);
+        return Ok(new CreateWorkoutFromPlanDayResponse(id));
     }
 }

@@ -5,6 +5,6 @@ public record WorkoutResponse(
     string Name,
     DateOnly PerformedAt,
     string? Notes,
-    Guid? TemplateId,
-    string? TemplateName,
+    Guid? PlanDayId,
+    string? PlanDayName,
     IReadOnlyList<WorkoutExerciseResponse> Exercises);

@@ -10,8 +10,9 @@ public class GrowItDbContext(DbContextOptions<GrowItDbContext> options) : DbCont
     public DbSet<Workout> Workouts => Set<Workout>();
     public DbSet<WorkoutExercise> WorkoutExercises => Set<WorkoutExercise>();
     public DbSet<Set> Sets => Set<Set>();
-    public DbSet<WorkoutTemplate> WorkoutTemplates => Set<WorkoutTemplate>();
-    public DbSet<TemplateExercise> TemplateExercises => Set<TemplateExercise>();
+    public DbSet<TrainingPlan> TrainingPlans => Set<TrainingPlan>();
+    public DbSet<TrainingPlanDay> TrainingPlanDays => Set<TrainingPlanDay>();
+    public DbSet<TrainingPlanDayExercise> TrainingPlanDayExercises => Set<TrainingPlanDayExercise>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

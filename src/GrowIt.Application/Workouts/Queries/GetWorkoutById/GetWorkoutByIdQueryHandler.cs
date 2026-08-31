@@ -17,8 +17,8 @@ public class GetWorkoutByIdQueryHandler(IApplicationDbContext dbContext)
                 w.Name,
                 w.PerformedAt,
                 w.Notes,
-                w.TemplateId,
-                w.Template != null ? w.Template.Name : null,
+                w.PlanDayId,
+                w.PlanDay != null ? w.PlanDay.Name : null,
                 w.WorkoutExercises
                     .OrderBy(we => we.OrderIndex)
                     .Select(we => new WorkoutExerciseResponse(

@@ -5,5 +5,5 @@ public record WorkoutByDateResponse(
     string Name,
     DateOnly PerformedAt,
     int ExerciseCount,
-    Guid? TemplateId,
-    string? TemplateName);
+    Guid? PlanDayId,
+    string? PlanDayName);
