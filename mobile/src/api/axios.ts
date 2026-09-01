@@ -23,9 +23,17 @@ const baseURL = resolveBaseUrl();
 
 const AXIOS_INSTANCE = axios.create({ baseURL });
 
+type TimedConfig = { metadata?: { start: number } };
+
 AXIOS_INSTANCE.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  if (__DEV__) {
+    (config as TimedConfig).metadata = { start: Date.now() };
+    console.log('[api →]', config.method?.toUpperCase(), config.url);
+  }
+
   return config;
 });
 
@@ -55,7 +63,14 @@ const refreshAccessToken = (): Promise<string | null> => {
 type RetriableConfig = InternalAxiosRequestConfig & { retried?: boolean };
 
 AXIOS_INSTANCE.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (__DEV__) {
+      const start = (response.config as TimedConfig).metadata?.start;
+      const ms = start ? `${Date.now() - start}ms` : '?';
+      console.log('[api ←]', response.status, response.config.url, ms);
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const config = error.config as RetriableConfig | undefined;
 

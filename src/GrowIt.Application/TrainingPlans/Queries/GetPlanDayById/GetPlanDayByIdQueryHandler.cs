@@ -18,6 +18,9 @@ public class GetPlanDayByIdQueryHandler(IApplicationDbContext dbContext)
                 d.Name,
                 d.Notes,
                 d.OrderIndex,
+                // A day counts as "performed" once any workout was logged from it,
+                // even a partial one - that is what marks its exercises as used.
+                dbContext.Workouts.Any(w => w.PlanDayId == d.Id),
                 d.Exercises
                     .OrderBy(e => e.OrderIndex)
                     .Select(e => new PlanDayExerciseResponse(

@@ -13,5 +13,6 @@ export interface PlanDayResponse {
   /** @nullable */
   notes: string | null;
   orderIndex: number;
+  hasBeenPerformed: boolean;
   exercises: PlanDayExerciseResponse[];
 }

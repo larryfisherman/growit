@@ -1,45 +1,146 @@
-import { View, Text, Pressable, FlatList, ActivityIndicator } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useQueryClient } from '@tanstack/react-query';
 import { PlansStackParamList } from '../../../navigation/types';
 import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
-import {
-  usePostApiTrainingPlansDaysDayIdExercises,
-  getGetApiTrainingPlansDaysDayIdQueryKey,
-  getGetApiTrainingPlansPlanIdQueryKey,
-} from '../../../api/generated/training-plans/training-plans';
-import { usePlanDayExerciseForm } from '../hooks/usePlanDayExerciseForm';
+import { useGetApiTrainingPlansDaysDayId } from '../../../api/generated/training-plans/training-plans';
+import { ExerciseResponse, PlanDayExerciseResponse } from '../../../api/generated/schemas';
+import { usePlanDayExerciseBatchCommit } from '../hooks/usePlanDayExerciseBatchCommit';
+import { isDefaultTargets } from '../constants';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
 import { tokens } from '../../../theme/tokens';
+import { searchable } from '../../../lib/text';
 
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDayExercisePicker'>;
 
+type Initial = {
+  ids: Set<string>;
+  byId: Map<string, PlanDayExerciseResponse>;
+  performed: boolean;
+};
+
 export const PlanDayExercisePickerScreen = ({ route, navigation }: Props) => {
   const { dayId, planId } = route.params;
-  const queryClient = useQueryClient();
 
-  const { data: exercises, isLoading } = useGetApiExercises({
-    query: { staleTime: Infinity },
-  });
+  const [query, setQuery] = useState('');
+  const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const [customName, setCustomName] = useState('');
 
-  const { mutate: add, isPending } = usePostApiTrainingPlansDaysDayIdExercises({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetApiTrainingPlansDaysDayIdQueryKey(dayId) });
-        // The plan screen shows an exercise count per day.
-        queryClient.invalidateQueries({ queryKey: getGetApiTrainingPlansPlanIdQueryKey(planId) });
-        navigation.goBack();
-      },
-    },
-  });
+  // Selection is local; nothing hits the API until the screen is left (batch commit).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [customNames, setCustomNames] = useState<string[]>([]);
+  // Exercises the user already OK'd removing this session - don't ask twice.
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
 
-  const { selection, setSelection, targets, setTarget, handleSubmit } = usePlanDayExerciseForm(
-    (payload) => add({ dayId, data: payload }),
+  const { data: exercises, isLoading } = useGetApiExercises({ query: { staleTime: Infinity } });
+  const { data: day } = useGetApiTrainingPlansDaysDayId(dayId);
+
+  // Snapshot the day as it looked when the picker opened - this is what tells a
+  // "fresh this session" pick apart from an established one, and carries the
+  // performed flag + original targets used by the confirm rule.
+  const seededRef = useRef(false);
+  const initialRef = useRef<Initial>({ ids: new Set(), byId: new Map(), performed: false });
+
+  useEffect(() => {
+    if (!day || seededRef.current) return;
+    const byId = new Map<string, PlanDayExerciseResponse>();
+    day.exercises.forEach((e) => {
+      if (e.exerciseId) byId.set(e.exerciseId, e);
+    });
+    initialRef.current = { ids: new Set(byId.keys()), byId, performed: day.hasBeenPerformed };
+    setSelectedIds(new Set(byId.keys()));
+    seededRef.current = true;
+  }, [day]);
+
+  const getState = useCallback(
+    () => ({ selectedIds, customNames, existingByExerciseId: initialRef.current.byId }),
+    [selectedIds, customNames],
+  );
+  const commit = usePlanDayExerciseBatchCommit({ dayId, planId, getState });
+
+  // Leaving the screen is the primary flush point.
+  useEffect(
+    () => navigation.addListener('beforeRemove', () => void commit('beforeRemove')),
+    [navigation, commit],
   );
 
-  const isLibrary = selection?.exerciseId != null;
-  const customName = selection && !isLibrary ? selection.name : '';
+  const removeId = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+  const toggle = (item: ExerciseResponse) => {
+    const id = item.id;
+
+    if (!selectedIds.has(id)) {
+      console.log('[picker] toggle ON', item.name);
+      setSelectedIds((prev) => new Set(prev).add(id));
+      return;
+    }
+
+    const { ids: initialIds, byId, performed } = initialRef.current;
+    const wasPreExisting = initialIds.has(id);
+
+    if (!wasPreExisting) {
+      console.log('[picker] toggle OFF', item.name, '-> silent (fresh)');
+      removeId(id);
+      return;
+    }
+    if (confirmedIds.has(id)) {
+      console.log('[picker] toggle OFF', item.name, '-> silent (already confirmed)');
+      removeId(id);
+      return;
+    }
+
+    const existing = byId.get(id);
+    const needsConfirm = performed || (existing ? !isDefaultTargets(existing) : false);
+    if (!needsConfirm) {
+      console.log('[picker] toggle OFF', item.name, '-> silent (default & not performed)');
+      removeId(id);
+      return;
+    }
+
+    console.log('[picker] toggle OFF', item.name, '-> confirm shown');
+    Alert.alert('Usunąć ćwiczenie?', `„${item.name}" zostanie usunięte z tego dnia.`, [
+      { text: 'Anuluj', style: 'cancel' },
+      {
+        text: 'Usuń',
+        style: 'destructive',
+        onPress: () => {
+          setConfirmedIds((prev) => new Set(prev).add(id));
+          removeId(id);
+        },
+      },
+    ]);
+  };
+
+  const addCustom = () => {
+    const name = customName.trim();
+    if (!name || customNames.includes(name)) return;
+    console.log('[picker] add custom', name);
+    setCustomNames((prev) => [...prev, name]);
+    setCustomName('');
+    setIsCustomOpen(false);
+  };
+
+  const removeCustom = (name: string) => {
+    // Customs are always this-session, so removing one is silent.
+    console.log('[picker] remove custom', name);
+    setCustomNames((prev) => prev.filter((n) => n !== name));
+  };
+
+  const filtered = useMemo(() => {
+    if (!exercises) return [];
+    const needle = searchable(query);
+    if (!needle) return exercises;
+    return exercises.filter(
+      (e) => searchable(e.name).includes(needle) || searchable(e.category).includes(needle),
+    );
+  }, [exercises, query]);
 
   if (isLoading) {
     return (
@@ -52,82 +153,114 @@ export const PlanDayExercisePickerScreen = ({ route, navigation }: Props) => {
   const renderHeader = () => (
     <View className="p-4 gap-4 border-b border-line">
       <Input
-        label="Własne ćwiczenie"
-        value={customName}
-        onChangeText={(t) => setSelection(t.trim() ? { exerciseId: null, name: t } : null)}
-        placeholder="Nazwa"
+        label="Szukaj"
+        value={query}
+        onChangeText={setQuery}
+        placeholder="np. przysiad, plecy"
+        autoCapitalize="none"
+        autoCorrect={false}
+        clearButtonMode="while-editing"
       />
 
-      <View className="flex-row gap-2">
-        <View className="flex-1">
-          <Input
-            label="Serie"
-            value={targets.sets}
-            onChangeText={(t) => setTarget('sets', t)}
-            keyboardType="number-pad"
+      <View className="border border-line rounded-md overflow-hidden">
+        <Pressable
+          onPress={() => setIsCustomOpen((open) => !open)}
+          className="flex-row items-center justify-between px-4 py-4"
+          accessibilityRole="button"
+        >
+          <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+            [ WŁASNE ĆWICZENIE ]
+          </Text>
+          <Ionicons
+            name={isCustomOpen ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color={tokens.color.muted}
           />
-        </View>
-        <View className="flex-1">
-          <Input
-            label="Powt."
-            value={targets.reps}
-            onChangeText={(t) => setTarget('reps', t)}
-            keyboardType="number-pad"
-          />
-        </View>
-        <View className="flex-1">
-          <Input
-            label="Przerwa"
-            value={targets.rest}
-            onChangeText={(t) => setTarget('rest', t)}
-            keyboardType="number-pad"
-          />
-        </View>
+        </Pressable>
+
+        {isCustomOpen && (
+          <View className="px-4 pb-4 border-t border-line pt-4 gap-3">
+            <Input
+              label="Nazwa"
+              value={customName}
+              onChangeText={setCustomName}
+              placeholder="np. Pompki na poręczach"
+              autoFocus
+              onSubmitEditing={addCustom}
+            />
+            <Button
+              label="Dodaj własne →"
+              variant="secondary"
+              disabled={!customName.trim()}
+              onPress={addCustom}
+            />
+          </View>
+        )}
       </View>
 
-      {isLibrary && selection && (
-        <View className="bg-surface rounded-md p-3 border border-line">
-          <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase">
-            Wybrane
-          </Text>
-          <Text className="text-fg font-sans-sb text-body-lg mt-1">{selection.name}</Text>
+      {customNames.length > 0 && (
+        <View className="gap-2">
+          {customNames.map((name) => (
+            <Pressable
+              key={name}
+              onPress={() => removeCustom(name)}
+              className="flex-row items-center justify-between bg-surface2 rounded-md px-4 py-3 border border-line"
+            >
+              <Text className="text-fg font-sans-sb text-body">{name}</Text>
+              <Ionicons name="close" size={18} color={tokens.color.muted} />
+            </Pressable>
+          ))}
         </View>
       )}
 
-      <Button
-        label="Dodaj do dnia →"
-        variant="primary"
-        loading={isPending}
-        disabled={!selection || isPending}
-        onPress={handleSubmit}
-      />
-
       <Text className="text-muted font-mono-md text-label tracking-label uppercase mt-2">
-        [ LUB Z BIBLIOTEKI ]
+        [ Z BIBLIOTEKI ]
       </Text>
     </View>
   );
 
   return (
-    <FlatList
-      className="bg-bg"
-      data={exercises}
-      keyExtractor={(item) => item.id}
-      ListHeaderComponent={renderHeader()}
-      renderItem={({ item }) => {
-        const isSelected = selection?.exerciseId === item.id;
-        return (
-          <Pressable
-            onPress={() => setSelection({ exerciseId: item.id, name: item.name })}
-            className={`px-4 py-4 border-b border-line ${isSelected ? 'bg-surface2' : ''}`}
-          >
-            <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
-            <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-              {item.category}
+    <View className="flex-1 bg-bg">
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={renderHeader()}
+        renderItem={({ item }) => {
+          const isSelected = selectedIds.has(item.id);
+          return (
+            <Pressable
+              onPress={() => toggle(item)}
+              className={`px-4 py-4 border-b border-line flex-row items-center justify-between ${
+                isSelected ? 'bg-surface2' : ''
+              }`}
+            >
+              <View className="flex-1">
+                <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
+                <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+                  {item.category}
+                </Text>
+              </View>
+              {isSelected && <Ionicons name="checkmark" size={20} color={tokens.color.lime} />}
+            </Pressable>
+          );
+        }}
+        ListEmptyComponent={
+          <View className="items-center justify-center p-10">
+            <Text className="text-muted font-sans-md text-body text-center">
+              Nic nie pasuje do „{query}". Możesz dodać własne ćwiczenie.
             </Text>
-          </Pressable>
-        );
-      }}
-    />
+          </View>
+        }
+      />
+
+      <View className="p-4 border-t border-line bg-bg">
+        <Button
+          label={total > 0 ? `Gotowe (${total}) →` : 'Gotowe →'}
+          variant="primary"
+          onPress={() => navigation.goBack()}
+        />
+      </View>
+    </View>
   );
 };

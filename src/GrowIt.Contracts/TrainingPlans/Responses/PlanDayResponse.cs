@@ -6,4 +6,5 @@ public record PlanDayResponse(
     string Name,
     string? Notes,
     int OrderIndex,
+    bool HasBeenPerformed,
     IReadOnlyList<PlanDayExerciseResponse> Exercises);
