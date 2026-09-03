@@ -33,6 +33,7 @@ import type {
   PlanDayResponse,
   PlanDaySummaryResponse,
   ReorderPlanDaysRequest,
+  SetPlanDayExercisesRequest,
   TrainingPlanResponse,
   TrainingPlanSummaryResponse,
   UpdatePlanDayExerciseRequest,
@@ -900,6 +901,64 @@ const {mutation: mutationOptions} = options ?
         TContext
       > => {
       return useMutation(getPostApiTrainingPlansDaysDayIdExercisesMutationOptions(options), queryClient);
+    }
+    export const putApiTrainingPlansDaysDayIdExercises = (
+    dayId: string,
+    setPlanDayExercisesRequest: SetPlanDayExercisesRequest,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/api/training-plans/days/${dayId}/exercises`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: setPlanDayExercisesRequest, signal
+    },
+      );
+    }
+
+
+
+export const getPutApiTrainingPlansDaysDayIdExercisesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiTrainingPlansDaysDayIdExercises>>, TError,{dayId: string;data: SetPlanDayExercisesRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof putApiTrainingPlansDaysDayIdExercises>>, TError,{dayId: string;data: SetPlanDayExercisesRequest}, TContext> => {
+
+const mutationKey = ['putApiTrainingPlansDaysDayIdExercises'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiTrainingPlansDaysDayIdExercises>>, {dayId: string;data: SetPlanDayExercisesRequest}> = (props) => {
+          const {dayId,data} = props ?? {};
+
+          return  putApiTrainingPlansDaysDayIdExercises(dayId,data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutApiTrainingPlansDaysDayIdExercisesMutationResult = NonNullable<Awaited<ReturnType<typeof putApiTrainingPlansDaysDayIdExercises>>>
+    export type PutApiTrainingPlansDaysDayIdExercisesMutationBody = SetPlanDayExercisesRequest
+    export type PutApiTrainingPlansDaysDayIdExercisesMutationError = unknown
+
+    export const usePutApiTrainingPlansDaysDayIdExercises = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiTrainingPlansDaysDayIdExercises>>, TError,{dayId: string;data: SetPlanDayExercisesRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putApiTrainingPlansDaysDayIdExercises>>,
+        TError,
+        {dayId: string;data: SetPlanDayExercisesRequest},
+        TContext
+      > => {
+      return useMutation(getPutApiTrainingPlansDaysDayIdExercisesMutationOptions(options), queryClient);
     }
     export const putApiTrainingPlansExercisesPlanDayExerciseId = (
     planDayExerciseId: string,

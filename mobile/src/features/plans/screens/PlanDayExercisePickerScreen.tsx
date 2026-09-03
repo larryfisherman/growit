@@ -2,12 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 import { PlansStackParamList } from '../../../navigation/types';
 import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
-import { useGetApiTrainingPlansDaysDayId } from '../../../api/generated/training-plans/training-plans';
-import { ExerciseResponse, PlanDayExerciseResponse } from '../../../api/generated/schemas';
-import { usePlanDayExerciseBatchCommit } from '../hooks/usePlanDayExerciseBatchCommit';
-import { isDefaultTargets } from '../constants';
+import {
+  useGetApiTrainingPlansDaysDayId,
+  getGetApiTrainingPlansDaysDayIdQueryKey,
+} from '../../../api/generated/training-plans/training-plans';
+import {
+  ExerciseResponse,
+  PlanDayExerciseResponse,
+  PlanDayExerciseSelection,
+  PlanDayResponse,
+} from '../../../api/generated/schemas';
+import { usePlanDayExercisesSync } from '../hooks/usePlanDayExercisesSync';
+import { DEFAULT_TARGETS, TEMP_ID_PREFIX, isDefaultTargets } from '../constants';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
 import { tokens } from '../../../theme/tokens';
@@ -15,84 +24,157 @@ import { searchable } from '../../../lib/text';
 
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDayExercisePicker'>;
 
-type Initial = {
+/// The day's exercises as the user currently wants them, in order. Kept as a list rather
+/// than a set because position is what the server turns into OrderIndex.
+type Pick =
+  | { kind: 'existing'; row: PlanDayExerciseResponse }
+  | { kind: 'library'; exerciseId: string; name: string; category: string | null }
+  | { kind: 'custom'; name: string };
+
+type Snapshot = {
   ids: Set<string>;
   byId: Map<string, PlanDayExerciseResponse>;
   performed: boolean;
 };
 
+const pickExerciseId = (pick: Pick) =>
+  pick.kind === 'existing' ? pick.row.exerciseId : pick.kind === 'library' ? pick.exerciseId : null;
+
+const toSelection = (pick: Pick): PlanDayExerciseSelection => {
+  if (pick.kind === 'existing') {
+    return { planDayExerciseId: pick.row.id, exerciseId: null, customExerciseName: null };
+  }
+  if (pick.kind === 'library') {
+    return { planDayExerciseId: null, exerciseId: pick.exerciseId, customExerciseName: null };
+  }
+  return { planDayExerciseId: null, exerciseId: null, customExerciseName: pick.name };
+};
+
+/// Renders the picks as day exercises for the optimistic cache. Each pick is resolved
+/// against what the day already holds, so once a write lands and the day refetches, the
+/// placeholder rows quietly turn into the real ones - ids, tuned targets and all.
+const toDayExercises = (picks: Pick[], day: PlanDayResponse): PlanDayExerciseResponse[] =>
+  picks.map((pick, orderIndex) => {
+    const live =
+      pick.kind === 'existing'
+        ? day.exercises.find((e) => e.id === pick.row.id)
+        : pick.kind === 'library'
+          ? day.exercises.find((e) => e.exerciseId === pick.exerciseId)
+          : day.exercises.find((e) => e.exerciseId === null && e.exerciseName === pick.name);
+
+    if (live) return { ...live, orderIndex };
+    if (pick.kind === 'existing') return { ...pick.row, orderIndex };
+
+    const isLibrary = pick.kind === 'library';
+    return {
+      id: `${TEMP_ID_PREFIX}${isLibrary ? pick.exerciseId : `custom:${pick.name}`}`,
+      exerciseId: isLibrary ? pick.exerciseId : null,
+      exerciseName: isLibrary ? pick.name : pick.name,
+      category: isLibrary ? pick.category : null,
+      targetSets: DEFAULT_TARGETS.sets,
+      targetReps: DEFAULT_TARGETS.reps,
+      restSeconds: DEFAULT_TARGETS.restSeconds,
+      orderIndex,
+    };
+  });
+
 export const PlanDayExercisePickerScreen = ({ route, navigation }: Props) => {
   const { dayId, planId } = route.params;
+  const queryClient = useQueryClient();
 
   const [query, setQuery] = useState('');
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [customName, setCustomName] = useState('');
 
-  // Selection is local; nothing hits the API until the screen is left (batch commit).
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [customNames, setCustomNames] = useState<string[]>([]);
+  const [picks, setPicks] = useState<Pick[] | null>(null);
   // Exercises the user already OK'd removing this session - don't ask twice.
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
 
   const { data: exercises, isLoading } = useGetApiExercises({ query: { staleTime: Infinity } });
   const { data: day } = useGetApiTrainingPlansDaysDayId(dayId);
 
-  // Snapshot the day as it looked when the picker opened - this is what tells a
-  // "fresh this session" pick apart from an established one, and carries the
-  // performed flag + original targets used by the confirm rule.
+  // The day as it looked when the picker opened. This is what separates a pick made just
+  // now from one that has been around - and it carries the performed flag and the
+  // original targets that the confirm rule reads.
   const seededRef = useRef(false);
-  const initialRef = useRef<Initial>({ ids: new Set(), byId: new Map(), performed: false });
+  const snapshotRef = useRef<Snapshot>({ ids: new Set(), byId: new Map(), performed: false });
 
   useEffect(() => {
     if (!day || seededRef.current) return;
+
     const byId = new Map<string, PlanDayExerciseResponse>();
     day.exercises.forEach((e) => {
       if (e.exerciseId) byId.set(e.exerciseId, e);
     });
-    initialRef.current = { ids: new Set(byId.keys()), byId, performed: day.hasBeenPerformed };
-    setSelectedIds(new Set(byId.keys()));
+    snapshotRef.current = {
+      ids: new Set(byId.keys()),
+      byId,
+      performed: day.hasBeenPerformed,
+    };
+    setPicks(day.exercises.map((row) => ({ kind: 'existing', row })));
     seededRef.current = true;
   }, [day]);
 
-  const getState = useCallback(
-    () => ({ selectedIds, customNames, existingByExerciseId: initialRef.current.byId }),
-    [selectedIds, customNames],
-  );
-  const commit = usePlanDayExerciseBatchCommit({ dayId, planId, getState });
+  const items = useMemo(() => picks?.map(toSelection) ?? null, [picks]);
 
-  // Leaving the screen is the primary flush point.
+  const handleSyncError = useCallback(() => {
+    Alert.alert(
+      'Nie udało się zapisać',
+      'Zmiany w ćwiczeniach tego dnia nie zostały zapisane. Sprawdź połączenie i spróbuj ponownie.',
+    );
+  }, []);
+
+  const flush = usePlanDayExercisesSync({ dayId, planId, items, onError: handleSyncError });
+
+  // Show the change on the day view straight away; the write follows in the background.
+  useEffect(() => {
+    if (!picks) return;
+    queryClient.setQueryData<PlanDayResponse>(
+      getGetApiTrainingPlansDaysDayIdQueryKey(dayId),
+      (old) => (old ? { ...old, exercises: toDayExercises(picks, old) } : old),
+    );
+  }, [picks, queryClient, dayId]);
+
+  // Leaving the screen should not wait for the debounce.
   useEffect(
-    () => navigation.addListener('beforeRemove', () => void commit('beforeRemove')),
-    [navigation, commit],
+    () => navigation.addListener('beforeRemove', () => void flush('beforeRemove')),
+    [navigation, flush],
   );
 
-  const removeId = (id: string) =>
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
+  const selectedIds = useMemo(() => {
+    const ids = new Set<string>();
+    picks?.forEach((pick) => {
+      const id = pickExerciseId(pick);
+      if (id) ids.add(id);
     });
+    return ids;
+  }, [picks]);
+
+  const dropByExerciseId = (exerciseId: string) =>
+    setPicks((prev) => (prev ?? []).filter((pick) => pickExerciseId(pick) !== exerciseId));
 
   const toggle = (item: ExerciseResponse) => {
     const id = item.id;
 
     if (!selectedIds.has(id)) {
       console.log('[picker] toggle ON', item.name);
-      setSelectedIds((prev) => new Set(prev).add(id));
+      setPicks((prev) => [
+        ...(prev ?? []),
+        { kind: 'library', exerciseId: id, name: item.name, category: item.category },
+      ]);
       return;
     }
 
-    const { ids: initialIds, byId, performed } = initialRef.current;
-    const wasPreExisting = initialIds.has(id);
+    const { ids: initialIds, byId, performed } = snapshotRef.current;
 
-    if (!wasPreExisting) {
+    if (!initialIds.has(id)) {
       console.log('[picker] toggle OFF', item.name, '-> silent (fresh)');
-      removeId(id);
+      dropByExerciseId(id);
       return;
     }
     if (confirmedIds.has(id)) {
       console.log('[picker] toggle OFF', item.name, '-> silent (already confirmed)');
-      removeId(id);
+      dropByExerciseId(id);
       return;
     }
 
@@ -100,7 +182,7 @@ export const PlanDayExercisePickerScreen = ({ route, navigation }: Props) => {
     const needsConfirm = performed || (existing ? !isDefaultTargets(existing) : false);
     if (!needsConfirm) {
       console.log('[picker] toggle OFF', item.name, '-> silent (default & not performed)');
-      removeId(id);
+      dropByExerciseId(id);
       return;
     }
 
@@ -112,25 +194,32 @@ export const PlanDayExercisePickerScreen = ({ route, navigation }: Props) => {
         style: 'destructive',
         onPress: () => {
           setConfirmedIds((prev) => new Set(prev).add(id));
-          removeId(id);
+          dropByExerciseId(id);
         },
       },
     ]);
   };
 
+  const customPicks = useMemo(
+    () => (picks ?? []).filter((pick): pick is Extract<Pick, { kind: 'custom' }> => pick.kind === 'custom'),
+    [picks],
+  );
+
   const addCustom = () => {
     const name = customName.trim();
-    if (!name || customNames.includes(name)) return;
+    if (!name || customPicks.some((pick) => pick.name === name)) return;
     console.log('[picker] add custom', name);
-    setCustomNames((prev) => [...prev, name]);
+    setPicks((prev) => [...(prev ?? []), { kind: 'custom', name }]);
     setCustomName('');
     setIsCustomOpen(false);
   };
 
   const removeCustom = (name: string) => {
-    // Customs are always this-session, so removing one is silent.
+    // Customs are always added in this session, so removing one is silent.
     console.log('[picker] remove custom', name);
-    setCustomNames((prev) => prev.filter((n) => n !== name));
+    setPicks((prev) =>
+      (prev ?? []).filter((pick) => !(pick.kind === 'custom' && pick.name === name)),
+    );
   };
 
   const filtered = useMemo(() => {
@@ -198,15 +287,15 @@ export const PlanDayExercisePickerScreen = ({ route, navigation }: Props) => {
         )}
       </View>
 
-      {customNames.length > 0 && (
+      {customPicks.length > 0 && (
         <View className="gap-2">
-          {customNames.map((name) => (
+          {customPicks.map((pick) => (
             <Pressable
-              key={name}
-              onPress={() => removeCustom(name)}
+              key={pick.name}
+              onPress={() => removeCustom(pick.name)}
               className="flex-row items-center justify-between bg-surface2 rounded-md px-4 py-3 border border-line"
             >
-              <Text className="text-fg font-sans-sb text-body">{name}</Text>
+              <Text className="text-fg font-sans-sb text-body">{pick.name}</Text>
               <Ionicons name="close" size={18} color={tokens.color.muted} />
             </Pressable>
           ))}

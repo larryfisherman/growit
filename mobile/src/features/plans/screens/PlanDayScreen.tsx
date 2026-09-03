@@ -6,6 +6,7 @@ import { useGetApiTrainingPlansDaysDayId } from '../../../api/generated/training
 import { PlanDayExerciseRow } from '../components/PlanDayExerciseRow';
 import { usePlanDayAutoSave } from '../hooks/usePlanDayAutoSave';
 import { usePlanDayExerciseDelete } from '../hooks/usePlanDayExerciseDelete';
+import { isPendingExerciseId } from '../constants';
 import { Input } from '../../../theme/components/Input';
 import { tokens } from '../../../theme/tokens';
 
@@ -65,6 +66,7 @@ export const PlanDayScreen = ({ route, navigation }: Props) => {
                 key={exercise.id}
                 exercise={exercise}
                 dayId={dayId}
+                pending={isPendingExerciseId(exercise.id)}
                 onDelete={() => removeExercise({ planDayExerciseId: exercise.id })}
               />
             ))}

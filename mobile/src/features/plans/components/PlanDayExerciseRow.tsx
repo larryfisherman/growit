@@ -12,11 +12,14 @@ type Props = {
   exercise: PlanDayExerciseResponse;
   dayId: string;
   onDelete: () => void;
+  /// The row only exists in the optimistic cache so far - the server has not handed back
+  /// a real id yet, so editing or deleting it would address a row that does not exist.
+  pending?: boolean;
 };
 
 const SAVE_DELAY_MS = 600;
 
-export const PlanDayExerciseRow = ({ exercise, dayId, onDelete }: Props) => {
+export const PlanDayExerciseRow = ({ exercise, dayId, onDelete, pending = false }: Props) => {
   const swipeRef = useRef<SwipeableMethods>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { mutate: update } = usePlanDayExerciseUpdate(dayId);
@@ -86,6 +89,17 @@ export const PlanDayExerciseRow = ({ exercise, dayId, onDelete }: Props) => {
       </RectButton>
     </View>
   );
+
+  if (pending) {
+    return (
+      <View className="bg-surface rounded-md p-4 border border-line opacity-60">
+        <Text className="text-fg font-sans-sb text-body-lg">{exercise.exerciseName}</Text>
+        <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+          Zapisywanie…
+        </Text>
+      </View>
+    );
+  }
 
   if (isEditing) {
     return (

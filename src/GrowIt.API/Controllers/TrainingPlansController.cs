@@ -6,6 +6,7 @@ using GrowIt.Application.TrainingPlans.Commands.DeletePlanDay;
 using GrowIt.Application.TrainingPlans.Commands.DeleteTrainingPlan;
 using GrowIt.Application.TrainingPlans.Commands.RemoveExerciseFromPlanDay;
 using GrowIt.Application.TrainingPlans.Commands.ReorderPlanDays;
+using GrowIt.Application.TrainingPlans.Commands.SetPlanDayExercises;
 using GrowIt.Application.TrainingPlans.Commands.SetActiveTrainingPlan;
 using GrowIt.Application.TrainingPlans.Commands.UpdatePlanDay;
 using GrowIt.Application.TrainingPlans.Commands.UpdatePlanDayExercise;
@@ -151,6 +152,22 @@ public class TrainingPlansController(IMediator mediator) : ControllerBase
             request.RestSeconds), ct);
 
         return Ok(new AddExerciseToPlanDayResponse(id));
+    }
+
+    [HttpPut("days/{dayId:guid}/exercises")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> SetDayExercises(
+        Guid dayId, [FromBody] SetPlanDayExercisesRequest request, CancellationToken ct)
+    {
+        var selections = request.Exercises
+            .Select(e => new PlanDayExerciseSelectionInput(
+                e.PlanDayExerciseId, e.ExerciseId, e.CustomExerciseName))
+            .ToList();
+
+        await mediator.Send(
+            new SetPlanDayExercisesCommand(HttpContext.GetUserId(), dayId, selections), ct);
+
+        return NoContent();
     }
 
     [HttpPut("exercises/{planDayExerciseId:guid}")]
