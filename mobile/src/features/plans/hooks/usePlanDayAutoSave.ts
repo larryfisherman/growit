@@ -46,6 +46,7 @@ export const usePlanDayAutoSave = ({ dayId, day, name, notes, delayMs = 600 }: A
     },
   });
 
+  
   useEffect(() => {
     if (!day) return;
     if (!name.trim()) return;
