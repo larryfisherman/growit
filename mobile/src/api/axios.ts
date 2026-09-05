@@ -1,27 +1,15 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
-import Constants from 'expo-constants';
 import { refreshSession } from '../auth/cognito';
 import { getAccessToken, getRefreshToken, saveSession } from '../auth/tokenStorage';
 import { notifySessionExpired } from '../auth/sessionExpiry';
+import { reportRequestSuccess, reportTransportFailure } from '../offline/connectivity';
+import { baseURL } from './baseUrl';
 
-const API_PORT = 5053;
+/// Without a ceiling a request on a dead network hangs for around a minute, which is
+/// long enough that the circuit breaker never sees enough failures to trip.
+const REQUEST_TIMEOUT_MS = 12_000;
 
-// Production: EXPO_PUBLIC_API_URL from .env / .env.production.
-// Dev on device: LAN IP from Expo dev server.
-// Web / fallback: localhost.
-const resolveBaseUrl = (): string => {
-  const prodUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (prodUrl) return prodUrl;
-
-  const hostUri = Constants.expoConfig?.hostUri ?? Constants.expoGoConfig?.debuggerHost;
-  const host = hostUri?.split(':')[0];
-  if (host && host !== 'localhost') return `http://${host}:${API_PORT}`;
-  return `http://localhost:${API_PORT}`;
-};
-
-const baseURL = resolveBaseUrl();
-
-const AXIOS_INSTANCE = axios.create({ baseURL });
+const AXIOS_INSTANCE = axios.create({ baseURL, timeout: REQUEST_TIMEOUT_MS });
 
 type TimedConfig = { metadata?: { start: number } };
 
@@ -64,6 +52,8 @@ type RetriableConfig = InternalAxiosRequestConfig & { retried?: boolean };
 
 AXIOS_INSTANCE.interceptors.response.use(
   (response) => {
+    reportRequestSuccess();
+
     if (__DEV__) {
       const start = (response.config as TimedConfig).metadata?.start;
       const ms = start ? `${Date.now() - start}ms` : '?';
@@ -73,6 +63,12 @@ AXIOS_INSTANCE.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const config = error.config as RetriableConfig | undefined;
+
+    // A status code means the network carried the request and the server disagreed
+    // with us - that says nothing about connectivity. Only a request that never
+    // landed counts against the circuit breaker.
+    if (error.response) reportRequestSuccess();
+    else reportTransportFailure();
 
     if (error.response?.status !== 401 || !config || config.retried) {
       return Promise.reject(error);

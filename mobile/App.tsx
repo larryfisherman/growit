@@ -14,11 +14,15 @@ import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AuthProvider } from './src/auth/AuthContext';
 import { ThemeProvider } from './src/theme/ThemeProvider';
+import { setupConnectivity } from './src/offline/connectivity';
 
 const queryClient = new QueryClient();
+
+setupConnectivity();
 
 export const App = () => {
   const [loaded] = useFonts({
@@ -33,14 +37,16 @@ export const App = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <StatusBar style="light" />
-            <RootNavigator />
-          </AuthProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <AuthProvider>
+              <StatusBar style="light" />
+              <RootNavigator />
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 };

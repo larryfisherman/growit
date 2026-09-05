@@ -12,6 +12,7 @@ import { RootStackParamList } from './types';
 import { darkStackOptions } from './screenOptions';
 import { tokens } from '../theme/tokens';
 import { useAuth } from '../auth/AuthContext';
+import { ConnectionBanner } from '../offline/ConnectionBanner';
 
 const Tab = createBottomTabNavigator();
 const Root = createNativeStackNavigator<RootStackParamList>();
@@ -72,27 +73,33 @@ export const RootNavigator = () => {
   }
 
   return (
-    <NavigationContainer theme={navigationTheme}>
-      <Root.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthed ? (
-          <>
-            <Root.Screen name="Main" component={MainTabs} />
-            {/* Root-level so every tab can open it without registering its own copy. */}
-            <Root.Screen
-              name="Settings"
-              component={SettingsScreen}
-              options={{
-                ...darkStackOptions,
-                headerShown: true,
-                title: 'Ustawienia',
-                presentation: 'modal',
-              }}
-            />
-          </>
-        ) : (
-          <Root.Screen name="Auth" component={AuthStack} />
-        )}
-      </Root.Navigator>
-    </NavigationContainer>
+    <View className="flex-1">
+      <NavigationContainer theme={navigationTheme}>
+        <Root.Navigator screenOptions={{ headerShown: false }}>
+          {isAuthed ? (
+            <>
+              <Root.Screen name="Main" component={MainTabs} />
+              {/* Root-level so every tab can open it without registering its own copy. */}
+              <Root.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{
+                  ...darkStackOptions,
+                  headerShown: true,
+                  title: 'Ustawienia',
+                  presentation: 'modal',
+                }}
+              />
+            </>
+          ) : (
+            <Root.Screen name="Auth" component={AuthStack} />
+          )}
+        </Root.Navigator>
+      </NavigationContainer>
+
+      {/* Outside the navigator so it survives every screen change, and overlaid rather
+          than stacked so showing it never reflows the screen underneath. */}
+      <ConnectionBanner />
+    </View>
   );
 };
