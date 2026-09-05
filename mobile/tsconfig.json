@@ -1,6 +1,9 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    // Node's test runner resolves ESM, which wants the real extension. Safe here
+    // because this config never emits.
+    "allowImportingTsExtensions": true
   }
 }

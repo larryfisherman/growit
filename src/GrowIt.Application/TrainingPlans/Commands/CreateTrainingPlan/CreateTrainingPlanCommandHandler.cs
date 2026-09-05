@@ -1,3 +1,4 @@
+using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Domain.Entities;
 using MediatR;
@@ -10,6 +11,13 @@ public class CreateTrainingPlanCommandHandler(IApplicationDbContext dbContext)
 {
     public async Task<Guid> Handle(CreateTrainingPlanCommand request, CancellationToken cancellationToken)
     {
+        if (await IdempotencyGuard.AlreadyCreatedAsync(
+                dbContext.TrainingPlans.Where(p => p.Id == request.Id).Select(p => p.UserId),
+                request.Id, request.UserId, cancellationToken))
+        {
+            return request.Id;
+        }
+
         // The first plan becomes the active one, so a new user never ends up with
         // plans but no suggestion on the today screen.
         var isFirstPlan = !await dbContext.TrainingPlans
@@ -17,7 +25,7 @@ public class CreateTrainingPlanCommandHandler(IApplicationDbContext dbContext)
 
         var plan = new TrainingPlan
         {
-            Id = Guid.NewGuid(),
+            Id = request.Id,
             UserId = request.UserId,
             Name = request.Name,
             Notes = request.Notes,

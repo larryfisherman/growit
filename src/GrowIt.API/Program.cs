@@ -1,3 +1,4 @@
+using GrowIt.API.Middleware;
 using GrowIt.Application;
 using GrowIt.Infrastructure;
 using GrowIt.Infrastructure.Persistence;
@@ -10,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -76,6 +80,9 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<GrowItDbContext>();
     await db.Database.MigrateAsync();
 }
+
+// First in the pipeline, so nothing downstream can escape as a bare 500.
+app.UseExceptionHandler();
 
 app.UseCors();
 app.UseAuthentication();

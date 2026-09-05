@@ -12,8 +12,10 @@ public class RemoveExerciseFromPlanDayCommandHandler(IApplicationDbContext dbCon
         var exercise = await dbContext.TrainingPlanDayExercises
             .FirstOrDefaultAsync(
                 e => e.Id == request.PlanDayExerciseId && e.PlanDay.Plan.UserId == request.UserId,
-                cancellationToken)
-            ?? throw new KeyNotFoundException($"Plan day exercise {request.PlanDayExerciseId} not found");
+                cancellationToken);
+
+        // Already gone is the requested state; see DeleteTrainingPlanCommandHandler.
+        if (exercise is null) return;
 
         dbContext.TrainingPlanDayExercises.Remove(exercise);
         await dbContext.SaveChangesAsync(cancellationToken);

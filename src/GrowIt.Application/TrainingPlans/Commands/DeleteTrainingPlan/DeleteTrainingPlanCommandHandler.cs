@@ -11,8 +11,12 @@ public class DeleteTrainingPlanCommandHandler(IApplicationDbContext dbContext)
     {
         var plan = await dbContext.TrainingPlans
             .Include(p => p.Days)
-            .FirstOrDefaultAsync(p => p.Id == request.PlanId && p.UserId == request.UserId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Training plan {request.PlanId} not found");
+            .FirstOrDefaultAsync(p => p.Id == request.PlanId && p.UserId == request.UserId, cancellationToken);
+
+        // Nothing to delete is the outcome the caller asked for, so say so. A queued
+        // delete can easily outlive its target: create and delete something offline,
+        // have the create fail for good, and the delete then arrives at an empty spot.
+        if (plan is null) return;
 
         // Workouts are history and outlive the plan they came from - detach them
         // rather than letting the delete cascade take them down.

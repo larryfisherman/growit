@@ -1,3 +1,5 @@
+using GrowIt.Application.Common.Exceptions;
+using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Domain.Entities;
 using MediatR;
@@ -10,12 +12,20 @@ public class CreatePlanDayCommandHandler(IApplicationDbContext dbContext)
 {
     public async Task<Guid> Handle(CreatePlanDayCommand request, CancellationToken cancellationToken)
     {
+        // Before anything else: a retry must not push the order along a second time.
+        if (await IdempotencyGuard.AlreadyCreatedAsync(
+                dbContext.TrainingPlanDays.Where(d => d.Id == request.Id).Select(d => d.Plan.UserId),
+                request.Id, request.UserId, cancellationToken))
+        {
+            return request.Id;
+        }
+
         var planExists = await dbContext.TrainingPlans
             .AnyAsync(p => p.Id == request.PlanId && p.UserId == request.UserId, cancellationToken);
 
         if (!planExists)
         {
-            throw new KeyNotFoundException($"Training plan {request.PlanId} not found");
+            throw new NotFoundException($"Training plan {request.PlanId} not found");
         }
 
         // New days land at the end; dragging them around rewrites the order later.
@@ -25,7 +35,7 @@ public class CreatePlanDayCommandHandler(IApplicationDbContext dbContext)
 
         var day = new TrainingPlanDay
         {
-            Id = Guid.NewGuid(),
+            Id = request.Id,
             PlanId = request.PlanId,
             Name = request.Name,
             Notes = request.Notes,

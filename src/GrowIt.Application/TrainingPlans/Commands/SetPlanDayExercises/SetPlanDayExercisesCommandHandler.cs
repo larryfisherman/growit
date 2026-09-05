@@ -1,3 +1,4 @@
+using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Domain.Entities;
 using MediatR;
@@ -24,7 +25,7 @@ public class SetPlanDayExercisesCommandHandler(IApplicationDbContext dbContext)
 
         if (day is null)
         {
-            throw new KeyNotFoundException($"Plan day {request.PlanDayId} not found");
+            throw new NotFoundException($"Plan day {request.PlanDayId} not found");
         }
 
         // Snapshot before touching anything: EF's relationship fix-up pushes rows we add
@@ -35,19 +36,41 @@ public class SetPlanDayExercisesCommandHandler(IApplicationDbContext dbContext)
         var claimed = new HashSet<Guid>();
         var resolved = new TrainingPlanDayExercise?[request.Selections.Count];
 
+        // Ids the client minted for rows it is adding. Kept apart from the reuse pass so
+        // an explicitly named row can never be quietly answered with a different one.
+        var idsToCreateWith = new Guid?[request.Selections.Count];
+
         // Rows the caller named outright are claimed first, so the reuse pass below cannot
         // steal one out from under them.
         for (var index = 0; index < request.Selections.Count; index++)
         {
-            if (request.Selections[index].PlanDayExerciseId is not { } rowId) continue;
+            var selection = request.Selections[index];
+            if (selection.PlanDayExerciseId is not { } rowId) continue;
 
-            if (!byRowId.TryGetValue(rowId, out var row))
+            if (byRowId.TryGetValue(rowId, out var row))
             {
-                throw new ArgumentException($"Plan day exercise {rowId} does not belong to this day");
+                claimed.Add(rowId);
+                resolved[index] = row;
+                continue;
             }
 
-            claimed.Add(rowId);
-            resolved[index] = row;
+            // Not one of this day's rows. Either the client generated the id for a row it
+            // is adding - which is how a day edited offline arrives - or the id belongs to
+            // something that already exists, and taking that over is not ours to do.
+            var takenElsewhere = await dbContext.TrainingPlanDayExercises
+                .AnyAsync(e => e.Id == rowId, cancellationToken);
+
+            if (takenElsewhere)
+            {
+                throw new ConflictException($"Plan day exercise {rowId} belongs to another day.");
+            }
+
+            if (selection.ExerciseId is null && string.IsNullOrWhiteSpace(selection.CustomExerciseName))
+            {
+                throw new NotFoundException($"Plan day exercise {rowId} not found");
+            }
+
+            idsToCreateWith[index] = rowId;
         }
 
         // An entry naming only an exercise reuses a row the day already has for it, rather
@@ -58,22 +81,26 @@ public class SetPlanDayExercisesCommandHandler(IApplicationDbContext dbContext)
             if (resolved[index] is not null) continue;
 
             var selection = request.Selections[index];
-            var reusable = originalRows.FirstOrDefault(e =>
-                !claimed.Contains(e.Id)
-                && (selection.ExerciseId.HasValue
-                    ? e.ExerciseId == selection.ExerciseId
-                    : e.ExerciseId is null && e.CustomExerciseName == selection.CustomExerciseName));
 
-            if (reusable is not null)
+            if (idsToCreateWith[index] is null)
             {
-                claimed.Add(reusable.Id);
-                resolved[index] = reusable;
-                continue;
+                var reusable = originalRows.FirstOrDefault(e =>
+                    !claimed.Contains(e.Id)
+                    && (selection.ExerciseId.HasValue
+                        ? e.ExerciseId == selection.ExerciseId
+                        : e.ExerciseId is null && e.CustomExerciseName == selection.CustomExerciseName));
+
+                if (reusable is not null)
+                {
+                    claimed.Add(reusable.Id);
+                    resolved[index] = reusable;
+                    continue;
+                }
             }
 
             var created = new TrainingPlanDayExercise
             {
-                Id = Guid.NewGuid(),
+                Id = idsToCreateWith[index] ?? Guid.CreateVersion7(),
                 PlanDayId = day.Id,
                 ExerciseId = selection.ExerciseId,
                 CustomExerciseName = selection.CustomExerciseName,

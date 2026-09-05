@@ -1,3 +1,4 @@
+using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.TrainingPlans.Commands.SetPlanDayExercises;
 using GrowIt.Domain.Entities;
 using GrowIt.Infrastructure.Persistence;
@@ -18,6 +19,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
 
     private readonly Guid _userId = Guid.NewGuid();
     private Guid _planId;
+    private readonly Guid _otherPlanId = Guid.CreateVersion7();
     private Guid _dayId;
     private Guid _benchRowId;
     private Guid _dumbbellRowId;
@@ -72,12 +74,52 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await using var db = NewContext();
-        var plan = await db.TrainingPlans.FirstOrDefaultAsync(p => p.Id == _planId);
-        if (plan is not null)
+        var plans = await db.TrainingPlans
+            .Where(p => p.Id == _planId || p.Id == _otherPlanId)
+            .ToListAsync();
+
+        if (plans.Count != 0)
         {
-            db.TrainingPlans.Remove(plan);
+            db.TrainingPlans.RemoveRange(plans);
             await db.SaveChangesAsync();
         }
+    }
+
+    /// A row living on a different plan entirely, for the conflict case. Torn down in
+    /// DisposeAsync along with the plan that owns it.
+    private async Task<Guid> CreateRowOnAnotherDayAsync()
+    {
+        await using var db = NewContext();
+
+        var rowId = Guid.CreateVersion7();
+        db.TrainingPlans.Add(new TrainingPlan
+        {
+            Id = _otherPlanId,
+            UserId = _userId,
+            Name = "Other plan",
+            CreatedAt = DateTime.UtcNow,
+            Days =
+            {
+                new TrainingPlanDay
+                {
+                    Id = Guid.CreateVersion7(),
+                    Name = "Pull",
+                    OrderIndex = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    Exercises =
+                    {
+                        new TrainingPlanDayExercise
+                        {
+                            Id = rowId, ExerciseId = BenchPress,
+                            TargetSets = 3, TargetReps = 10, RestSeconds = 90, OrderIndex = 0
+                        }
+                    }
+                }
+            }
+        });
+
+        await db.SaveChangesAsync();
+        return rowId;
     }
 
     private async Task<List<TrainingPlanDayExercise>> ReadDayAsync()
@@ -169,9 +211,64 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Rejects_a_row_from_another_day()
+    public async Task Rejects_a_row_id_that_names_nothing_we_can_create()
     {
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        // An unknown id with no exercise behind it is not something we can act on:
+        // the caller is pointing at a row that does not exist.
+        await Assert.ThrowsAsync<NotFoundException>(() =>
             RunAsync(new PlanDayExerciseSelectionInput(Guid.NewGuid(), null, null)));
+    }
+
+    [Fact]
+    public async Task Creates_a_row_using_the_id_the_client_picked()
+    {
+        // How a day edited offline arrives: the client minted the id so it could show
+        // and edit the row before the server ever heard about it.
+        var clientId = Guid.CreateVersion7();
+
+        await RunAsync(
+            new PlanDayExerciseSelectionInput(_benchRowId, null, null),
+            new PlanDayExerciseSelectionInput(clientId, Deadlift, null));
+
+        var rows = await ReadDayAsync();
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(clientId, rows[1].Id);
+        Assert.Equal(Deadlift, rows[1].ExerciseId);
+    }
+
+    [Fact]
+    public async Task Replaying_a_client_id_does_not_duplicate_the_row()
+    {
+        var clientId = Guid.CreateVersion7();
+        var selections = new[]
+        {
+            new PlanDayExerciseSelectionInput(_benchRowId, null, null),
+            new PlanDayExerciseSelectionInput(clientId, Deadlift, null)
+        };
+
+        await RunAsync(selections);
+        await RunAsync(selections);
+
+        var rows = await ReadDayAsync();
+
+        Assert.Equal(2, rows.Count);
+        Assert.Single(rows, r => r.Id == clientId);
+    }
+
+    [Fact]
+    public async Task Refuses_an_id_that_already_belongs_to_another_day()
+    {
+        // Taking over a row that exists elsewhere is the one thing client-supplied ids
+        // must never make possible, so it has to fail loudly rather than move the row.
+        var strangerRowId = await CreateRowOnAnotherDayAsync();
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            RunAsync(new PlanDayExerciseSelectionInput(strangerRowId, Deadlift, null)));
+
+        // And the row it pointed at is untouched.
+        await using var db = NewContext();
+        var stranger = await db.TrainingPlanDayExercises.FirstAsync(e => e.Id == strangerRowId);
+        Assert.NotEqual(_dayId, stranger.PlanDayId);
     }
 }

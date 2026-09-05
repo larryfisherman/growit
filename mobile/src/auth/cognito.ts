@@ -24,6 +24,22 @@ type Action =
   | 'InitiateAuth'
   | 'RevokeToken';
 
+/// Cognito answered and refused. Anything else escaping these calls - fetch rejecting
+/// on a dead network, a body that will not parse - means the request never got a
+/// verdict, and offline that difference decides whether the user stays signed in.
+export class CognitoRejection extends Error {
+  readonly httpStatus: number;
+
+  constructor(message: string, name: string, httpStatus: number) {
+    super(message);
+    this.name = name;
+    this.httpStatus = httpStatus;
+  }
+}
+
+export const isCognitoRejection = (error: unknown): error is CognitoRejection =>
+  error instanceof CognitoRejection;
+
 const call = async <T>(action: Action, body: object): Promise<T> => {
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -40,9 +56,11 @@ const call = async <T>(action: Action, body: object): Promise<T> => {
   if (!response.ok) {
     // Errors arrive as { __type, message }, where __type may be prefixed with a
     // namespace, e.g. "com.amazon.coral.service#NotAuthorizedException".
-    const error = new Error(payload.message ?? 'Nie udało się połączyć z Cognito');
-    error.name = String(payload.__type ?? 'CognitoError').split('#').pop() ?? 'CognitoError';
-    throw error;
+    throw new CognitoRejection(
+      payload.message ?? 'Nie udało się połączyć z Cognito',
+      String(payload.__type ?? 'CognitoError').split('#').pop() ?? 'CognitoError',
+      response.status,
+    );
   }
 
   return payload as T;
@@ -59,6 +77,8 @@ export type Session = {
   name: string;
   email: string;
   tokens: Tokens;
+  /// Epoch ms. Lets the request path refresh before a 401 rather than after one.
+  expiresAt: number;
 };
 
 type AuthenticationResult = {
@@ -107,6 +127,7 @@ const toSession = (result: AuthenticationResult, refreshToken: string): Session 
     name,
     email,
     tokens: { accessToken: result.AccessToken, idToken: result.IdToken, refreshToken },
+    expiresAt: Date.now() + result.ExpiresIn * 1000,
   };
 };
 

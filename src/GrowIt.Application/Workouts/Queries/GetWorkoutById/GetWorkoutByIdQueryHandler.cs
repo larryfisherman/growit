@@ -11,7 +11,8 @@ public class GetWorkoutByIdQueryHandler(IApplicationDbContext dbContext)
     public async Task<WorkoutResponse?> Handle(GetWorkoutByIdQuery request, CancellationToken cancellationToken)
     {
         return await dbContext.Workouts
-            .Where(w => w.Id == request.WorkoutId)
+            // The user filter was missing: any valid token could read any workout by id.
+            .Where(w => w.Id == request.WorkoutId && w.UserId == request.UserId)
             .Select(w => new WorkoutResponse(
                 w.Id,
                 w.Name,

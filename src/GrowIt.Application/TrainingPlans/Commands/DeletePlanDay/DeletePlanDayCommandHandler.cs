@@ -12,8 +12,10 @@ public class DeletePlanDayCommandHandler(IApplicationDbContext dbContext)
         var day = await dbContext.TrainingPlanDays
             .FirstOrDefaultAsync(
                 d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId,
-                cancellationToken)
-            ?? throw new KeyNotFoundException($"Plan day {request.PlanDayId} not found");
+                cancellationToken);
+
+        // Already gone is the requested state; see DeleteTrainingPlanCommandHandler.
+        if (day is null) return;
 
         // Sessions already performed from this day stay in history, just unlinked.
         var workouts = await dbContext.Workouts

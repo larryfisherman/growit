@@ -1,3 +1,3 @@
 namespace GrowIt.Contracts.TrainingPlans.Requests;
 
-public record CreatePlanDayRequest(string Name, string? Notes);
+public record CreatePlanDayRequest(Guid Id, string Name, string? Notes);

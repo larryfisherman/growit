@@ -1,16 +1,25 @@
+using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Domain.Entities;
 using MediatR;
 
 namespace GrowIt.Application.Workouts.Commands.CreateWorkout;
 
-public class CreateWorkoutCommandHandler(IApplicationDbContext dbContext) : IRequestHandler<CreateWorkoutCommand, Guid>
+public class CreateWorkoutCommandHandler(IApplicationDbContext dbContext)
+    : IRequestHandler<CreateWorkoutCommand, Guid>
 {
     public async Task<Guid> Handle(CreateWorkoutCommand request, CancellationToken cancellationToken)
     {
+        if (await IdempotencyGuard.AlreadyCreatedAsync(
+                dbContext.Workouts.Where(w => w.Id == request.Id).Select(w => w.UserId),
+                request.Id, request.UserId, cancellationToken))
+        {
+            return request.Id;
+        }
+
         var workout = new Workout
         {
-            Id = Guid.NewGuid(),
+            Id = request.Id,
             UserId = request.UserId,
             Name = request.Name,
             PerformedAt = request.PerformedAt,

@@ -1,3 +1,5 @@
+using GrowIt.Application.Common.Exceptions;
+using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Domain.Entities;
 using MediatR;
@@ -10,18 +12,32 @@ public class CreateWorkoutFromPlanDayCommandHandler(IApplicationDbContext dbCont
 {
     public async Task<Guid> Handle(CreateWorkoutFromPlanDayCommand request, CancellationToken cancellationToken)
     {
+        if (await IdempotencyGuard.AlreadyCreatedAsync(
+                dbContext.Workouts.Where(w => w.Id == request.Id).Select(w => w.UserId),
+                request.Id, request.UserId, cancellationToken))
+        {
+            return request.Id;
+        }
+
         var day = await dbContext.TrainingPlanDays
             .Include(d => d.Exercises)
             .FirstOrDefaultAsync(
                 d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId,
                 cancellationToken)
-            ?? throw new KeyNotFoundException($"Plan day {request.PlanDayId} not found");
+            ?? throw new NotFoundException($"Plan day {request.PlanDayId} not found");
+
+        // The client names the ids of the copied rows so it can start logging sets into
+        // them before this request is answered - the whole point of starting a session
+        // in a basement gym. Anything it did not name gets one from us.
+        var assignedIds = request.ExerciseIds.ToDictionary(
+            assignment => assignment.PlanDayExerciseId,
+            assignment => assignment.WorkoutExerciseId);
 
         // The targets are copied rather than referenced: editing the plan later must
         // not rewrite what a past session says it was meant to be.
         var workout = new Workout
         {
-            Id = Guid.NewGuid(),
+            Id = request.Id,
             UserId = request.UserId,
             Name = day.Name,
             PerformedAt = request.PerformedAt,
@@ -31,7 +47,7 @@ public class CreateWorkoutFromPlanDayCommandHandler(IApplicationDbContext dbCont
                 .OrderBy(e => e.OrderIndex)
                 .Select(e => new WorkoutExercise
                 {
-                    Id = Guid.NewGuid(),
+                    Id = assignedIds.TryGetValue(e.Id, out var assigned) ? assigned : Guid.CreateVersion7(),
                     ExerciseId = e.ExerciseId,
                     CustomExerciseName = e.CustomExerciseName,
                     TargetSets = e.TargetSets,

@@ -1,3 +1,3 @@
 namespace GrowIt.Contracts.Exercises.Requests;
 
-public record LogSetRequest(decimal WeightKg, int Reps);
+public record LogSetRequest(Guid Id, decimal WeightKg, int Reps, int OrderIndex);

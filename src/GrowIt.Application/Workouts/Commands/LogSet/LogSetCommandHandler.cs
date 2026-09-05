@@ -1,6 +1,9 @@
+using GrowIt.Application.Common.Exceptions;
+using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Application.Workouts.Commands.LogSet;
 
@@ -8,17 +11,41 @@ public class LogSetCommandHandler(IApplicationDbContext dbContext) : IRequestHan
 {
     public async Task<Guid> Handle(LogSetCommand request, CancellationToken cancellationToken)
     {
-        var logSet = new Set()
+        // Sets are the one thing that gets logged mid-workout with no signal, so this
+        // is the retry path that matters most: the same set must never land twice.
+        if (await IdempotencyGuard.AlreadyCreatedAsync(
+                dbContext.Sets
+                    .Where(s => s.Id == request.Id)
+                    .Select(s => s.WorkoutExercise.Workout.UserId),
+                request.Id, request.UserId, cancellationToken))
         {
-            Id = Guid.NewGuid(),
+            return request.Id;
+        }
+
+        // As with AddExerciseToWorkout, this check did not exist at all.
+        var exerciseIsMine = await dbContext.WorkoutExercises
+            .AnyAsync(
+                e => e.Id == request.WorkoutExerciseId && e.Workout.UserId == request.UserId,
+                cancellationToken);
+
+        if (!exerciseIsMine)
+        {
+            throw new NotFoundException($"Workout exercise {request.WorkoutExerciseId} not found");
+        }
+
+        var set = new Set
+        {
+            Id = request.Id,
             WorkoutExerciseId = request.WorkoutExerciseId,
             Reps = request.Reps,
             WeightKg = request.WeightKg,
-            OrderIndex = 0
+            // Was hardcoded to 0, which left every set in a workout claiming to be first.
+            OrderIndex = request.OrderIndex
         };
 
-        dbContext.Sets.Add(logSet);
+        dbContext.Sets.Add(set);
         await dbContext.SaveChangesAsync(cancellationToken);
-        return logSet.Id;
+
+        return set.Id;
     }
 }

@@ -1,3 +1,4 @@
+using GrowIt.API.Authorization;
 using GrowIt.Application.Exercises.Queries.GetExerciseList;
 using GrowIt.Application.Workouts.Commands.LogSet;
 using GrowIt.Contracts.Exercises.Requests;
@@ -24,7 +25,13 @@ public class ExercisesController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<LogSetResponse>> LogSet(
         Guid workoutExerciseId, [FromBody] LogSetRequest request, CancellationToken ct)
     {
-        var id = await mediator.Send(new LogSetCommand(workoutExerciseId, request.WeightKg, request.Reps), ct);
+        var id = await mediator.Send(new LogSetCommand(
+            request.Id,
+            HttpContext.GetUserId(),
+            workoutExerciseId,
+            request.WeightKg,
+            request.Reps,
+            request.OrderIndex), ct);
         return Ok(new LogSetResponse(id));
     }
 }

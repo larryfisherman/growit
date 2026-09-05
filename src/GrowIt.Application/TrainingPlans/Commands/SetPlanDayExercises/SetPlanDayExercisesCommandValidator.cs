@@ -13,21 +13,26 @@ public class SetPlanDayExercisesCommandValidator : AbstractValidator<SetPlanDayE
         RuleFor(x => x.Selections).NotNull();
 
         RuleForEach(x => x.Selections)
-            .Must(HasExactlyOneIdentity)
-            .WithMessage("Each entry must be either an existing row, a library exercise, or a custom name");
+            .Must(HasUsableIdentity)
+            .WithMessage("Each entry must name a row, a library exercise, or a custom name - and never both an exercise and a custom name");
 
         RuleFor(x => x.Selections)
             .Must(NoRepeatedRows)
             .WithMessage("The same existing exercise cannot be listed twice");
     }
 
-    private static bool HasExactlyOneIdentity(PlanDayExerciseSelectionInput selection)
+    /// A row id may travel together with what the row is, which is how a day edited
+    /// offline arrives: the client minted the id itself and still has to say which
+    /// exercise it stands for. What stays forbidden is claiming to be a library
+    /// exercise and a hand-typed name at once, and naming nothing at all.
+    private static bool HasUsableIdentity(PlanDayExerciseSelectionInput selection)
     {
-        var identities = 0;
-        if (selection.PlanDayExerciseId.HasValue) identities++;
-        if (selection.ExerciseId.HasValue) identities++;
-        if (!string.IsNullOrWhiteSpace(selection.CustomExerciseName)) identities++;
-        return identities == 1;
+        var namesLibraryExercise = selection.ExerciseId.HasValue;
+        var namesCustomExercise = !string.IsNullOrWhiteSpace(selection.CustomExerciseName);
+
+        if (namesLibraryExercise && namesCustomExercise) return false;
+
+        return selection.PlanDayExerciseId.HasValue || namesLibraryExercise || namesCustomExercise;
     }
 
     private static bool NoRepeatedRows(IReadOnlyList<PlanDayExerciseSelectionInput> selections)

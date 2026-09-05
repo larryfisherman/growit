@@ -25,7 +25,7 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     {
         var userId = HttpContext.GetUserId();
         var id = await mediator.Send(new CreateWorkoutCommand(
-            userId, request.Name, request.PerformedAt, request.Notes), ct);
+            request.Id, userId, request.Name, request.PerformedAt, request.Notes), ct);
         return Ok(new CreateWorkoutResponse(id));
     }
 
@@ -41,7 +41,7 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     [HttpGet("{workoutId:guid}")]
     public async Task<ActionResult<WorkoutResponse>> GetWorkoutById(Guid workoutId, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetWorkoutByIdQuery(workoutId), ct);
+        var result = await mediator.Send(new GetWorkoutByIdQuery(HttpContext.GetUserId(), workoutId), ct);
         if (result is null) return NotFound();
         return Ok(result);
     }
@@ -69,7 +69,15 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<AddExerciseToWorkoutResponse>> AddExerciseToWorkout(
         Guid workoutId, [FromBody] AddExerciseToWorkoutRequest request, CancellationToken ct)
     {
-        var id = await mediator.Send(new AddExerciseToWorkoutCommand(workoutId, request.ExerciseId), ct);
+        var id = await mediator.Send(new AddExerciseToWorkoutCommand(
+            request.Id,
+            HttpContext.GetUserId(),
+            workoutId,
+            request.ExerciseId,
+            request.OrderIndex,
+            request.TargetSets,
+            request.TargetReps,
+            request.RestSeconds), ct);
         return Ok(new AddExerciseToWorkoutResponse(id));
     }
 
@@ -79,7 +87,11 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
     {
         var userId = HttpContext.GetUserId();
         var id = await mediator.Send(new CreateWorkoutFromPlanDayCommand(
-            userId, request.PlanDayId, request.PerformedAt), ct);
+            request.Id,
+            userId,
+            request.PlanDayId,
+            request.PerformedAt,
+            request.ExerciseIds ?? []), ct);
         return Ok(new CreateWorkoutFromPlanDayResponse(id));
     }
 }

@@ -3,6 +3,7 @@ using MediatR;
 namespace GrowIt.Application.TrainingPlans.Commands.AddExerciseToPlanDay;
 
 public record AddExerciseToPlanDayCommand(
+    Guid Id,
     Guid UserId,
     Guid PlanDayId,
     Guid? ExerciseId,

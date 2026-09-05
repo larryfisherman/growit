@@ -42,7 +42,7 @@ public class TrainingPlansController(IMediator mediator) : ControllerBase
         [FromBody] CreateTrainingPlanRequest request, CancellationToken ct)
     {
         var id = await mediator.Send(
-            new CreateTrainingPlanCommand(HttpContext.GetUserId(), request.Name, request.Notes), ct);
+            new CreateTrainingPlanCommand(request.Id, HttpContext.GetUserId(), request.Name, request.Notes), ct);
         return Ok(new CreateTrainingPlanResponse(id));
     }
 
@@ -97,7 +97,7 @@ public class TrainingPlansController(IMediator mediator) : ControllerBase
         Guid planId, [FromBody] CreatePlanDayRequest request, CancellationToken ct)
     {
         var id = await mediator.Send(
-            new CreatePlanDayCommand(HttpContext.GetUserId(), planId, request.Name, request.Notes), ct);
+            new CreatePlanDayCommand(request.Id, HttpContext.GetUserId(), planId, request.Name, request.Notes), ct);
         return Ok(new CreatePlanDayResponse(id));
     }
 
@@ -143,6 +143,7 @@ public class TrainingPlansController(IMediator mediator) : ControllerBase
         Guid dayId, [FromBody] AddExerciseToPlanDayRequest request, CancellationToken ct)
     {
         var id = await mediator.Send(new AddExerciseToPlanDayCommand(
+            request.Id,
             HttpContext.GetUserId(),
             dayId,
             request.ExerciseId,
