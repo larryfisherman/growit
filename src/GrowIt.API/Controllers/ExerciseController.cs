@@ -1,6 +1,8 @@
 using GrowIt.API.Authorization;
 using GrowIt.Application.Exercises.Queries.GetExerciseList;
+using GrowIt.Application.Workouts.Commands.DeleteSet;
 using GrowIt.Application.Workouts.Commands.LogSet;
+using GrowIt.Application.Workouts.Commands.UpdateSet;
 using GrowIt.Contracts.Exercises.Requests;
 using GrowIt.Contracts.Exercises.Responses;
 using MediatR;
@@ -33,5 +35,22 @@ public class ExercisesController(IMediator mediator) : ControllerBase
             request.Reps,
             request.OrderIndex), ct);
         return Ok(new LogSetResponse(id));
+    }
+
+    [HttpPut("sets/{setId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdateSet(Guid setId, [FromBody] UpdateSetRequest request, CancellationToken ct)
+    {
+        await mediator.Send(
+            new UpdateSetCommand(HttpContext.GetUserId(), setId, request.WeightKg, request.Reps), ct);
+        return NoContent();
+    }
+
+    [HttpDelete("sets/{setId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteSet(Guid setId, CancellationToken ct)
+    {
+        await mediator.Send(new DeleteSetCommand(HttpContext.GetUserId(), setId), ct);
+        return NoContent();
     }
 }

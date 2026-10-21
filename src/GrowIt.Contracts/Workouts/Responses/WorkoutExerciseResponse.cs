@@ -9,4 +9,5 @@ public record WorkoutExerciseResponse(
     int? TargetReps,
     int? RestSeconds,
     int OrderIndex,
-    IReadOnlyList<SetResponse> Sets);
+    IReadOnlyList<SetResponse> Sets,
+    LastPerformanceResponse? LastPerformance);

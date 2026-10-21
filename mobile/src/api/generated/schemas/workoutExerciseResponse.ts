@@ -4,6 +4,7 @@
  * GrowIt.API | v1
  * OpenAPI spec version: 1.0.0
  */
+import type { LastPerformanceResponse } from './lastPerformanceResponse';
 import type { SetResponse } from './setResponse';
 
 export interface WorkoutExerciseResponse {
@@ -21,4 +22,5 @@ export interface WorkoutExerciseResponse {
   restSeconds: number | null;
   orderIndex: number;
   sets: SetResponse[];
+  lastPerformance: LastPerformanceResponse | null;
 }

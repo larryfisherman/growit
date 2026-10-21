@@ -4,8 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
-import { SocialButton } from '../../../theme/components/SocialButton';
-import { Divider } from '../../../theme/components/Divider';
 import { BackButton } from '../../../theme/components/BackButton';
 import { AuthStackParamList } from '../../../navigation/AuthStack';
 import { useSignUp } from '../hooks/useSignUp';
@@ -103,24 +101,6 @@ export const RegisterScreen = ({ navigation }: Props) => {
             onPress={handleSubmit}
             disabled={!canSubmit}
           />
-        </View>
-
-        <View className="gap-4 mt-8">
-          <Divider label="lub" />
-          <View className="gap-2">
-            <SocialButton
-              provider="apple"
-              onPress={() => {
-                /* TODO: expo-apple-authentication */
-              }}
-            />
-            <SocialButton
-              provider="google"
-              onPress={() => {
-                /* TODO: expo-auth-session google */
-              }}
-            />
-          </View>
         </View>
 
         {/* link to login */}

@@ -2,6 +2,8 @@ using GrowIt.API.Authorization;
 using GrowIt.Application.Workouts.Commands.AddExerciseToWorkout;
 using GrowIt.Application.Workouts.Commands.CreateWorkout;
 using GrowIt.Application.Workouts.Commands.CreateWorkoutFromPlanDay;
+using GrowIt.Application.Workouts.Commands.DeleteWorkout;
+using GrowIt.Application.Workouts.Commands.RemoveExerciseFromWorkout;
 using GrowIt.Application.Workouts.Queries.GetWorkoutByDate;
 using GrowIt.Application.Workouts.Queries.GetWorkoutById;
 using GrowIt.Application.Workouts.Queries.GetWorkoutHistory;
@@ -95,5 +97,21 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
             request.Name,
             request.Exercises), ct);
         return Ok(new CreateWorkoutFromPlanDayResponse(id));
+    }
+
+    [HttpDelete("{workoutId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteWorkout(Guid workoutId, CancellationToken ct)
+    {
+        await mediator.Send(new DeleteWorkoutCommand(HttpContext.GetUserId(), workoutId), ct);
+        return NoContent();
+    }
+
+    [HttpDelete("exercises/{workoutExerciseId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> RemoveExercise(Guid workoutExerciseId, CancellationToken ct)
+    {
+        await mediator.Send(new RemoveExerciseFromWorkoutCommand(HttpContext.GetUserId(), workoutExerciseId), ct);
+        return NoContent();
     }
 }

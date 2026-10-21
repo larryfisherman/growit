@@ -281,7 +281,62 @@ export function useGetApiWorkoutsWorkoutId<TData = Awaited<ReturnType<typeof get
 
 
 
-export const getApiWorkoutsUserIdByDate = (
+export const deleteApiWorkoutsWorkoutId = (
+    workoutId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/api/Workouts/${workoutId}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+export const getDeleteApiWorkoutsWorkoutIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiWorkoutsWorkoutId>>, TError,{workoutId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteApiWorkoutsWorkoutId>>, TError,{workoutId: string}, TContext> => {
+
+const mutationKey = ['deleteApiWorkoutsWorkoutId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiWorkoutsWorkoutId>>, {workoutId: string}> = (props) => {
+          const {workoutId} = props ?? {};
+
+          return  deleteApiWorkoutsWorkoutId(workoutId,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteApiWorkoutsWorkoutIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiWorkoutsWorkoutId>>>
+
+    export type DeleteApiWorkoutsWorkoutIdMutationError = unknown
+
+    export const useDeleteApiWorkoutsWorkoutId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiWorkoutsWorkoutId>>, TError,{workoutId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteApiWorkoutsWorkoutId>>,
+        TError,
+        {workoutId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteApiWorkoutsWorkoutIdMutationOptions(options), queryClient);
+    }
+    export const getApiWorkoutsUserIdByDate = (
     userId: string,
     params?: GetApiWorkoutsUserIdByDateParams,
  signal?: AbortSignal
@@ -583,4 +638,59 @@ const {mutation: mutationOptions} = options ?
         TContext
       > => {
       return useMutation(getPostApiWorkoutsFromPlanDayMutationOptions(options), queryClient);
+    }
+    export const deleteApiWorkoutsExercisesWorkoutExerciseId = (
+    workoutExerciseId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/api/Workouts/exercises/${workoutExerciseId}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+export const getDeleteApiWorkoutsExercisesWorkoutExerciseIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiWorkoutsExercisesWorkoutExerciseId>>, TError,{workoutExerciseId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteApiWorkoutsExercisesWorkoutExerciseId>>, TError,{workoutExerciseId: string}, TContext> => {
+
+const mutationKey = ['deleteApiWorkoutsExercisesWorkoutExerciseId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiWorkoutsExercisesWorkoutExerciseId>>, {workoutExerciseId: string}> = (props) => {
+          const {workoutExerciseId} = props ?? {};
+
+          return  deleteApiWorkoutsExercisesWorkoutExerciseId(workoutExerciseId,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteApiWorkoutsExercisesWorkoutExerciseIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiWorkoutsExercisesWorkoutExerciseId>>>
+
+    export type DeleteApiWorkoutsExercisesWorkoutExerciseIdMutationError = unknown
+
+    export const useDeleteApiWorkoutsExercisesWorkoutExerciseId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiWorkoutsExercisesWorkoutExerciseId>>, TError,{workoutExerciseId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteApiWorkoutsExercisesWorkoutExerciseId>>,
+        TError,
+        {workoutExerciseId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteApiWorkoutsExercisesWorkoutExerciseIdMutationOptions(options), queryClient);
     }

@@ -4,6 +4,7 @@
  * GrowIt.API | v1
  * OpenAPI spec version: 1.0.0
  */
+import type { LastPerformanceResponse } from './lastPerformanceResponse';
 
 export interface PlanDayExerciseResponse {
   id: string;
@@ -16,4 +17,5 @@ export interface PlanDayExerciseResponse {
   targetReps: number;
   restSeconds: number;
   orderIndex: number;
+  lastPerformance: LastPerformanceResponse | null;
 }

@@ -26,7 +26,8 @@ import type {
 import type {
   ExerciseResponse,
   LogSetRequest,
-  LogSetResponse
+  LogSetResponse,
+  UpdateSetRequest
 } from '../schemas';
 
 import { customInstance } from '../../axios';
@@ -177,4 +178,117 @@ const {mutation: mutationOptions} = options ?
         TContext
       > => {
       return useMutation(getPostApiExercisesWorkoutExerciseIdSetsMutationOptions(options), queryClient);
+    }
+    export const putApiExercisesSetsSetId = (
+    setId: string,
+    updateSetRequest: UpdateSetRequest,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/api/Exercises/sets/${setId}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: updateSetRequest, signal
+    },
+      );
+    }
+
+
+
+export const getPutApiExercisesSetsSetIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiExercisesSetsSetId>>, TError,{setId: string;data: UpdateSetRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof putApiExercisesSetsSetId>>, TError,{setId: string;data: UpdateSetRequest}, TContext> => {
+
+const mutationKey = ['putApiExercisesSetsSetId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putApiExercisesSetsSetId>>, {setId: string;data: UpdateSetRequest}> = (props) => {
+          const {setId,data} = props ?? {};
+
+          return  putApiExercisesSetsSetId(setId,data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutApiExercisesSetsSetIdMutationResult = NonNullable<Awaited<ReturnType<typeof putApiExercisesSetsSetId>>>
+    export type PutApiExercisesSetsSetIdMutationBody = UpdateSetRequest
+    export type PutApiExercisesSetsSetIdMutationError = unknown
+
+    export const usePutApiExercisesSetsSetId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putApiExercisesSetsSetId>>, TError,{setId: string;data: UpdateSetRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof putApiExercisesSetsSetId>>,
+        TError,
+        {setId: string;data: UpdateSetRequest},
+        TContext
+      > => {
+      return useMutation(getPutApiExercisesSetsSetIdMutationOptions(options), queryClient);
+    }
+    export const deleteApiExercisesSetsSetId = (
+    setId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/api/Exercises/sets/${setId}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+export const getDeleteApiExercisesSetsSetIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiExercisesSetsSetId>>, TError,{setId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteApiExercisesSetsSetId>>, TError,{setId: string}, TContext> => {
+
+const mutationKey = ['deleteApiExercisesSetsSetId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiExercisesSetsSetId>>, {setId: string}> = (props) => {
+          const {setId} = props ?? {};
+
+          return  deleteApiExercisesSetsSetId(setId,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteApiExercisesSetsSetIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiExercisesSetsSetId>>>
+
+    export type DeleteApiExercisesSetsSetIdMutationError = unknown
+
+    export const useDeleteApiExercisesSetsSetId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiExercisesSetsSetId>>, TError,{setId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteApiExercisesSetsSetId>>,
+        TError,
+        {setId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteApiExercisesSetsSetIdMutationOptions(options), queryClient);
     }

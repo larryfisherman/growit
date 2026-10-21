@@ -4,14 +4,15 @@ import { usePostApiExercisesWorkoutExerciseIdSets } from '../../../api/generated
 import { WorkoutExerciseResponse } from '../../../api/generated/schemas';
 import { newId } from '../../../offline/ids';
 import { tokens } from '../../../theme/tokens';
+import { nextSetPosition, parseSetInput } from '../setInput';
 
 type Props = { exercise: WorkoutExerciseResponse };
 
 /// Both fields start on whatever the last set was, because that is usually what the next
-/// set is - and with nothing logged yet they fall back to the plan's target. Most sets
-/// should be one tap.
+/// set is. With nothing logged yet they start on the first set from last time, and failing
+/// that on the plan's target. Most sets should be one tap.
 const startingValues = (exercise: WorkoutExerciseResponse) => {
-  const last = exercise.sets.at(-1);
+  const last = exercise.sets.at(-1) ?? exercise.lastPerformance?.sets[0];
   if (last) return { weight: String(last.weightKg), reps: String(last.reps) };
 
   return { weight: '', reps: exercise.targetReps != null ? String(exercise.targetReps) : '' };
@@ -23,22 +24,20 @@ export const SetLogger = ({ exercise }: Props) => {
   const [values, setValues] = useState(() => startingValues(exercise));
   const { mutate: logSet } = usePostApiExercisesWorkoutExerciseIdSets();
 
-  const weightKg = Number(values.weight.replace(',', '.'));
-  const reps = parseInt(values.reps, 10);
-  const canLog = values.weight.trim() !== '' && Number.isFinite(weightKg) && weightKg >= 0 && reps > 0;
+  const parsed = parseSetInput(values.weight, values.reps);
+  const canLog = parsed !== null;
 
   const log = () => {
-    if (!canLog) return;
+    if (!parsed) return;
 
     logSet({
       workoutExerciseId: exercise.id,
       data: {
         id: newId(),
-        weightKg,
-        reps,
+        ...parsed,
         // The position is the client's to decide: several sets can be logged with no
         // signal, and nothing on the server could work out what order they happened in.
-        orderIndex: exercise.sets.length,
+        orderIndex: nextSetPosition(exercise.sets),
       },
     });
   };

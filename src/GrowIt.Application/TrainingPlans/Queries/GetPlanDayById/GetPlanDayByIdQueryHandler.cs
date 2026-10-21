@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Workouts.Common;
 using GrowIt.Contracts.TrainingPlans.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ public class GetPlanDayByIdQueryHandler(IApplicationDbContext dbContext)
 {
     public async Task<PlanDayResponse?> Handle(GetPlanDayByIdQuery request, CancellationToken cancellationToken)
     {
-        return await dbContext.TrainingPlanDays
+        var day = await dbContext.TrainingPlanDays
             .Where(d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId)
             .Select(d => new PlanDayResponse(
                 d.Id,
@@ -31,8 +32,32 @@ public class GetPlanDayByIdQueryHandler(IApplicationDbContext dbContext)
                         e.TargetSets,
                         e.TargetReps,
                         e.RestSeconds,
-                        e.OrderIndex))
+                        e.OrderIndex,
+                        null))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (day is null) return null;
+
+        var exerciseIds = day.Exercises
+            .Where(e => e.ExerciseId != null)
+            .Select(e => e.ExerciseId!.Value)
+            .Distinct()
+            .ToList();
+
+        // No cut-off: a session started from this day copies the hint from here, often
+        // with no signal, so it has to be the latest one there is.
+        var last = await LastPerformanceLookup.FindAsync(
+            dbContext, request.UserId, exerciseIds, before: null, cancellationToken);
+
+        return day with
+        {
+            Exercises = day.Exercises
+                .Select(e => e with
+                {
+                    LastPerformance = e.ExerciseId is { } id ? last.GetValueOrDefault(id) : null,
+                })
+                .ToList(),
+        };
     }
 }

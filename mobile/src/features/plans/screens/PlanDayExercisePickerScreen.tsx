@@ -80,6 +80,7 @@ const toDayExercises = (picks: Pick[], day: PlanDayResponse): PlanDayExerciseRes
       targetReps: DEFAULT_TARGETS.reps,
       restSeconds: DEFAULT_TARGETS.restSeconds,
       orderIndex,
+      lastPerformance: null,
     };
   });
 

@@ -16,8 +16,8 @@ const day: PlanDayResponse = {
   orderIndex: 0,
   hasBeenPerformed: false,
   exercises: [
-    { id: 'row-1', exerciseId: BENCH_PRESS, exerciseName: 'Wyciskanie', category: null, targetSets: 5, targetReps: 5, restSeconds: 180, orderIndex: 0 },
-    { id: 'row-2', exerciseId: null, exerciseName: 'Moje ćwiczenie', category: null, targetSets: 3, targetReps: 12, restSeconds: 60, orderIndex: 1 },
+    { id: 'row-1', exerciseId: BENCH_PRESS, exerciseName: 'Wyciskanie', category: null, targetSets: 5, targetReps: 5, restSeconds: 180, orderIndex: 0, lastPerformance: null },
+    { id: 'row-2', exerciseId: null, exerciseName: 'Moje ćwiczenie', category: null, targetSets: 3, targetReps: 12, restSeconds: 60, orderIndex: 1, lastPerformance: null },
   ],
 };
 

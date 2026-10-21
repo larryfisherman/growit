@@ -21,6 +21,8 @@ type Action =
   | 'SignUp'
   | 'ConfirmSignUp'
   | 'ResendConfirmationCode'
+  | 'ForgotPassword'
+  | 'ConfirmForgotPassword'
   | 'InitiateAuth'
   | 'RevokeToken';
 
@@ -166,6 +168,20 @@ export const confirmSignUp = (email: string, code: string): Promise<void> =>
 
 export const resendConfirmationCode = (email: string): Promise<void> =>
   call('ResendConfirmationCode', { ClientId: clientId, Username: email }).then(() => undefined);
+
+/// Sends a reset code to the account's email. With user-existence errors switched off in
+/// the pool, an unknown address succeeds too - which is the point: the screen must not
+/// reveal who has an account.
+export const requestPasswordReset = (email: string): Promise<void> =>
+  call('ForgotPassword', { ClientId: clientId, Username: email }).then(() => undefined);
+
+export const confirmPasswordReset = (email: string, code: string, newPassword: string): Promise<void> =>
+  call('ConfirmForgotPassword', {
+    ClientId: clientId,
+    Username: email,
+    ConfirmationCode: code,
+    Password: newPassword,
+  }).then(() => undefined);
 
 export const signIn = async (email: string, password: string): Promise<Session> => {
   const { AuthenticationResult } = await call<{ AuthenticationResult: AuthenticationResult }>(

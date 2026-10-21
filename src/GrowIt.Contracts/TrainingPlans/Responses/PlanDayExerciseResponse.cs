@@ -1,3 +1,5 @@
+using GrowIt.Contracts.Workouts.Responses;
+
 namespace GrowIt.Contracts.TrainingPlans.Responses;
 
 public record PlanDayExerciseResponse(
@@ -8,4 +10,5 @@ public record PlanDayExerciseResponse(
     int TargetSets,
     int TargetReps,
     int RestSeconds,
-    int OrderIndex);
+    int OrderIndex,
+    LastPerformanceResponse? LastPerformance);
