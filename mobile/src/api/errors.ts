@@ -27,6 +27,27 @@ export const isPermanentError = (error: unknown): boolean => {
   return status >= 400 && status < 500;
 };
 
+/// The server is not there to judge the request: a gateway with nothing behind it, a
+/// deploy, a container restarting. That is the backend being away, not disagreeing, so
+/// for the queue it is the same as a link that went down.
+export const isServerUnavailable = (error: unknown): boolean => {
+  const status = statusOf(error);
+  return status === 502 || status === 503 || status === 504;
+};
+
+/// The token was too old to send and Cognito could not be reached to swap it. The API
+/// never got to judge the write - the 401 it answered says nothing about the write, only
+/// that we had no valid token yet - so the write waits for one rather than being dropped.
+export class SessionUnavailableError extends Error {
+  constructor() {
+    super('The session could not be refreshed; the request was not authorised.');
+    this.name = 'SessionUnavailableError';
+  }
+}
+
+export const isSessionUnavailable = (error: unknown): boolean =>
+  error instanceof SessionUnavailableError;
+
 /// Someone else's row, or ours arriving twice. Worth telling apart because it is the
 /// one permanent failure the offline queue can produce by itself.
 export const isConflict = (error: unknown): boolean => statusOf(error) === 409;

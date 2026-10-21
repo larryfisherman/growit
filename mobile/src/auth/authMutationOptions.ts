@@ -1,4 +1,4 @@
-import { UseMutationOptions } from '@tanstack/react-query';
+import type { UseMutationOptions } from '@tanstack/react-query';
 
 /// Signing in is not a write that can wait.
 ///

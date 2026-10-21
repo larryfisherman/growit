@@ -11,11 +11,12 @@ public class CreateTrainingPlanCommandHandler(IApplicationDbContext dbContext)
 {
     public async Task<Guid> Handle(CreateTrainingPlanCommand request, CancellationToken cancellationToken)
     {
+        var existing = dbContext.TrainingPlans
+            .Where(p => p.Id == request.Id)
+            .Select(p => new ExistingRow(p.UserId, p.UserId));
+
         if (await IdempotencyGuard.AlreadyCreatedAsync(
-                dbContext.TrainingPlans
-                    .Where(p => p.Id == request.Id)
-                    .Select(p => new ExistingRow(p.UserId, p.UserId)),
-                request.Id, request.UserId, request.UserId, cancellationToken))
+                existing, request.Id, request.UserId, request.UserId, cancellationToken))
         {
             return request.Id;
         }
@@ -36,7 +37,8 @@ public class CreateTrainingPlanCommandHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.TrainingPlans.Add(plan);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await IdempotencyGuard.SaveCreateAsync(
+            dbContext, existing, request.Id, request.UserId, request.UserId, cancellationToken);
 
         return plan.Id;
     }

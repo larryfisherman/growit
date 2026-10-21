@@ -1,6 +1,12 @@
 // Explicit extension: this module is loaded both by Metro and by node --test, and
 // Node's ESM resolution will not guess it.
-import { isPermanentError, isTransportError } from '../api/errors.ts';
+import {
+  isPermanentError,
+  isServerUnavailable,
+  isSessionUnavailable,
+  isTransportError,
+} from '../api/errors.ts';
+import { isRetiredClientError } from './retiredClient.ts';
 
 /// How many times a write is retried after its first attempt, split by what went wrong.
 ///
@@ -18,7 +24,15 @@ export const MAX_SERVER_ERROR_RETRIES = 3;
 /// TanStack calls this before counting the failure, so failureCount is 0 on the first
 /// one. `failureCount < n` therefore means n retries on top of the original attempt.
 export const shouldRetryWrite = (failureCount: number, error: unknown): boolean => {
+  // The client was torn down (sign-out, session expiry). Its queue is on disk and goes
+  // out with the next session of the same user; this copy must not try again.
+  if (isRetiredClientError(error)) return false;
+  // Waiting for a token is not a failure of the write, so it has no budget to run out
+  // of. The back-off is capped, so this costs one cheap attempt every half minute.
+  if (isSessionUnavailable(error)) return true;
   if (isPermanentError(error)) return false;
-  if (isTransportError(error)) return failureCount < MAX_TRANSPORT_RETRIES;
+  if (isTransportError(error) || isServerUnavailable(error)) {
+    return failureCount < MAX_TRANSPORT_RETRIES;
+  }
   return failureCount < MAX_SERVER_ERROR_RETRIES;
 };

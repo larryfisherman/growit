@@ -1,41 +1,10 @@
 import { ReactNode, useEffect, useMemo } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Query, QueryClientProvider } from '@tanstack/react-query';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider, persistQueryClientSave } from '@tanstack/react-query-persist-client';
 import { useAuth } from '../auth/AuthContext';
 import { setQueueInspector } from './pendingWrites';
+import { persistOptionsFor } from './persistence';
 import { createQueryClient } from './queryClient';
-
-/// Bump when the shape of what we store changes, so old payloads are discarded rather
-/// than hydrated into a client that no longer understands them.
-const CACHE_VERSION = 'v1';
-
-/// Everything the app reads from the API, and nothing else. The exercise library is in
-/// here on purpose: without it a session opened offline after a restart would show rows
-/// with no names.
-const PERSISTED_PREFIXES = ['/api/training-plans', '/api/Workouts', '/api/Exercises'];
-
-const persistOptionsFor = (userId: string) => ({
-  // Keyed by user. Query keys for plans carry no user id - the server takes it from the
-  // token - so one shared store would hand the next account the previous one's plans.
-  persister: createAsyncStoragePersister({
-    storage: AsyncStorage,
-    key: `growit.rq.${userId}`,
-    throttleTime: 1000,
-  }),
-  // Not the default 24 hours. That clock governs the write queue as much as the cache,
-  // and a day offline is a long weekend, not a reason to throw away someone's training.
-  maxAge: Infinity,
-  buster: CACHE_VERSION,
-  dehydrateOptions: {
-    shouldDehydrateQuery: (query: Query) => {
-      if (query.state.status !== 'success') return false;
-      const [first] = query.queryKey;
-      return typeof first === 'string' && PERSISTED_PREFIXES.some((p) => first.startsWith(p));
-    },
-  },
-});
 
 /// Signed in: a client of this user's own, restored from disk and saved back to it.
 ///

@@ -1,18 +1,39 @@
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { dropSupersededWrites } from './coalesce';
 import { recordLostWrite } from './failedWrites';
+import { isRetiredClientError } from './retiredClient';
 import { shouldRetryWrite } from './retryPolicy';
 import { registerMutationDefaults } from './mutationDefaults';
+import { WRITE_SCOPE } from './writeScope';
 
-/// Every write in the app shares one scope, which is what makes the mutation cache run
-/// them strictly in order: canRun() only lets the first pending mutation of a scope
-/// through, and a paused one still counts as pending. So a queue drained after a flight
-/// lands create-then-child rather than all at once, and nothing arrives before the row
-/// it depends on.
+/// A client that knows when it has been torn down.
 ///
-/// Splitting this per aggregate was tempting and wrong: "add a plan day offline, then
-/// start a workout from it" crosses aggregates, and separate scopes would race.
-const WRITE_SCOPE = { id: 'growit-writes' };
+/// QueryClientProvider mounts the client and unmounts it when it leaves the tree - which
+/// for a per-user client means its user signed out or their session expired. TanStack
+/// stops listening for the network at that point, but anything already moving in the
+/// write queue keeps going: each write that finishes starts the next. Being retired is
+/// what lets the registered mutationFns refuse to send. Counted rather than flipped, so
+/// StrictMode's mount-unmount-mount in development leaves the client usable.
+class AppQueryClient extends QueryClient {
+  #mounts = 0;
+  #retired = false;
+
+  get isRetired() {
+    return this.#retired;
+  }
+
+  mount(): void {
+    this.#mounts += 1;
+    this.#retired = false;
+    super.mount();
+  }
+
+  unmount(): void {
+    this.#mounts -= 1;
+    if (this.#mounts <= 0) this.#retired = true;
+    super.unmount();
+  }
+}
 
 export const createQueryClient = () => {
   const supersedable = new Set<string>();
@@ -27,10 +48,18 @@ export const createQueryClient = () => {
     // Reached only once a write has stopped being retried, so this is where a write is
     // finally lost. The optimistic patch it applied is still in the cache and offline
     // nothing will refetch it away, so someone has to say so out loud.
-    onError: () => recordLostWrite(),
+    //
+    // Only for writes in the queue, though. Sign-in and sign-up run on this client too,
+    // and a wrong password is the screen's to explain, not a lost change. Neither is a
+    // write a retired client declined to send: it is safe on disk.
+    onError: (error, _variables, _context, mutation) => {
+      if (mutation.options.scope?.id !== WRITE_SCOPE.id) return;
+      if (isRetiredClientError(error)) return;
+      recordLostWrite();
+    },
   });
 
-  const queryClient = new QueryClient({
+  const queryClient = new AppQueryClient({
     mutationCache,
     defaultOptions: {
       queries: {
@@ -56,7 +85,7 @@ export const createQueryClient = () => {
   // Registered here rather than by the caller because the two cannot be separated: once
   // the queue is persisted, hydration rebuilds mutations through defaultMutationOptions,
   // and a key with no registered mutationFn comes back unable to run.
-  registerMutationDefaults(queryClient, supersedable);
+  registerMutationDefaults(queryClient, supersedable, () => queryClient.isRetired);
 
   return queryClient;
 };

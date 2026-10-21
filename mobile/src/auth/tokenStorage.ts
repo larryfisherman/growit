@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { Session } from './cognito';
+import type { Session } from './cognito';
 
 const ACCESS_TOKEN_KEY = 'growit.accessToken';
 const ID_TOKEN_KEY = 'growit.idToken';

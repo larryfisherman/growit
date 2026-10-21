@@ -1,4 +1,5 @@
-import { Query, QueryClient } from '@tanstack/react-query';
+import type { Query, QueryClient } from '@tanstack/react-query';
+import { WRITE_SCOPE } from './writeScope';
 
 /// Orval names query keys after the URL, so everything a write can disturb already
 /// shares a prefix. Invalidating a whole family is blunter than listing exact keys, but
@@ -29,6 +30,17 @@ const touching = (families: readonly QueryFamily[]) => (query: Query) => {
 ///     undoes a failed write and costs one request.
 ///   - Nothing closes over component state. A resumed mutation has no component behind
 ///     it; everything has to come from the variables or the cache.
+/// Families whose refetch is owed once the queue empties, per client.
+const owedRefetches = new WeakMap<QueryClient, Set<QueryFamily>>();
+
+/// Writes still waiting in the queue, the one settling right now included - its status
+/// only flips after its callbacks have run.
+const queuedWrites = (queryClient: QueryClient) =>
+  queryClient.isMutating({
+    predicate: (mutation) =>
+      mutation.options.scope?.id === WRITE_SCOPE.id && mutation.state.status === 'pending',
+  });
+
 export const optimistic = <TVariables>(
   queryClient: QueryClient,
   families: readonly QueryFamily[],
@@ -54,8 +66,24 @@ export const optimistic = <TVariables>(
     },
     // Fires on success and on final failure, but never while a write sits queued
     // offline - so the optimistic view survives exactly as long as it should.
+    //
+    // Not while other writes are still queued behind this one, though. The refetch
+    // would bring back what the server holds so far, which does not yet include them,
+    // and their optimistic rows would vanish from the screen until they land - a day
+    // disappearing and reappearing while a queue drains after a flight. The refetch is
+    // owed instead, and paid by whichever write empties the queue.
     onSettled: () => {
-      void queryClient.invalidateQueries({ predicate });
+      const owed = owedRefetches.get(queryClient) ?? new Set<QueryFamily>();
+      families.forEach((family) => owed.add(family));
+
+      if (queuedWrites(queryClient) > 1) {
+        owedRefetches.set(queryClient, owed);
+        return;
+      }
+
+      owedRefetches.delete(queryClient);
+      const due = touching([...owed]);
+      void queryClient.invalidateQueries({ predicate: due });
     },
   };
 };

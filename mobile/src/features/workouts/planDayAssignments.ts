@@ -1,25 +1,45 @@
-import { QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { getGetApiTrainingPlansDaysDayIdQueryKey } from '../../api/generated/training-plans/training-plans';
-import { PlanDayResponse, WorkoutExerciseIdAssignment } from '../../api/generated/schemas';
+import type {
+  CreateWorkoutFromPlanDayRequest,
+  PlanDayResponse,
+} from '../../api/generated/schemas';
 import { newId } from '../../offline/ids';
 
-/// Names the ids the copied exercises will get when a session is started from a plan day.
+type SessionCopy = Pick<CreateWorkoutFromPlanDayRequest, 'exerciseIds' | 'name' | 'exercises'>;
+
+/// The session as this phone starts it from a plan day: the ids its exercises get, and
+/// the copy itself.
 ///
-/// Sending them up front is what lets the session be opened and written to before the
-/// server has answered - the client and the server end up agreeing on the same ids rather
-/// than the client waiting to be told. Returns null when the day was never opened, in
-/// which case the server names them and they arrive with the refetch.
-export const planDayExerciseAssignments = (
-  queryClient: QueryClient,
-  planDayId: string,
-): WorkoutExerciseIdAssignment[] | null => {
+/// The ids are what let the session be opened and written to before the server has
+/// answered. The copy is what makes the server keep exactly that session - with those
+/// ids - even if the day was edited or deleted on another device before the write
+/// landed; without it, sets logged offline could point at rows the server never made.
+///
+/// Empty when the day was never opened: then there is nothing to copy from, and the
+/// server makes the copy and names the rows itself.
+export const planDaySessionCopy = (queryClient: QueryClient, planDayId: string): SessionCopy => {
   const day = queryClient.getQueryData<PlanDayResponse>(
     getGetApiTrainingPlansDaysDayIdQueryKey(planDayId),
   );
-  if (!day) return null;
+  if (!day) return { exerciseIds: null, name: null, exercises: null };
 
-  return day.exercises.map((exercise) => ({
-    planDayExerciseId: exercise.id,
-    workoutExerciseId: newId(),
-  }));
+  const copied = day.exercises.map((exercise) => ({ row: exercise, workoutExerciseId: newId() }));
+
+  return {
+    exerciseIds: copied.map(({ row, workoutExerciseId }) => ({
+      planDayExerciseId: row.id,
+      workoutExerciseId,
+    })),
+    name: day.name,
+    exercises: copied.map(({ row, workoutExerciseId }) => ({
+      workoutExerciseId,
+      exerciseId: row.exerciseId,
+      customExerciseName: row.exerciseId ? null : row.exerciseName,
+      targetSets: row.targetSets,
+      targetReps: row.targetReps,
+      restSeconds: row.restSeconds,
+      orderIndex: row.orderIndex,
+    })),
+  };
 };

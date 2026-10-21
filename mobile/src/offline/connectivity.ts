@@ -2,12 +2,12 @@
 /// Every decision about what the state should be lives in connectionState.ts.
 
 import { AppState } from 'react-native';
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
 import { focusManager, onlineManager } from '@tanstack/react-query';
 import { baseURL, healthUrl } from '../api/baseUrl';
 import {
-  ConnectionEvent,
-  ConnectionStatus,
+  type ConnectionEvent,
+  type ConnectionStatus,
   initialConnectionState,
   reduceConnection,
   shouldProbe,

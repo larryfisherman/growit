@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 import { isCognitoRejection, refreshSession } from '../auth/cognito';
 import { getAccessToken, getRefreshToken, saveSession } from '../auth/tokenStorage';
 import { notifySessionExpired } from '../auth/sessionExpiry';
@@ -10,6 +10,7 @@ import {
   subscribeToConnection,
 } from '../offline/connectivity';
 import { baseURL } from './baseUrl';
+import { isServerUnavailable, SessionUnavailableError } from './errors';
 
 /// Without a ceiling a request on a dead network hangs for around a minute, which is
 /// long enough that the circuit breaker never sees enough failures to trip.
@@ -134,8 +135,10 @@ AXIOS_INSTANCE.interceptors.response.use(
 
     // A status code means the network carried the request and the server disagreed
     // with us - that says nothing about connectivity. Only a request that never
-    // landed counts against the circuit breaker.
-    if (error.response) reportRequestSettled();
+    // landed counts against the circuit breaker - and so does a gateway answering for a
+    // backend that is not there, which is the API being unreachable in every way that
+    // matters to the queue.
+    if (error.response && !isServerUnavailable(error)) reportRequestSettled();
     else reportTransportFailure();
 
     if (error.response?.status !== 401 || config.retried) {
@@ -152,8 +155,10 @@ AXIOS_INSTANCE.interceptors.response.use(
     }
 
     // No verdict came back. Keep the session and let the caller try again later -
-    // signing out here would discard everything not yet synced.
-    if (result.status === 'unavailable') return Promise.reject(error);
+    // signing out here would discard everything not yet synced. Not as the 401 itself,
+    // though: that reads as the server refusing the write, and a refused write is
+    // dropped. It was our token, not the write, that was turned away.
+    if (result.status === 'unavailable') return Promise.reject(new SessionUnavailableError());
 
     config.headers.Authorization = `Bearer ${result.token}`;
     return AXIOS_INSTANCE(config);

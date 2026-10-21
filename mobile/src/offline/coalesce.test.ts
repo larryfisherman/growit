@@ -77,6 +77,31 @@ describe('dropSupersededWrites', () => {
     assert.deepEqual(queue, [otherPlan, issued]);
   });
 
+  test('keeps an older copy when another write stands between it and the new one', () => {
+    // The write in the middle may depend on what the older copy does - an edit to a row
+    // that a day's exercise list creates. Dropping the older copy would send the middle
+    // write first.
+    const older = write(RENAME_PLAN, { planId: 'p1', data: { name: 'A' } });
+    const between = write(['putApiTrainingPlansPlanIdActive'], { planId: 'p1' });
+    const issued = write(RENAME_PLAN, { planId: 'p1', data: { name: 'B' } });
+    const { cache, queue } = fakeCache([older, between, issued]);
+
+    run(cache, issued);
+
+    assert.deepEqual(queue, [older, between, issued]);
+  });
+
+  test('drops the whole run of copies directly in front of the new write', () => {
+    const first = write(RENAME_PLAN, { planId: 'p1', data: { name: 'A' } });
+    const second = write(RENAME_PLAN, { planId: 'p1', data: { name: 'B' } });
+    const issued = write(RENAME_PLAN, { planId: 'p1', data: { name: 'C' } });
+    const { cache, queue } = fakeCache([first, second, issued]);
+
+    run(cache, issued);
+
+    assert.deepEqual(queue, [issued]);
+  });
+
   test('leaves a write that is already on its way out', () => {
     const inFlight = write(RENAME_PLAN, { planId: 'p1', data: { name: 'A' } }, { paused: false });
     const issued = write(RENAME_PLAN, { planId: 'p1', data: { name: 'B' } });

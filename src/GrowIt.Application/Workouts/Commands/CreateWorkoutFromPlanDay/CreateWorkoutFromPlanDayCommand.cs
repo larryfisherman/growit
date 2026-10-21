@@ -8,4 +8,6 @@ public record CreateWorkoutFromPlanDayCommand(
     Guid UserId,
     Guid PlanDayId,
     DateOnly PerformedAt,
-    IReadOnlyList<WorkoutExerciseIdAssignment> ExerciseIds) : IRequest<Guid>;
+    IReadOnlyList<WorkoutExerciseIdAssignment> ExerciseIds,
+    string? Name = null,
+    IReadOnlyList<WorkoutExerciseSnapshot>? Exercises = null) : IRequest<Guid>;

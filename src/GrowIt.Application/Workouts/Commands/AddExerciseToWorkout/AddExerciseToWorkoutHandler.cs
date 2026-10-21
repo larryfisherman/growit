@@ -12,11 +12,12 @@ public class AddExerciseToWorkoutHandler(IApplicationDbContext dbContext)
 {
     public async Task<Guid> Handle(AddExerciseToWorkoutCommand request, CancellationToken cancellationToken)
     {
+        var existing = dbContext.WorkoutExercises
+            .Where(e => e.Id == request.Id)
+            .Select(e => new ExistingRow(e.Workout.UserId, e.WorkoutId));
+
         if (await IdempotencyGuard.AlreadyCreatedAsync(
-                dbContext.WorkoutExercises
-                    .Where(e => e.Id == request.Id)
-                    .Select(e => new ExistingRow(e.Workout.UserId, e.WorkoutId)),
-                request.Id, request.UserId, request.WorkoutId, cancellationToken))
+                existing, request.Id, request.UserId, request.WorkoutId, cancellationToken))
         {
             return request.Id;
         }
@@ -45,7 +46,8 @@ public class AddExerciseToWorkoutHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.WorkoutExercises.Add(workoutExercise);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await IdempotencyGuard.SaveCreateAsync(
+            dbContext, existing, request.Id, request.UserId, request.WorkoutId, cancellationToken);
 
         return workoutExercise.Id;
     }

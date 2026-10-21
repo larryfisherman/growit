@@ -34,6 +34,8 @@ public class SetPlanDayExercisesCommandHandler(IApplicationDbContext dbContext)
         var originalRows = day.Exercises.ToList();
         var byRowId = originalRows.ToDictionary(e => e.Id);
         var claimed = new HashSet<Guid>();
+        // Existing rows giving way to a client-named row for the same exercise.
+        var replaced = new HashSet<Guid>();
         var resolved = new TrainingPlanDayExercise?[request.Selections.Count];
 
         // Ids the client minted for rows it is adding. Kept apart from the reuse pass so
@@ -82,34 +84,42 @@ public class SetPlanDayExercisesCommandHandler(IApplicationDbContext dbContext)
 
             var selection = request.Selections[index];
 
-            // Reuse is tried even when the caller named an id of its own, and that is
-            // deliberate. A second device working from a stale copy of the day will mint a
-            // fresh id for an exercise the day already holds; honouring that id would drop
-            // the existing row and rebuild it on the defaults, losing whatever the user had
-            // tuned. Keeping the row is worth more than keeping the id - and the caller
-            // reconciles on the next read, which resolves by exercise rather than by id.
+            // The day may already hold this exercise under another row: a phone working
+            // from a stale copy of the day, or one where the user removed the exercise and
+            // added it back offline, mints a fresh id for it.
             var reusable = originalRows.FirstOrDefault(e =>
                 !claimed.Contains(e.Id)
+                && !replaced.Contains(e.Id)
                 && (selection.ExerciseId.HasValue
                     ? e.ExerciseId == selection.ExerciseId
                     : e.ExerciseId is null && e.CustomExerciseName == selection.CustomExerciseName));
 
-            if (reusable is not null)
+            // No id of the caller's own: the existing row simply stays, ids and all.
+            if (reusable is not null && idsToCreateWith[index] is null)
             {
                 claimed.Add(reusable.Id);
                 resolved[index] = reusable;
                 continue;
             }
 
+            // Left unclaimed, so it is dropped below; remembered, so no later entry
+            // reuses it.
+            if (reusable is not null) replaced.Add(reusable.Id);
+
+            // Otherwise the caller's id wins, because writes queued behind this one -
+            // tuning the targets, starting a session from the day - already use it, and
+            // answering them with a row they cannot find would drop them. What the user
+            // tuned on the old row is carried over rather than reset to the defaults; the
+            // old row itself goes with the rest of the unclaimed ones below.
             var created = new TrainingPlanDayExercise
             {
                 Id = idsToCreateWith[index] ?? Guid.CreateVersion7(),
                 PlanDayId = day.Id,
                 ExerciseId = selection.ExerciseId,
                 CustomExerciseName = selection.CustomExerciseName,
-                TargetSets = DefaultTargetSets,
-                TargetReps = DefaultTargetReps,
-                RestSeconds = DefaultRestSeconds
+                TargetSets = reusable?.TargetSets ?? DefaultTargetSets,
+                TargetReps = reusable?.TargetReps ?? DefaultTargetReps,
+                RestSeconds = reusable?.RestSeconds ?? DefaultRestSeconds
             };
 
             dbContext.TrainingPlanDayExercises.Add(created);

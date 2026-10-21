@@ -47,6 +47,10 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Development");
 
+        // The app reads its connection string while services are registered, before any
+        // configuration callback of ours would run, so it has to arrive as a host setting.
+        builder.UseSetting("ConnectionStrings:DefaultConnection", TestDatabase.ConnectionString);
+
         builder.ConfigureTestServices(services =>
         {
             services

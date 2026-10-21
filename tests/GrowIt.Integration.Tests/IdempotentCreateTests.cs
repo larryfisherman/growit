@@ -13,9 +13,6 @@ namespace GrowIt.Integration.Tests;
 /// anything, and an id must never let one user write into another's rows.
 public class IdempotentCreateTests : IAsyncLifetime
 {
-    private const string ConnectionString =
-        "Host=localhost;Port=5432;Database=growit;Username=growit;Password=localdev";
-
     private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
 
     private readonly Guid _userId = Guid.CreateVersion7();
@@ -24,10 +21,9 @@ public class IdempotentCreateTests : IAsyncLifetime
     private readonly List<Guid> _planIds = [];
     private readonly List<Guid> _workoutIds = [];
 
-    private static GrowItDbContext NewContext() =>
-        new(new DbContextOptionsBuilder<GrowItDbContext>().UseNpgsql(ConnectionString).Options);
+    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public Task InitializeAsync() => TestDatabase.EnsureMigratedAsync();
 
     public async Task DisposeAsync()
     {

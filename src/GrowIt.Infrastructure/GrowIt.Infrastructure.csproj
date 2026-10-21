@@ -12,6 +12,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <!-- Pinned so it matches EF Core: Npgsql pulls in 9.0.1, and the two versions
+         conflict in every project that references this one. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.4" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -13,11 +13,12 @@ public class CreatePlanDayCommandHandler(IApplicationDbContext dbContext)
     public async Task<Guid> Handle(CreatePlanDayCommand request, CancellationToken cancellationToken)
     {
         // Before anything else: a retry must not push the order along a second time.
+        var existing = dbContext.TrainingPlanDays
+            .Where(d => d.Id == request.Id)
+            .Select(d => new ExistingRow(d.Plan.UserId, d.PlanId));
+
         if (await IdempotencyGuard.AlreadyCreatedAsync(
-                dbContext.TrainingPlanDays
-                    .Where(d => d.Id == request.Id)
-                    .Select(d => new ExistingRow(d.Plan.UserId, d.PlanId)),
-                request.Id, request.UserId, request.PlanId, cancellationToken))
+                existing, request.Id, request.UserId, request.PlanId, cancellationToken))
         {
             return request.Id;
         }
@@ -46,7 +47,8 @@ public class CreatePlanDayCommandHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.TrainingPlanDays.Add(day);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await IdempotencyGuard.SaveCreateAsync(
+            dbContext, existing, request.Id, request.UserId, request.PlanId, cancellationToken);
 
         return day.Id;
     }

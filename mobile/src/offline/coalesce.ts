@@ -20,6 +20,13 @@ const targetOf = (variables: unknown) => {
 /// Creates and logged sets are deliberately left out: each one is a fact of its own, and
 /// dropping the earlier ones would lose what the user did.
 ///
+/// Only the run of copies sitting directly in front of the new write is dropped. The new
+/// write goes out from the back of the queue, so dropping an older copy moves its effect
+/// to the back too - harmless when nothing stands in between, wrong when something does.
+/// A day's exercise list creates rows; an edit to one of those rows queued after it must
+/// still reach the server after the list, not before it. So the first unrelated write met
+/// walking backwards ends the run, and everything older stays where it is.
+///
 /// Hooked to the cache rather than to individual mutations because it needs to know which
 /// write is the new one. By the time onMutate runs, that write is already sitting in the
 /// cache marked paused, indistinguishable from the ones it supersedes - and only the
@@ -33,13 +40,28 @@ export const dropSupersededWrites = (
   if (!supersedable.has(key)) return;
 
   const target = targetOf(issued.state.variables);
+  const scope = issued.options.scope?.id;
 
-  for (const queued of cache.getAll()) {
-    if (queued === issued) continue;
-    // Anything already in flight is past the point of being called off.
-    if (!queued.state.isPaused) continue;
-    if (keyOf(queued.options.mutationKey) !== key) continue;
-    if (targetOf(queued.state.variables) !== target) continue;
+  // Writes still waiting their turn in the same queue as this one. Settled writes stay
+  // in the cache for a while but are no longer in the queue, so they separate nothing.
+  const all = cache.getAll();
+  const inQueue = (mutation: (typeof all)[number]) =>
+    mutation.options.scope?.id === scope &&
+    mutation.state.status !== 'success' &&
+    mutation.state.status !== 'error';
+
+  const position = all.findIndex((mutation) => mutation === issued);
+
+  for (let index = position - 1; index >= 0; index--) {
+    const queued = all[index];
+    if (!inQueue(queued)) continue;
+
+    const sameTarget =
+      keyOf(queued.options.mutationKey) === key && targetOf(queued.state.variables) === target;
+
+    // Anything already in flight is past the point of being called off - and, like a
+    // different write, it has to stay ahead of the new one.
+    if (!sameTarget || !queued.state.isPaused) return;
 
     cache.remove(queued);
   }

@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Exceptions;
+using GrowIt.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Application.Common.Idempotency;
@@ -52,5 +53,31 @@ public static class IdempotencyGuard
         }
 
         return true;
+    }
+
+    /// Saves a create, and reads losing a race against our own retry as the retry it is.
+    ///
+    /// The check above runs before the insert, so two copies of one write arriving
+    /// together - a client retrying after a timeout while the original is still being
+    /// processed - can both pass it, and one then hits the unique key. That one used to
+    /// come back as 409, and the client reported as lost a write that had landed. If the
+    /// row that beat us is ours, in the same place, the write is done; anything else is
+    /// still a conflict.
+    public static async Task SaveCreateAsync(
+        IApplicationDbContext dbContext,
+        IQueryable<ExistingRow> rows,
+        Guid id,
+        Guid userId,
+        Guid expectedParentId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (ConflictException)
+        {
+            if (!await AlreadyCreatedAsync(rows, id, userId, expectedParentId, cancellationToken)) throw;
+        }
     }
 }

@@ -10,9 +10,6 @@ namespace GrowIt.Integration.Tests;
 /// Postgres from docker-compose. Each test builds and tears down its own plan.
 public class SetPlanDayExercisesTests : IAsyncLifetime
 {
-    private const string ConnectionString =
-        "Host=localhost;Port=5432;Database=growit;Username=growit;Password=localdev";
-
     private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
     private static readonly Guid DumbbellPress = Guid.Parse("a1b2c3d4-0002-0000-0000-000000000000");
     private static readonly Guid Deadlift = Guid.Parse("a1b2c3d4-0004-0000-0000-000000000000");
@@ -24,11 +21,12 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     private Guid _benchRowId;
     private Guid _dumbbellRowId;
 
-    private static GrowItDbContext NewContext() =>
-        new(new DbContextOptionsBuilder<GrowItDbContext>().UseNpgsql(ConnectionString).Options);
+    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
 
     public async Task InitializeAsync()
     {
+        await TestDatabase.EnsureMigratedAsync();
+
         await using var db = NewContext();
 
         _planId = Guid.NewGuid();
@@ -257,20 +255,26 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_fresh_id_for_an_exercise_the_day_already_has_keeps_the_tuned_row()
+    public async Task A_fresh_id_for_an_exercise_the_day_already_has_is_honoured_and_keeps_the_tuning()
     {
-        // What a second device does when its copy of the day is out of date: it mints an id
-        // for an exercise the day already holds. Honouring that id would drop the bench row
-        // and rebuild it on the defaults, losing the 5x5x180 the user set on another phone.
+        // What a phone sends when its copy of the day is out of date, or when the user
+        // removed bench press and added it back offline: a new id for an exercise the day
+        // already holds. Writes queued behind this one already use that id - editing the
+        // targets, starting a session - so it has to be the id the row ends up with. The
+        // 5x5x180 tuned on the old row must not be lost on the way.
+        var freshId = Guid.CreateVersion7();
+
         await RunAsync(
-            new PlanDayExerciseSelectionInput(Guid.CreateVersion7(), BenchPress, null),
+            new PlanDayExerciseSelectionInput(freshId, BenchPress, null),
             new PlanDayExerciseSelectionInput(_dumbbellRowId, null, null));
 
         var rows = await ReadDayAsync();
 
         Assert.Equal(2, rows.Count);
-        Assert.Equal(_benchRowId, rows[0].Id);
+        Assert.Equal(freshId, rows[0].Id);
+        Assert.Equal(BenchPress, rows[0].ExerciseId);
         Assert.Equal(5, rows[0].TargetSets);
+        Assert.Equal(5, rows[0].TargetReps);
         Assert.Equal(180, rows[0].RestSeconds);
     }
 

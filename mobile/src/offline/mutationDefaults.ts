@@ -1,4 +1,4 @@
-import { QueryClient, UseMutationOptions } from '@tanstack/react-query';
+import { QueryClient, type UseMutationOptions } from '@tanstack/react-query';
 import {
   getGetApiExercisesQueryKey,
   getPostApiExercisesWorkoutExerciseIdSetsMutationOptions,
@@ -26,7 +26,7 @@ import {
   getPostApiWorkoutsMutationOptions,
   getPostApiWorkoutsWorkoutIdExercisesMutationOptions,
 } from '../api/generated/workouts/workouts';
-import {
+import type {
   ExerciseResponse,
   PlanDayResponse,
   WorkoutByDateResponse,
@@ -36,7 +36,8 @@ import {
   TrainingPlanSummaryResponse,
 } from '../api/generated/schemas';
 import { newId } from './ids';
-import { QueryFamily, optimistic } from './optimistic';
+import { RetiredClientError } from './retiredClient';
+import { type QueryFamily, optimistic } from './optimistic';
 
 const PLAN_DAY_KEY_PREFIX = '/api/training-plans/days/';
 
@@ -156,6 +157,10 @@ export const registerMutationDefaults = (
   /// Filled in as we go: the keys whose queued writes may be thrown away when a newer
   /// one for the same target arrives. See coalesce.ts.
   supersedable: Set<string>,
+  /// True once the client has been torn down. Checked on every attempt, retries
+  /// included, because a write already moving through the queue does not stop on its
+  /// own. See queryClient.ts.
+  isRetired: () => boolean = () => false,
 ) => {
   // Taking orval's own options object means TVariables is inferred from the generated
   // client, so a contract change lands as a type error in the patch below rather than as
@@ -169,8 +174,12 @@ export const registerMutationDefaults = (
       throw new Error('Orval stopped emitting a mutationKey; the offline registry needs one.');
     }
 
+    const send = base.mutationFn;
+    if (!send) throw new Error('Orval stopped emitting a mutationFn; the offline registry needs one.');
+
     queryClient.setMutationDefaults(base.mutationKey, {
-      mutationFn: base.mutationFn,
+      mutationFn: (...args: Parameters<typeof send>) =>
+        isRetired() ? Promise.reject(new RetiredClientError()) : send(...args),
       ...optimistic(queryClient, families, apply),
     });
 

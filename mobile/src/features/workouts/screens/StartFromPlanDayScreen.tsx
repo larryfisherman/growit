@@ -11,7 +11,7 @@ import {
 import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
 import { newId } from '../../../offline/ids';
-import { planDayExerciseAssignments } from '../planDayAssignments';
+import { planDaySessionCopy } from '../planDayAssignments';
 import { useQueryClient } from '@tanstack/react-query';
 import { getToday } from '../../../lib/date';
 import { exerciseCountLabel } from '../../../lib/plurals';
@@ -65,7 +65,7 @@ export const StartFromPlanDayScreen = ({ navigation }: Props) => {
                     id,
                     planDayId: item.id,
                     performedAt: today,
-                    exerciseIds: planDayExerciseAssignments(queryClient, item.id),
+                    ...planDaySessionCopy(queryClient, item.id),
                   },
                 });
                 navigation.replace('WorkoutDetail', { workoutId: id });

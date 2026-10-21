@@ -91,7 +91,9 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
             userId,
             request.PlanDayId,
             request.PerformedAt,
-            request.ExerciseIds ?? []), ct);
+            request.ExerciseIds ?? [],
+            request.Name,
+            request.Exercises), ct);
         return Ok(new CreateWorkoutFromPlanDayResponse(id));
     }
 }

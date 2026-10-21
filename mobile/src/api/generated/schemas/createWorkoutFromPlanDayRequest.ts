@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { WorkoutExerciseIdAssignment } from './workoutExerciseIdAssignment';
+import type { WorkoutExerciseSnapshot } from './workoutExerciseSnapshot';
 
 export interface CreateWorkoutFromPlanDayRequest {
   id: string;
@@ -12,4 +13,8 @@ export interface CreateWorkoutFromPlanDayRequest {
   performedAt: string;
   /** @nullable */
   exerciseIds: WorkoutExerciseIdAssignment[] | null;
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  exercises?: WorkoutExerciseSnapshot[] | null;
 }

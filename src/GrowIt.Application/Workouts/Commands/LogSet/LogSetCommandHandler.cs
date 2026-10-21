@@ -13,11 +13,12 @@ public class LogSetCommandHandler(IApplicationDbContext dbContext) : IRequestHan
     {
         // Sets are the one thing that gets logged mid-workout with no signal, so this
         // is the retry path that matters most: the same set must never land twice.
+        var existing = dbContext.Sets
+            .Where(s => s.Id == request.Id)
+            .Select(s => new ExistingRow(s.WorkoutExercise.Workout.UserId, s.WorkoutExerciseId));
+
         if (await IdempotencyGuard.AlreadyCreatedAsync(
-                dbContext.Sets
-                    .Where(s => s.Id == request.Id)
-                    .Select(s => new ExistingRow(s.WorkoutExercise.Workout.UserId, s.WorkoutExerciseId)),
-                request.Id, request.UserId, request.WorkoutExerciseId, cancellationToken))
+                existing, request.Id, request.UserId, request.WorkoutExerciseId, cancellationToken))
         {
             return request.Id;
         }
@@ -44,7 +45,8 @@ public class LogSetCommandHandler(IApplicationDbContext dbContext) : IRequestHan
         };
 
         dbContext.Sets.Add(set);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await IdempotencyGuard.SaveCreateAsync(
+            dbContext, existing, request.Id, request.UserId, request.WorkoutExerciseId, cancellationToken);
 
         return set.Id;
     }

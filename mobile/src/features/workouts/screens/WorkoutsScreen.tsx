@@ -15,7 +15,7 @@ import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
 import { Button } from '../../../theme/components/Button';
 import { tokens } from '../../../theme/tokens';
 import { newId } from '../../../offline/ids';
-import { planDayExerciseAssignments } from '../planDayAssignments';
+import { planDaySessionCopy } from '../planDayAssignments';
 import { useQueryClient } from '@tanstack/react-query';
 import { getToday, formatWeekdayDayMonth, formatDayMonth, formatShortDate } from '../../../lib/date';
 import { exerciseCountLabel } from '../../../lib/plurals';
@@ -151,7 +151,7 @@ export const WorkoutsScreen = () => {
                       id,
                       planDayId: nextDay.id,
                       performedAt: today,
-                      exerciseIds: planDayExerciseAssignments(queryClient, nextDay.id),
+                      ...planDaySessionCopy(queryClient, nextDay.id),
                     },
                   });
                   navigation.navigate('WorkoutDetail', { workoutId: id });

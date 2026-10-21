@@ -12,11 +12,12 @@ public class AddExerciseToPlanDayCommandHandler(IApplicationDbContext dbContext)
 {
     public async Task<Guid> Handle(AddExerciseToPlanDayCommand request, CancellationToken cancellationToken)
     {
+        var existing = dbContext.TrainingPlanDayExercises
+            .Where(e => e.Id == request.Id)
+            .Select(e => new ExistingRow(e.PlanDay.Plan.UserId, e.PlanDayId));
+
         if (await IdempotencyGuard.AlreadyCreatedAsync(
-                dbContext.TrainingPlanDayExercises
-                    .Where(e => e.Id == request.Id)
-                    .Select(e => new ExistingRow(e.PlanDay.Plan.UserId, e.PlanDayId)),
-                request.Id, request.UserId, request.PlanDayId, cancellationToken))
+                existing, request.Id, request.UserId, request.PlanDayId, cancellationToken))
         {
             return request.Id;
         }
@@ -46,7 +47,8 @@ public class AddExerciseToPlanDayCommandHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.TrainingPlanDayExercises.Add(exercise);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await IdempotencyGuard.SaveCreateAsync(
+            dbContext, existing, request.Id, request.UserId, request.PlanDayId, cancellationToken);
 
         return exercise.Id;
     }

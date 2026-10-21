@@ -14,18 +14,14 @@ namespace GrowIt.Integration.Tests;
 /// data the server never stored.
 public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsyncLifetime
 {
-    private const string ConnectionString =
-        "Host=localhost;Port=5432;Database=growit;Username=growit;Password=localdev";
-
     private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
 
     private readonly Guid _userId = Guid.CreateVersion7();
     private readonly Guid _strangerId = Guid.CreateVersion7();
 
-    private static GrowItDbContext NewContext() =>
-        new(new DbContextOptionsBuilder<GrowItDbContext>().UseNpgsql(ConnectionString).Options);
+    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public Task InitializeAsync() => TestDatabase.EnsureMigratedAsync();
 
     public async Task DisposeAsync()
     {

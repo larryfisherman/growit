@@ -38,6 +38,7 @@ export * from './updateTrainingPlanRequest';
 export * from './workoutByDateResponse';
 export * from './workoutExerciseIdAssignment';
 export * from './workoutExerciseResponse';
+export * from './workoutExerciseSnapshot';
 export * from './workoutHistoryResponse';
 export * from './workoutResponse';
 export * from './workoutSummaryResponse';
