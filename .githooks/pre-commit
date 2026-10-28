@@ -1,0 +1,14 @@
+#!/bin/sh
+# Refuses the commit when the staged changes contain a secret (AWS keys, tokens,
+# passwords in connection strings...). The repo is public, so a leaked key is
+# found by scanners within minutes.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# Requires gitleaks:      brew install gitleaks
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed (brew install gitleaks) - commit refused." >&2
+  exit 1
+fi
+
+exec gitleaks git --pre-commit --staged --redact --verbose --no-banner

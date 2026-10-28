@@ -490,3 +490,25 @@ $RECYCLE.BIN/
 
 # Elastic Beanstalk deployment artifact
 growit-api-app.zip
+
+# Environment files: only the *.example templates belong in git
+.env.*
+!.env.example
+!.env.*.example
+
+# Terraform: state and variable files can hold secrets; .terraform.lock.hcl IS committed
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+infra/build/

@@ -360,6 +360,8 @@ Warunek wejścia: limit konta ≥105 albo przyjęty fallback z Pułapki 17.
 
 ## Decyzje do potwierdzenia
 
+> **Zamknięte 2026-10-28:** Decyzja 1 = (b), stare dane były testowe, więc Etap 4b pomijamy, a oba snapshoty RDS usuwamy w Etapie 8. Decyzja 2 = Postgres 16 (snapshoty też były 16.14).
+
 1. **Stare dane ze snapshotu** (zamknąć po Etapie 0, przed Etapem 3).
    - (a) Import w Etapie 4b. Wymaga `KeyState=Enabled` i wersji Neona zgodnej z silnikiem.
    - (b) Wszyscy zaczynają od zera.
