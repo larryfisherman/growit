@@ -22,5 +22,5 @@ export interface WorkoutExerciseResponse {
   restSeconds: number | null;
   orderIndex: number;
   sets: SetResponse[];
-  lastPerformance: LastPerformanceResponse | null;
+  lastPerformance: null | LastPerformanceResponse;
 }

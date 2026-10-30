@@ -2,6 +2,7 @@ using GrowIt.API.Middleware;
 using GrowIt.Application;
 using GrowIt.Infrastructure;
 using GrowIt.Infrastructure.Persistence;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -9,7 +10,11 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Numbers must be JSON numbers, never "5". Set twice: controllers read the MVC options,
+// the OpenAPI generator reads the HTTP ones - and orval turns a lenient spec into number | string.
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict);
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict);
 builder.Services.AddOpenApi();
 
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();

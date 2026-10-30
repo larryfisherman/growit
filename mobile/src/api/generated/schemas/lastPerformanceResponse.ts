@@ -6,10 +6,7 @@
  */
 import type { LastSetResponse } from './lastSetResponse';
 
-/**
- * @nullable
- */
-export type LastPerformanceResponse = {
+export interface LastPerformanceResponse {
   performedAt: string;
   sets: LastSetResponse[];
-} | null;
+}

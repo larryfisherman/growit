@@ -17,5 +17,5 @@ export interface PlanDayExerciseResponse {
   targetReps: number;
   restSeconds: number;
   orderIndex: number;
-  lastPerformance: LastPerformanceResponse | null;
+  lastPerformance: null | LastPerformanceResponse;
 }
