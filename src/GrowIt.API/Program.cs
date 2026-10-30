@@ -1,3 +1,4 @@
+using Amazon.Lambda.AspNetCoreServer.Hosting;
 using GrowIt.API.Middleware;
 using GrowIt.Application;
 using GrowIt.Infrastructure;
@@ -9,6 +10,11 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Turns Lambda events into ordinary HTTP requests; does nothing outside Lambda, so
+// `dotnet run` and the tests keep using Kestrel. A Function URL sends the same payload
+// (format 2.0) as an API Gateway HTTP API, hence HttpApi.
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
 // Numbers must be JSON numbers, never "5". Set twice: controllers read the MVC options,
 // the OpenAPI generator reads the HTTP ones - and orval turns a lenient spec into number | string.
