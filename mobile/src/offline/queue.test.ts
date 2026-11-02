@@ -4,6 +4,7 @@ import { afterEach, describe, test } from 'node:test';
 import { MutationCache, QueryClient, onlineManager } from '@tanstack/react-query';
 import { dropSupersededWrites } from './coalesce.ts';
 import { shouldRetryWrite } from './retryPolicy.ts';
+import { WRITE_SCOPE } from './writeScope.ts';
 
 /// Exercises the queue against the real mutation cache rather than a stand-in.
 ///
@@ -32,7 +33,7 @@ const makeClient = () => {
       mutations: {
         networkMode: 'online',
         retry: shouldRetryWrite,
-        scope: { id: 'growit-writes' },
+        scope: WRITE_SCOPE,
       },
     },
   });

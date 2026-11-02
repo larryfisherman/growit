@@ -23,6 +23,9 @@ public class ExercisesController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
+    // The set endpoints below dispatch Workouts commands: {workoutExerciseId} is a workout-row id,
+    // not a library exercise id. They live under api/Exercises for historical reasons and must stay
+    // here, because the generated mobile client (mobile/src/api/generated/exercises) calls them by this path.
     [HttpPost("{workoutExerciseId:guid}/sets")]
     public async Task<ActionResult<LogSetResponse>> LogSet(
         Guid workoutExerciseId, [FromBody] LogSetRequest request, CancellationToken ct)

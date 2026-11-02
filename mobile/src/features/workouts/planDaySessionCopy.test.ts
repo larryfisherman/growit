@@ -4,7 +4,7 @@ import { describe, test } from 'node:test';
 import { QueryClient } from '@tanstack/react-query';
 import { getGetApiTrainingPlansDaysDayIdQueryKey } from '../../api/generated/training-plans/training-plans.ts';
 import type { PlanDayResponse } from '../../api/generated/schemas/index.ts';
-import { planDaySessionCopy } from './planDayAssignments.ts';
+import { planDaySessionCopy } from './planDaySessionCopy.ts';
 
 const BENCH_PRESS = 'a1b2c3d4-0001-0000-0000-000000000000';
 

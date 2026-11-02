@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlansStackParamList } from '../../../navigation/types';
-import { useGetApiTrainingPlansDaysDayId } from '../../../api/generated/training-plans/training-plans';
+import {
+  useDeleteApiTrainingPlansExercisesPlanDayExerciseId,
+  useGetApiTrainingPlansDaysDayId,
+} from '../../../api/generated/training-plans/training-plans';
 import { PlanDayExerciseRow } from '../components/PlanDayExerciseRow';
 import { usePlanDayAutoSave } from '../hooks/usePlanDayAutoSave';
-import { useDeleteApiTrainingPlansExercisesPlanDayExerciseId } from '../../../api/generated/training-plans/training-plans';
 import { Input } from '../../../theme/components/Input';
 import { ScreenState, screenStateOf } from '../../../theme/components/ScreenState';
+import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDay'>;
 
@@ -46,9 +49,9 @@ export const PlanDayScreen = ({ route, navigation }: Props) => {
       />
 
       <View className="mt-2">
-        <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-3">
+        <SectionLabel className="mb-3">
           [ ĆWICZENIA ]
-        </Text>
+        </SectionLabel>
 
         {day && day.exercises.length === 0 ? (
           <View className="items-center justify-center py-8 border border-line rounded-md">

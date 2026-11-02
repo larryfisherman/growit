@@ -31,6 +31,10 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
         return Ok(new CreateWorkoutResponse(id));
     }
 
+    // The {userId} route segment on history, by-date and by-month is legacy: it stays only because the
+    // generated mobile client sends it (it is also part of the client's query cache key). Never pass it
+    // to a query - identity always comes from the token (HttpContext.GetUserId()); using the route value
+    // would let any user read anyone's workouts.
     [HttpGet("{userId:guid}/history")]
     public async Task<ActionResult<WorkoutHistoryResponse>> GetHistory(
         Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)

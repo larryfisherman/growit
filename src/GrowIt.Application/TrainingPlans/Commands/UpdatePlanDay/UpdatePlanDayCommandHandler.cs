@@ -1,4 +1,6 @@
+using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +12,9 @@ public class UpdatePlanDayCommandHandler(IApplicationDbContext dbContext)
     public async Task Handle(UpdatePlanDayCommand request, CancellationToken cancellationToken)
     {
         var day = await dbContext.TrainingPlanDays
-            .FirstOrDefaultAsync(
-                d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId,
-                cancellationToken)
-            ?? throw new KeyNotFoundException($"Plan day {request.PlanDayId} not found");
+            .OwnedBy(request.UserId)
+            .FirstOrDefaultAsync(d => d.Id == request.PlanDayId, cancellationToken)
+            ?? throw new NotFoundException($"Plan day {request.PlanDayId} not found");
 
         day.Name = request.Name;
         day.Notes = request.Notes;

@@ -1,16 +1,16 @@
 import { ReactNode, useEffect, useMemo } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { PersistQueryClientProvider, persistQueryClientSave } from '@tanstack/react-query-persist-client';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useAuth } from '../auth/AuthContext';
 import { setQueueInspector } from './pendingWrites';
-import { persistOptionsFor } from './persistence';
+import { persistOptionsFor, savePersistedClient } from './persistence';
 import { createQueryClient } from './queryClient';
 
 /// Signed in: a client of this user's own, restored from disk and saved back to it.
 ///
 /// The key on this component is what isolates accounts - a different user remounts the
-/// whole thing rather than reusing a client that has been told to forget. queryClient.clear()
-/// used to do that job and took the write queue with it every time.
+/// whole thing rather than reusing a client that has been told to forget. Do not call
+/// queryClient.clear() for this: it empties the write queue too.
 const PersistedQueries = ({ userId, children }: { userId: string; children: ReactNode }) => {
   // Built during render, before anything can hydrate into it: hydration rebuilds mutations
   // through defaultMutationOptions, and a key whose mutationFn is not registered yet comes
@@ -22,13 +22,7 @@ const PersistedQueries = ({ userId, children }: { userId: string; children: Reac
     setQueueInspector({
       pausedCount: () =>
         queryClient.getMutationCache().getAll().filter((m) => m.state.isPaused).length,
-      persist: () =>
-        persistQueryClientSave({
-          queryClient,
-          persister: persistOptions.persister,
-          buster: persistOptions.buster,
-          dehydrateOptions: persistOptions.dehydrateOptions,
-        }),
+      persist: () => savePersistedClient(queryClient, persistOptions),
     });
 
     return () => setQueueInspector(null);

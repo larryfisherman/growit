@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Mutation, Query } from '@tanstack/react-query';
+import type { Mutation, Query, QueryClient } from '@tanstack/react-query';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
+import { persistQueryClientSave, type PersistedClient, type Persister } from '@tanstack/react-query-persist-client';
+import { KEY_PREFIX, keyStartsWith } from './queryKeys';
 
 /// Bump when the shape of the cached reads changes. Only the reads are discarded on a
 /// mismatch - the write queue is kept, because it holds things the user did that the
@@ -11,7 +12,7 @@ export const CACHE_VERSION = 'v1';
 /// Everything the app reads from the API, and nothing else. The exercise library is in
 /// here on purpose: without it a session opened offline after a restart would show rows
 /// with no names.
-const PERSISTED_PREFIXES = ['/api/training-plans', '/api/Workouts', '/api/Exercises'];
+const PERSISTED_PREFIXES = [KEY_PREFIX.plans, KEY_PREFIX.workouts, KEY_PREFIX.exercises];
 
 /// Every write the server has not confirmed - not only the ones paused for want of a
 /// network (TanStack's default). A write on the wire or waiting out a retry back-off when
@@ -76,8 +77,20 @@ export const persistOptionsFor = (userId: string) => ({
     shouldDehydrateMutation: isUnsent,
     shouldDehydrateQuery: (query: Query) => {
       if (query.state.status !== 'success') return false;
-      const [first] = query.queryKey;
-      return typeof first === 'string' && PERSISTED_PREFIXES.some((p) => first.startsWith(p));
+      return PERSISTED_PREFIXES.some((p) => keyStartsWith(query.queryKey, p));
     },
   },
 });
+
+/// Writes the client's cache and queue to disk right now, through the given options -
+/// the one save path shared by QueryLayer (on demand, at sign-out) and the tests.
+export const savePersistedClient = (
+  queryClient: QueryClient,
+  options: ReturnType<typeof persistOptionsFor>,
+) =>
+  persistQueryClientSave({
+    queryClient,
+    persister: options.persister,
+    buster: options.buster,
+    dehydrateOptions: options.dehydrateOptions,
+  });

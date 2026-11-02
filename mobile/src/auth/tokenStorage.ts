@@ -1,13 +1,16 @@
 import * as SecureStore from 'expo-secure-store';
 import type { Session } from './cognito';
 
-const ACCESS_TOKEN_KEY = 'growit.accessToken';
-const ID_TOKEN_KEY = 'growit.idToken';
-const REFRESH_TOKEN_KEY = 'growit.refreshToken';
-const NAME_KEY = 'growit.name';
-const EMAIL_KEY = 'growit.email';
-const USER_ID_KEY = 'growit.userId';
-const EXPIRES_AT_KEY = 'growit.expiresAt';
+/// Every Keychain entry that makes up a signed-in session.
+const SESSION_KEYS = {
+  accessToken: 'growit.accessToken',
+  idToken: 'growit.idToken',
+  refreshToken: 'growit.refreshToken',
+  name: 'growit.name',
+  email: 'growit.email',
+  userId: 'growit.userId',
+  expiresAt: 'growit.expiresAt',
+} as const;
 
 export type StoredAccessToken = { token: string; expiresAt: number };
 
@@ -27,13 +30,13 @@ export const saveSession = async (session: Session): Promise<void> => {
   cachedAccessToken = null;
 
   await Promise.all([
-    SecureStore.setItemAsync(ACCESS_TOKEN_KEY, session.tokens.accessToken),
-    SecureStore.setItemAsync(ID_TOKEN_KEY, session.tokens.idToken),
-    SecureStore.setItemAsync(REFRESH_TOKEN_KEY, session.tokens.refreshToken),
-    SecureStore.setItemAsync(NAME_KEY, session.name),
-    SecureStore.setItemAsync(EMAIL_KEY, session.email),
-    SecureStore.setItemAsync(USER_ID_KEY, session.userId),
-    SecureStore.setItemAsync(EXPIRES_AT_KEY, String(session.expiresAt)),
+    SecureStore.setItemAsync(SESSION_KEYS.accessToken, session.tokens.accessToken),
+    SecureStore.setItemAsync(SESSION_KEYS.idToken, session.tokens.idToken),
+    SecureStore.setItemAsync(SESSION_KEYS.refreshToken, session.tokens.refreshToken),
+    SecureStore.setItemAsync(SESSION_KEYS.name, session.name),
+    SecureStore.setItemAsync(SESSION_KEYS.email, session.email),
+    SecureStore.setItemAsync(SESSION_KEYS.userId, session.userId),
+    SecureStore.setItemAsync(SESSION_KEYS.expiresAt, String(session.expiresAt)),
   ]);
 
   cachedAccessToken = { token: session.tokens.accessToken, expiresAt: session.expiresAt };
@@ -41,13 +44,13 @@ export const saveSession = async (session: Session): Promise<void> => {
 
 export const loadSession = async (): Promise<Session | null> => {
   const [accessToken, idToken, refreshToken, name, email, userId, expiresAt] = await Promise.all([
-    SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
-    SecureStore.getItemAsync(ID_TOKEN_KEY),
-    SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
-    SecureStore.getItemAsync(NAME_KEY),
-    SecureStore.getItemAsync(EMAIL_KEY),
-    SecureStore.getItemAsync(USER_ID_KEY),
-    SecureStore.getItemAsync(EXPIRES_AT_KEY),
+    SecureStore.getItemAsync(SESSION_KEYS.accessToken),
+    SecureStore.getItemAsync(SESSION_KEYS.idToken),
+    SecureStore.getItemAsync(SESSION_KEYS.refreshToken),
+    SecureStore.getItemAsync(SESSION_KEYS.name),
+    SecureStore.getItemAsync(SESSION_KEYS.email),
+    SecureStore.getItemAsync(SESSION_KEYS.userId),
+    SecureStore.getItemAsync(SESSION_KEYS.expiresAt),
   ]);
 
   if (!accessToken || !idToken || !refreshToken || !email || !userId) return null;
@@ -68,8 +71,8 @@ export const getAccessToken = async (): Promise<StoredAccessToken | null> => {
   if (cachedAccessToken) return cachedAccessToken;
 
   const [token, expiresAt] = await Promise.all([
-    SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
-    SecureStore.getItemAsync(EXPIRES_AT_KEY),
+    SecureStore.getItemAsync(SESSION_KEYS.accessToken),
+    SecureStore.getItemAsync(SESSION_KEYS.expiresAt),
   ]);
   if (!token) return null;
 
@@ -78,20 +81,15 @@ export const getAccessToken = async (): Promise<StoredAccessToken | null> => {
 };
 
 export const getRefreshToken = (): Promise<string | null> =>
-  SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  SecureStore.getItemAsync(SESSION_KEYS.refreshToken);
 
-export const getStoredEmail = (): Promise<string | null> => SecureStore.getItemAsync(EMAIL_KEY);
+export const getStoredEmail = (): Promise<string | null> =>
+  SecureStore.getItemAsync(SESSION_KEYS.email);
 
 export const clearSession = async (): Promise<void> => {
   cachedAccessToken = null;
 
-  await Promise.all([
-    SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
-    SecureStore.deleteItemAsync(ID_TOKEN_KEY),
-    SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
-    SecureStore.deleteItemAsync(NAME_KEY),
-    SecureStore.deleteItemAsync(EMAIL_KEY),
-    SecureStore.deleteItemAsync(USER_ID_KEY),
-    SecureStore.deleteItemAsync(EXPIRES_AT_KEY),
-  ]);
+  // Iterates the record rather than listing keys again, so a key added later can never
+  // survive sign-out and leave the previous user's data on the device.
+  await Promise.all(Object.values(SESSION_KEYS).map((key) => SecureStore.deleteItemAsync(key)));
 };

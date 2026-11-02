@@ -31,11 +31,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setSessionExpiredHandler(() => {
-      // Nothing is cleared here any more. queryClient.clear() empties the mutation cache
-      // as well as the query cache, and this path fires exactly when that cache is at its
-      // fullest - a session expiring is usually a session that has been offline. The
-      // queue is written to disk instead, and the next sign-in as the same user picks it
-      // back up; isolation between accounts comes from the per-user client in QueryLayer.
+      // Do not clear the query client here. queryClient.clear() empties the mutation
+      // cache as well as the query cache, and this path fires exactly when that cache is
+      // at its fullest - a session expiring is usually a session that has been offline.
+      // The queue is written to disk instead, and the next sign-in as the same user picks
+      // it back up; isolation between accounts comes from the per-user client in QueryLayer.
       void persistPendingWrites();
       setSession(null);
       void clearSession();

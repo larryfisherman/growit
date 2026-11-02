@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Contracts.TrainingPlans.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,8 @@ public class GetNextPlanDayQueryHandler(IApplicationDbContext dbContext)
         // reading every active plan at once would then blend two programmes into one
         // rotation and suggest days that belong together in neither.
         var activePlanId = await dbContext.TrainingPlans
-            .Where(p => p.UserId == request.UserId && p.IsActive)
+            .OwnedBy(request.UserId)
+            .Where(p => p.IsActive)
             .OrderBy(p => p.CreatedAt)
             .Select(p => (Guid?)p.Id)
             .FirstOrDefaultAsync(cancellationToken);
@@ -43,7 +45,8 @@ public class GetNextPlanDayQueryHandler(IApplicationDbContext dbContext)
         // came from this plan. Ordering by PerformedAt alone would be ambiguous when
         // two days share a date, so CreatedAt breaks the tie.
         var lastDayId = await dbContext.Workouts
-            .Where(w => w.UserId == request.UserId && w.PlanDayId != null && dayIds.Contains(w.PlanDayId.Value))
+            .OwnedBy(request.UserId)
+            .Where(w => w.PlanDayId != null && dayIds.Contains(w.PlanDayId.Value))
             .OrderByDescending(w => w.PerformedAt)
             .ThenByDescending(w => w.CreatedAt)
             .Select(w => w.PlanDayId)

@@ -1,4 +1,6 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
+using GrowIt.Application.TrainingPlans.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,22 +12,13 @@ public class DeletePlanDayCommandHandler(IApplicationDbContext dbContext)
     public async Task Handle(DeletePlanDayCommand request, CancellationToken cancellationToken)
     {
         var day = await dbContext.TrainingPlanDays
-            .FirstOrDefaultAsync(
-                d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId,
-                cancellationToken);
+            .OwnedBy(request.UserId)
+            .FirstOrDefaultAsync(d => d.Id == request.PlanDayId, cancellationToken);
 
         // Already gone is the requested state; see DeleteTrainingPlanCommandHandler.
         if (day is null) return;
 
-        // Sessions already performed from this day stay in history, just unlinked.
-        var workouts = await dbContext.Workouts
-            .Where(w => w.PlanDayId == day.Id)
-            .ToListAsync(cancellationToken);
-
-        foreach (var workout in workouts)
-        {
-            workout.PlanDayId = null;
-        }
+        await PlanDayWorkouts.DetachAsync(dbContext, [day.Id], cancellationToken);
 
         dbContext.TrainingPlanDays.Remove(day);
         await dbContext.SaveChangesAsync(cancellationToken);

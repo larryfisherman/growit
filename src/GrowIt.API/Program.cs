@@ -16,6 +16,12 @@ var builder = WebApplication.CreateBuilder(args);
 // (format 2.0) as an API Gateway HTTP API, hence HttpApi.
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
+var ssmPath = builder.Configuration["Ssm:Path"];
+if (!string.IsNullOrEmpty(ssmPath))
+{
+    builder.Configuration.AddSystemsManager(ssmPath);
+}
+
 // Numbers must be JSON numbers, never "5". Set twice: controllers read the MVC options,
 // the OpenAPI generator reads the HTTP ones - and orval turns a lenient spec into number | string.
 builder.Services.AddControllers()

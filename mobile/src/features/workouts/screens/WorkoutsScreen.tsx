@@ -1,25 +1,25 @@
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { TodayStackParamList } from '../../../navigation/types';
 import {
   useGetApiWorkoutsUserIdByDate,
   useGetApiWorkoutsUserIdHistory,
   usePostApiWorkouts,
-  usePostApiWorkoutsFromPlanDay,
 } from '../../../api/generated/workouts/workouts';
 import {
   useGetApiTrainingPlansNextDay,
 } from '../../../api/generated/training-plans/training-plans';
 import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
+import { TodayStackParamList } from '../../../navigation/types';
+import { useAuth, useUserId } from '../../../auth/AuthContext';
 import { Button } from '../../../theme/components/Button';
-import { tokens } from '../../../theme/tokens';
+import { ScreenState } from '../../../theme/components/ScreenState';
+import { SectionLabel } from '../../../theme/components/SectionLabel';
 import { newId } from '../../../offline/ids';
-import { planDaySessionCopy } from '../planDayAssignments';
-import { useQueryClient } from '@tanstack/react-query';
+import { isInFlight } from '../../../offline/isInFlight';
 import { getToday, formatWeekdayDayMonth, formatDayMonth, formatShortDate } from '../../../lib/date';
 import { exerciseCountLabel } from '../../../lib/plurals';
-import { useAuth, useUserId } from '../../../auth/AuthContext';
+import { useStartWorkoutFromPlanDay } from '../hooks/useStartWorkoutFromPlanDay';
 
 const LastWorkoutCard = ({
   workout,
@@ -48,6 +48,7 @@ export const WorkoutsScreen = () => {
   const { data: workout, isLoading } = useGetApiWorkoutsUserIdByDate(
     userId,
     { date: today },
+    // 404 means nothing is logged today - an expected answer, not a failure worth retrying.
     { query: { retry: false } },
   );
   const { data: history } = useGetApiWorkoutsUserIdHistory(userId, { page: 1, pageSize: 2 });
@@ -56,37 +57,28 @@ export const WorkoutsScreen = () => {
   // an empty string - falsy either way, so the check below covers both.
   const { data: nextDay } = useGetApiTrainingPlansNextDay();
 
-  const queryClient = useQueryClient();
+  const createWorkoutMutation = usePostApiWorkouts();
+  const { mutate: createWorkout } = createWorkoutMutation;
+  const isCreatingNow = isInFlight(createWorkoutMutation);
 
-  // A paused write stays pending for as long as there is no signal, so binding a button
-  // to isPending alone would leave it spinning and disabled until the network returns.
-  // Only a write actually in flight is worth waiting on.
-  const { mutate: createWorkout, isPending: isCreatingEmpty, isPaused: isCreatePaused } =
-    usePostApiWorkouts();
-  const { mutate: startFromDay, isPending: isStartingDay, isPaused: isStartPaused } =
-    usePostApiWorkoutsFromPlanDay();
+  const { start, isStartingNow } = useStartWorkoutFromPlanDay();
 
-  const isCreatingNow = isCreatingEmpty && !isCreatePaused;
-  const isStartingNow = isStartingDay && !isStartPaused;
-
+  // Queries run with networkMode 'online': offline with nothing cached the by-date query
+  // is paused rather than loading, so isLoading is false and the start buttons show.
   if (isLoading) {
-    return (
-      <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color={tokens.color.lime} />
-      </View>
-    );
+    return <ScreenState kind="loading" />;
   }
 
-  // pick most recent workout that's not today
+  // The most recent workout other than today's.
   const lastWorkout = history?.items.find((w) => w.id !== workout?.id);
 
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerClassName="px-6 pt-6 pb-10 gap-12">
-      {/* greeting */}
+      {/* Greeting */}
       <View>
-        <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-3">
+        <SectionLabel className="mb-3">
           [ DZISIAJ ]
-        </Text>
+        </SectionLabel>
         <Text className="text-fg font-sans-b text-h1" style={{ letterSpacing: -1 }}>
           Cześć{name ? ', ' : ''}
           <Text className="text-lime">{name}</Text> 👋
@@ -96,12 +88,12 @@ export const WorkoutsScreen = () => {
         </Text>
       </View>
 
-      {/* today's workout - if it already exists */}
+      {/* Today's workout, once one has been logged */}
       {workout && (
         <View className="gap-3">
-          <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+          <SectionLabel>
             [ TWÓJ TRENING ]
-          </Text>
+          </SectionLabel>
           <Pressable
             className="bg-surface rounded-md p-5 border border-line"
             onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
@@ -119,12 +111,12 @@ export const WorkoutsScreen = () => {
         </View>
       )}
 
-      {/* nothing logged yet - suggest where the rotation left off */}
+      {/* Nothing logged yet: suggest where the plan rotation left off */}
       {!workout && (
         <View className="gap-3">
-          <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+          <SectionLabel>
             [ ROZPOCZNIJ ]
-          </Text>
+          </SectionLabel>
 
           {nextDay ? (
             <>
@@ -142,20 +134,9 @@ export const WorkoutsScreen = () => {
                 variant="primary"
                 loading={isStartingNow}
                 disabled={isStartingNow}
-                onPress={() => {
-                  // Our own id, so the session opens straight away - the registry has
-                  // already seeded it into the cache by the time we navigate.
-                  const id = newId();
-                  startFromDay({
-                    data: {
-                      id,
-                      planDayId: nextDay.id,
-                      performedAt: today,
-                      ...planDaySessionCopy(queryClient, nextDay.id),
-                    },
-                  });
-                  navigation.navigate('WorkoutDetail', { workoutId: id });
-                }}
+                onPress={() =>
+                  navigation.navigate('WorkoutDetail', { workoutId: start(nextDay.id) })
+                }
               />
               <Button
                 label="Wybierz inny dzień"
@@ -190,12 +171,12 @@ export const WorkoutsScreen = () => {
         </View>
       )}
 
-      {/* last workout - informational */}
+      {/* Last workout, for reference only */}
       {lastWorkout && (
         <View className="gap-3">
-          <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+          <SectionLabel>
             [ OSTATNI TRENING ]
-          </Text>
+          </SectionLabel>
           <LastWorkoutCard
             workout={lastWorkout}
             onPress={() => navigation.navigate('WorkoutDetail', { workoutId: lastWorkout.id })}

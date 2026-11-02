@@ -1,4 +1,6 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
+using GrowIt.Application.TrainingPlans.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,24 +13,16 @@ public class DeleteTrainingPlanCommandHandler(IApplicationDbContext dbContext)
     {
         var plan = await dbContext.TrainingPlans
             .Include(p => p.Days)
-            .FirstOrDefaultAsync(p => p.Id == request.PlanId && p.UserId == request.UserId, cancellationToken);
+            .OwnedBy(request.UserId)
+            .FirstOrDefaultAsync(p => p.Id == request.PlanId, cancellationToken);
 
         // Nothing to delete is the outcome the caller asked for, so say so. A queued
         // delete can easily outlive its target: create and delete something offline,
         // have the create fail for good, and the delete then arrives at an empty spot.
         if (plan is null) return;
 
-        // Workouts are history and outlive the plan they came from - detach them
-        // rather than letting the delete cascade take them down.
         var dayIds = plan.Days.Select(d => d.Id).ToList();
-        var workouts = await dbContext.Workouts
-            .Where(w => w.PlanDayId != null && dayIds.Contains(w.PlanDayId.Value))
-            .ToListAsync(cancellationToken);
-
-        foreach (var workout in workouts)
-        {
-            workout.PlanDayId = null;
-        }
+        await PlanDayWorkouts.DetachAsync(dbContext, dayIds, cancellationToken);
 
         // Losing the active plan would leave the today screen with nothing to suggest, so
         // the successor is chosen before anything is written. Two separate saves would
@@ -37,7 +31,8 @@ public class DeleteTrainingPlanCommandHandler(IApplicationDbContext dbContext)
         if (plan.IsActive)
         {
             var fallback = await dbContext.TrainingPlans
-                .Where(p => p.UserId == request.UserId && p.Id != plan.Id)
+                .OwnedBy(request.UserId)
+                .Where(p => p.Id != plan.Id)
                 .OrderBy(p => p.CreatedAt)
                 .FirstOrDefaultAsync(cancellationToken);
 

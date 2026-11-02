@@ -1,5 +1,4 @@
 namespace GrowIt.Contracts.Workouts.Requests;
 
-/// UserId is gone on purpose: it was ignored anyway, since the controller takes the
-/// user from the token. Leaving it in the contract only suggested otherwise.
+/// The user comes from the token, never from the body.
 public record CreateWorkoutRequest(Guid Id, string Name, DateOnly PerformedAt, string? Notes);

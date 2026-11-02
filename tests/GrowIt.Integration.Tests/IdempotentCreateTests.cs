@@ -3,7 +3,7 @@ using GrowIt.Application.TrainingPlans.Commands.CreateTrainingPlan;
 using GrowIt.Application.Workouts.Commands.AddExerciseToWorkout;
 using GrowIt.Application.Workouts.Commands.LogSet;
 using GrowIt.Domain.Entities;
-using GrowIt.Infrastructure.Persistence;
+using GrowIt.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Integration.Tests;
@@ -13,28 +13,26 @@ namespace GrowIt.Integration.Tests;
 /// anything, and an id must never let one user write into another's rows.
 public class IdempotentCreateTests : IAsyncLifetime
 {
-    private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
-
     private readonly Guid _userId = Guid.CreateVersion7();
     private readonly Guid _strangerId = Guid.CreateVersion7();
 
     private readonly List<Guid> _planIds = [];
     private readonly List<Guid> _workoutIds = [];
 
-    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
-
     public Task InitializeAsync() => TestDatabase.EnsureMigratedAsync();
 
     public async Task DisposeAsync()
     {
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
 
+        // Workouts and plans in separate saves, workouts first; see
+        // TestDatabase.DeleteUserDataAsync for why.
         var workouts = await db.Workouts.Where(w => _workoutIds.Contains(w.Id)).ToListAsync();
         db.Workouts.RemoveRange(workouts);
+        await db.SaveChangesAsync();
 
         var plans = await db.TrainingPlans.Where(p => _planIds.Contains(p.Id)).ToListAsync();
         db.TrainingPlans.RemoveRange(plans);
-
         await db.SaveChangesAsync();
     }
 
@@ -42,7 +40,7 @@ public class IdempotentCreateTests : IAsyncLifetime
     {
         _planIds.Add(id);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var handler = new CreateTrainingPlanCommandHandler(db);
         return await handler.Handle(
             new CreateTrainingPlanCommand(id, ownerId, "Plan", null), CancellationToken.None);
@@ -55,7 +53,7 @@ public class IdempotentCreateTests : IAsyncLifetime
         var workoutExerciseId = Guid.CreateVersion7();
         _workoutIds.Add(workoutId);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         db.Workouts.Add(new Workout
         {
             Id = workoutId,
@@ -65,7 +63,7 @@ public class IdempotentCreateTests : IAsyncLifetime
             CreatedAt = DateTime.UtcNow,
             WorkoutExercises =
             {
-                new WorkoutExercise { Id = workoutExerciseId, ExerciseId = BenchPress, OrderIndex = 0 }
+                new WorkoutExercise { Id = workoutExerciseId, ExerciseId = ExerciseSeed.BenchPress, OrderIndex = 0 }
             }
         });
 
@@ -85,7 +83,7 @@ public class IdempotentCreateTests : IAsyncLifetime
         Assert.Equal(planId, first);
         Assert.Equal(planId, second);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.Equal(1, await db.TrainingPlans.CountAsync(p => p.Id == planId));
     }
 
@@ -95,7 +93,7 @@ public class IdempotentCreateTests : IAsyncLifetime
         var planId = Guid.CreateVersion7();
         await CreatePlanAsync(planId, _userId);
 
-        await using (var db = NewContext())
+        await using (var db = TestDatabase.NewContext())
         {
             var plan = await db.TrainingPlans.FirstAsync(p => p.Id == planId);
             plan.Name = "Renamed since";
@@ -106,7 +104,7 @@ public class IdempotentCreateTests : IAsyncLifetime
         // edit the user has already made, so a replay has to be a no-op.
         await CreatePlanAsync(planId, _userId);
 
-        await using var check = NewContext();
+        await using var check = TestDatabase.NewContext();
         var stored = await check.TrainingPlans.FirstAsync(p => p.Id == planId);
         Assert.Equal("Renamed since", stored.Name);
     }
@@ -120,7 +118,7 @@ public class IdempotentCreateTests : IAsyncLifetime
         await Assert.ThrowsAsync<ConflictException>(() => CreatePlanAsync(planId, _userId));
 
         // The stranger keeps their plan.
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var stored = await db.TrainingPlans.FirstAsync(p => p.Id == planId);
         Assert.Equal(_strangerId, stored.UserId);
     }
@@ -133,18 +131,18 @@ public class IdempotentCreateTests : IAsyncLifetime
 
         var command = new LogSetCommand(setId, _userId, workoutExerciseId, 100m, 5, 0);
 
-        await using (var db = NewContext())
+        await using (var db = TestDatabase.NewContext())
         {
             await new LogSetCommandHandler(db).Handle(command, CancellationToken.None);
         }
 
         // Logged in a basement with no signal: the write is retried when signal returns.
-        await using (var db = NewContext())
+        await using (var db = TestDatabase.NewContext())
         {
             await new LogSetCommandHandler(db).Handle(command, CancellationToken.None);
         }
 
-        await using var check = NewContext();
+        await using var check = TestDatabase.NewContext();
         Assert.Equal(1, await check.Sets.CountAsync(s => s.Id == setId));
     }
 
@@ -153,7 +151,7 @@ public class IdempotentCreateTests : IAsyncLifetime
     {
         var workoutExerciseId = await SeedWorkoutExerciseAsync(_userId);
 
-        await using (var db = NewContext())
+        await using (var db = TestDatabase.NewContext())
         {
             var handler = new LogSetCommandHandler(db);
             await handler.Handle(
@@ -161,7 +159,7 @@ public class IdempotentCreateTests : IAsyncLifetime
                 CancellationToken.None);
         }
 
-        await using (var db = NewContext())
+        await using (var db = TestDatabase.NewContext())
         {
             var handler = new LogSetCommandHandler(db);
             await handler.Handle(
@@ -169,7 +167,7 @@ public class IdempotentCreateTests : IAsyncLifetime
                 CancellationToken.None);
         }
 
-        await using var check = NewContext();
+        await using var check = TestDatabase.NewContext();
         var sets = await check.Sets
             .Where(s => s.WorkoutExerciseId == workoutExerciseId)
             .OrderBy(s => s.OrderIndex)
@@ -185,14 +183,14 @@ public class IdempotentCreateTests : IAsyncLifetime
     {
         var strangersExerciseId = await SeedWorkoutExerciseAsync(_strangerId);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var handler = new LogSetCommandHandler(db);
 
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(
             new LogSetCommand(Guid.CreateVersion7(), _userId, strangersExerciseId, 100m, 5, 0),
             CancellationToken.None));
 
-        await using var check = NewContext();
+        await using var check = TestDatabase.NewContext();
         Assert.Equal(0, await check.Sets.CountAsync(s => s.WorkoutExerciseId == strangersExerciseId));
     }
 
@@ -201,17 +199,17 @@ public class IdempotentCreateTests : IAsyncLifetime
     {
         var strangersExerciseId = await SeedWorkoutExerciseAsync(_strangerId);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var strangersWorkoutId = await db.WorkoutExercises
             .Where(e => e.Id == strangersExerciseId)
             .Select(e => e.WorkoutId)
             .FirstAsync();
 
-        var handler = new AddExerciseToWorkoutHandler(db);
+        var handler = new AddExerciseToWorkoutCommandHandler(db);
 
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(
             new AddExerciseToWorkoutCommand(
-                Guid.CreateVersion7(), _userId, strangersWorkoutId, BenchPress, 1, null, null, null),
+                Guid.CreateVersion7(), _userId, strangersWorkoutId, ExerciseSeed.BenchPress, 1, null, null, null),
             CancellationToken.None));
     }
 }

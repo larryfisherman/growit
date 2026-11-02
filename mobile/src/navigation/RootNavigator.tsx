@@ -1,4 +1,4 @@
-import { View, ActivityIndicator } from 'react-native';
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { SettingsScreen } from '../features/settings/screens/SettingsScreen';
 import { RootStackParamList } from './types';
 import { darkStackOptions } from './screenOptions';
 import { tokens } from '../theme/tokens';
+import { ScreenState } from '../theme/components/ScreenState';
 import { useIsRestoring } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { ConnectionBanner } from '../offline/ConnectionBanner';
@@ -72,11 +73,7 @@ export const RootNavigator = () => {
   // restored, so rendering now would show every screen as empty for a moment and then
   // fill in - which reads as data that was lost and then found.
   if (isBootstrapping || isRestoring) {
-    return (
-      <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color={tokens.color.lime} />
-      </View>
-    );
+    return <ScreenState kind="loading" />;
   }
 
   return (

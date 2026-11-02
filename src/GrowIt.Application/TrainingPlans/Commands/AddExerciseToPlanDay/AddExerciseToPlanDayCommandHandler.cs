@@ -1,6 +1,7 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,14 +17,16 @@ public class AddExerciseToPlanDayCommandHandler(IApplicationDbContext dbContext)
             .Where(e => e.Id == request.Id)
             .Select(e => new ExistingRow(e.PlanDay.Plan.UserId, e.PlanDayId));
 
-        if (await IdempotencyGuard.AlreadyCreatedAsync(
-                existing, request.Id, request.UserId, request.PlanDayId, cancellationToken))
+        var create = new IdempotentCreate(dbContext, existing, request.Id, request.UserId, request.PlanDayId);
+
+        if (await create.AlreadyCreatedAsync(cancellationToken))
         {
             return request.Id;
         }
 
         var dayExists = await dbContext.TrainingPlanDays
-            .AnyAsync(d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId, cancellationToken);
+            .OwnedBy(request.UserId)
+            .AnyAsync(d => d.Id == request.PlanDayId, cancellationToken);
 
         if (!dayExists)
         {
@@ -47,8 +50,7 @@ public class AddExerciseToPlanDayCommandHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.TrainingPlanDayExercises.Add(exercise);
-        await IdempotencyGuard.SaveCreateAsync(
-            dbContext, existing, request.Id, request.UserId, request.PlanDayId, cancellationToken);
+        await create.SaveAsync(cancellationToken);
 
         return exercise.Id;
     }

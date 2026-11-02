@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using GrowIt.Domain.Entities;
-using GrowIt.Infrastructure.Persistence;
+using GrowIt.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Integration.Tests;
@@ -14,26 +14,12 @@ namespace GrowIt.Integration.Tests;
 /// data the server never stored.
 public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsyncLifetime
 {
-    private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
-
     private readonly Guid _userId = Guid.CreateVersion7();
     private readonly Guid _strangerId = Guid.CreateVersion7();
 
-    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
-
     public Task InitializeAsync() => TestDatabase.EnsureMigratedAsync();
 
-    public async Task DisposeAsync()
-    {
-        await using var db = NewContext();
-
-        db.Workouts.RemoveRange(
-            await db.Workouts.Where(w => w.UserId == _userId || w.UserId == _strangerId).ToListAsync());
-        db.TrainingPlans.RemoveRange(
-            await db.TrainingPlans.Where(p => p.UserId == _userId || p.UserId == _strangerId).ToListAsync());
-
-        await db.SaveChangesAsync();
-    }
+    public Task DisposeAsync() => TestDatabase.DeleteUserDataAsync(_userId, _strangerId);
 
     private HttpClient Mine() => factory.ClientFor(_userId);
     private HttpClient Theirs() => factory.ClientFor(_strangerId);
@@ -51,7 +37,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.False(await db.TrainingPlans.AnyAsync(p => p.Id == Guid.Empty));
     }
 
@@ -67,7 +53,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.Equal(1, await db.TrainingPlans.CountAsync(p => p.Id == id));
     }
 
@@ -85,7 +71,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
         // dropped rather than retried until its budget runs out.
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var stored = await db.TrainingPlans.FirstAsync(p => p.Id == id);
         Assert.Equal(_strangerId, stored.UserId);
     }
@@ -153,7 +139,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
         var response = await Mine().PostAsJsonAsync($"/api/Workouts/{workoutId}/exercises", new
         {
             id = Guid.CreateVersion7(),
-            exerciseId = BenchPress,
+            exerciseId = ExerciseSeed.BenchPress,
             orderIndex = 2,
             targetSets = (int?)null,
             targetReps = (int?)null,
@@ -163,7 +149,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // The position is the client's to decide now; the server used to pin every row to 0.
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var stored = await db.WorkoutExercises.FirstAsync(e => e.WorkoutId == workoutId);
         Assert.Equal(2, stored.OrderIndex);
     }
@@ -194,7 +180,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
         await Theirs().PostAsJsonAsync($"/api/Workouts/{workoutId}/exercises", new
         {
             id = exerciseId,
-            exerciseId = BenchPress,
+            exerciseId = ExerciseSeed.BenchPress,
             orderIndex = 0,
             targetSets = (int?)null,
             targetReps = (int?)null,
@@ -213,7 +199,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
         // id exists would leak it.
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.False(await db.Sets.AnyAsync(s => s.WorkoutExerciseId == exerciseId));
     }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PlansStackParamList } from '../../../navigation/types';
 import {
@@ -9,11 +9,12 @@ import {
   usePutApiTrainingPlansPlanIdActive,
 } from '../../../api/generated/training-plans/training-plans';
 import { usePlanAutoSave } from '../hooks/usePlanAutoSave';
+import { PlanDayRow } from '../components/PlanDayRow';
 import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
-import { tokens } from '../../../theme/tokens';
+import { ScreenState } from '../../../theme/components/ScreenState';
 import { newId } from '../../../offline/ids';
-import { exerciseCountLabel } from '../../../lib/plurals';
+import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDetail'>;
 
@@ -40,8 +41,7 @@ export const PlanDetailScreen = ({ route, navigation }: Props) => {
 
   const { mutate: create, isPending: isCreating } = usePostApiTrainingPlans();
 
-  const { mutate: addDay, isPending: isAddingDay } = usePostApiTrainingPlansPlanIdDays({
-  });
+  const { mutate: addDay, isPending: isAddingDay } = usePostApiTrainingPlansPlanIdDays();
 
   const { mutate: setActive, isPending: isActivating } = usePutApiTrainingPlansPlanIdActive();
 
@@ -67,11 +67,7 @@ export const PlanDetailScreen = ({ route, navigation }: Props) => {
   };
 
   if (!isNew && isLoading) {
-    return (
-      <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color={tokens.color.lime} />
-      </View>
-    );
+    return <ScreenState kind="loading" />;
   }
 
   return (
@@ -109,9 +105,9 @@ export const PlanDetailScreen = ({ route, navigation }: Props) => {
           )}
 
           <View className="mt-2">
-            <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-3">
+            <SectionLabel className="mb-3">
               [ DNI ]
-            </Text>
+            </SectionLabel>
 
             {plan.days.length === 0 ? (
               <View className="items-center justify-center py-8 border border-line rounded-md">
@@ -120,21 +116,13 @@ export const PlanDetailScreen = ({ route, navigation }: Props) => {
             ) : (
               <View className="gap-2 mb-3">
                 {plan.days.map((day, index) => (
-                  <Pressable
+                  <PlanDayRow
                     key={day.id}
+                    name={day.name}
+                    exerciseCount={day.exerciseCount}
+                    position={index + 1}
                     onPress={() => navigation.navigate('PlanDay', { dayId: day.id })}
-                    className="bg-surface rounded-md p-4 border border-line flex-row items-center gap-3"
-                  >
-                    <Text className="text-lime font-mono-md text-label tracking-label">
-                      {index + 1}
-                    </Text>
-                    <View className="flex-1">
-                      <Text className="text-fg font-sans-sb text-body-lg">{day.name}</Text>
-                      <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-                        {exerciseCountLabel(day.exerciseCount)}
-                      </Text>
-                    </View>
-                  </Pressable>
+                  />
                 ))}
               </View>
             )}

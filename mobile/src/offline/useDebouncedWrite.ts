@@ -4,10 +4,10 @@ import { AppState } from 'react-native';
 /// Delays a write until the user stops typing, without losing it if they leave first.
 ///
 /// The obvious version - a timer cleared on cleanup - quietly drops the edit whenever the
-/// screen unmounts inside the debounce window. Renaming a plan and hitting back within
-/// the delay was doing exactly that: no request, no error, the change simply gone. So the
-/// pending write is flushed on the way out instead of cancelled, and again when the OS
-/// takes the app away, which is the last moment we are sure to get.
+/// screen unmounts inside the debounce window: rename a plan and hit back within the
+/// delay, and there is no request, no error, the change is simply gone. So the pending
+/// write is flushed on the way out instead of cancelled, and again when the OS takes the
+/// app away, which is the last moment we are sure to get.
 export const useDebouncedWrite = <TPayload>(
   write: (payload: TPayload) => void,
   delayMs: number,

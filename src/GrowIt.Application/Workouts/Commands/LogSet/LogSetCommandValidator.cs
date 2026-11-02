@@ -1,4 +1,5 @@
 using FluentValidation;
+using GrowIt.Application.Common.Validation;
 
 namespace GrowIt.Application.Workouts.Commands.LogSet;
 
@@ -6,9 +7,7 @@ public class LogSetCommandValidator : AbstractValidator<LogSetCommand>
 {
     public LogSetCommandValidator()
     {
-        // See CreateTrainingPlanCommandValidator: a missing id in the body arrives as
-        // Guid.Empty, and the idempotency check cannot tell that apart from a real one.
-        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Id).ClientSuppliedId();
         RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.WorkoutExerciseId).NotEmpty();
 

@@ -5,9 +5,7 @@ namespace GrowIt.Application.Common.Behaviours;
 
 /// Runs the FluentValidation validators for a request before its handler.
 ///
-/// Without this the validators are dead code: AddValidatorsFromAssembly registers them
-/// in DI and nothing ever calls them, which is how every *CommandValidator in this
-/// assembly has been sitting unused.
+/// AddValidatorsFromAssembly only registers validators; this behaviour is what runs them.
 public class ValidationBehaviour<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull

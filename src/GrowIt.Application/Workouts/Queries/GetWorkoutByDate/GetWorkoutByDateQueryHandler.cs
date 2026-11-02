@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Contracts.Workouts.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,9 @@ public class GetWorkoutByDateQueryHandler(IApplicationDbContext dbContext)
     public async Task<WorkoutByDateResponse?> Handle(GetWorkoutByDateQuery request, CancellationToken cancellationToken)
     {
         return await dbContext.Workouts
-            .Where(w => w.UserId == request.UserId && w.PerformedAt == request.Date)
+            .OwnedBy(request.UserId)
+            .Where(w => w.PerformedAt == request.Date)
+            // Mirrors WorkoutProjections.Summary field for field on purpose; a field added to one belongs in the other.
             .Select(w => new WorkoutByDateResponse(
                 w.Id,
                 w.Name,

@@ -1,13 +1,13 @@
-// mobile/src/features/auth/screens/WelcomeScreen.tsx
 // First screen the user sees after launching GrowIt.
-// Built from theme tokens + Button + Chip — fully reusable system.
+// Built from the shared Button and theme classes.
 
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button } from '../../../theme/components/Button';
-import { AuthStackParamList } from '../../../navigation/AuthStack';
+import { AuthStackParamList } from '../../../navigation/types';
+import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 
@@ -40,9 +40,9 @@ export const WelcomeScreen = () => {
 
         {/* hero — vertically centered */}
         <View className="flex-1 justify-center">
-          <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-4">
+          <SectionLabel className="mb-4">
             [ STRENGTH · TRAINING · LOG ]
-          </Text>
+          </SectionLabel>
 
           <Text className="text-fg font-sans-b text-display" style={{ letterSpacing: -2 }}>
             Twój trening,{'\n'}

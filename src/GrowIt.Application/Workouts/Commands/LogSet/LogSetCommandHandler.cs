@@ -1,6 +1,7 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -17,17 +18,18 @@ public class LogSetCommandHandler(IApplicationDbContext dbContext) : IRequestHan
             .Where(s => s.Id == request.Id)
             .Select(s => new ExistingRow(s.WorkoutExercise.Workout.UserId, s.WorkoutExerciseId));
 
-        if (await IdempotencyGuard.AlreadyCreatedAsync(
-                existing, request.Id, request.UserId, request.WorkoutExerciseId, cancellationToken))
+        var create = new IdempotentCreate(
+            dbContext, existing, request.Id, request.UserId, request.WorkoutExerciseId);
+
+        if (await create.AlreadyCreatedAsync(cancellationToken))
         {
             return request.Id;
         }
 
-        // As with AddExerciseToWorkout, this check did not exist at all.
+        // Only the owner may log into this exercise.
         var exerciseIsMine = await dbContext.WorkoutExercises
-            .AnyAsync(
-                e => e.Id == request.WorkoutExerciseId && e.Workout.UserId == request.UserId,
-                cancellationToken);
+            .OwnedBy(request.UserId)
+            .AnyAsync(e => e.Id == request.WorkoutExerciseId, cancellationToken);
 
         if (!exerciseIsMine)
         {
@@ -40,13 +42,12 @@ public class LogSetCommandHandler(IApplicationDbContext dbContext) : IRequestHan
             WorkoutExerciseId = request.WorkoutExerciseId,
             Reps = request.Reps,
             WeightKg = request.WeightKg,
-            // Was hardcoded to 0, which left every set in a workout claiming to be first.
+            // Position comes from the client because sets can be logged offline and must keep their order.
             OrderIndex = request.OrderIndex
         };
 
         dbContext.Sets.Add(set);
-        await IdempotencyGuard.SaveCreateAsync(
-            dbContext, existing, request.Id, request.UserId, request.WorkoutExerciseId, cancellationToken);
+        await create.SaveAsync(cancellationToken);
 
         return set.Id;
     }

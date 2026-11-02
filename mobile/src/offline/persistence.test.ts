@@ -1,11 +1,11 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { after, beforeEach, describe, test } from 'node:test';
-import type { QueryClient } from '@tanstack/react-query';
-import { getPostApiTrainingPlansMutationOptions } from '../api/generated/training-plans/training-plans.ts';
 import {
   connectionDrops,
   connectionReturns,
+  createPlan,
+  createsOf,
   fakeApi,
   newId,
   relaunch,
@@ -19,7 +19,6 @@ import {
   storage,
   tokenOf,
   waitFor,
-  write,
 } from '../../test/app.ts';
 
 /// What survives the app being killed. A write the user made is theirs until the server
@@ -27,12 +26,6 @@ import {
 /// it disappears.
 
 const USER = 'alice';
-
-const createPlan = (app: QueryClient, id: string) =>
-  write(app, getPostApiTrainingPlansMutationOptions, { data: { id, name: 'Plan', notes: null } });
-
-const createsOf = (id: string) =>
-  fakeApi.requests.filter((r) => r.method === 'POST' && r.path === '/api/training-plans' && r.body?.id === id);
 
 const createdInOrder = () =>
   fakeApi.requests

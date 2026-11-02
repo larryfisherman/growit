@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using GrowIt.Infrastructure.Persistence;
+using GrowIt.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Integration.Tests;
@@ -13,49 +13,15 @@ namespace GrowIt.Integration.Tests;
 /// "done" for something that was not done.
 public class OfflineReplayTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsyncLifetime
 {
-    private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
-
     private readonly Guid _userId = Guid.CreateVersion7();
-
-    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
 
     public Task InitializeAsync() => TestDatabase.EnsureMigratedAsync();
 
-    public async Task DisposeAsync()
-    {
-        await using var db = NewContext();
-
-        // Sessions first, in a save of their own: a plan's days go with it by cascade in
-        // the database, where a session still pointing at one of them would stop it.
-        db.Workouts.RemoveRange(await db.Workouts.Where(w => w.UserId == _userId).ToListAsync());
-        await db.SaveChangesAsync();
-
-        db.TrainingPlans.RemoveRange(await db.TrainingPlans.Where(p => p.UserId == _userId).ToListAsync());
-        await db.SaveChangesAsync();
-    }
+    public Task DisposeAsync() => TestDatabase.DeleteUserDataAsync(_userId);
 
     private HttpClient Mine() => factory.ClientFor(_userId);
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow);
-
-    /// A plan with one day holding bench press, built over HTTP the way the app builds it.
-    private async Task<(Guid PlanId, Guid DayId, Guid RowId)> PlanWithBenchDayAsync()
-    {
-        var planId = Guid.CreateVersion7();
-        var dayId = Guid.CreateVersion7();
-        var rowId = Guid.CreateVersion7();
-
-        (await Mine().PostAsJsonAsync("/api/training-plans", new { id = planId, name = "Plan", notes = (string?)null }))
-            .EnsureSuccessStatusCode();
-        (await Mine().PostAsJsonAsync($"/api/training-plans/{planId}/days", new { id = dayId, name = "Push", notes = (string?)null }))
-            .EnsureSuccessStatusCode();
-        (await Mine().PutAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
-        {
-            exercises = new[] { new { planDayExerciseId = (Guid?)rowId, exerciseId = (Guid?)BenchPress, customExerciseName = (string?)null } },
-        })).EnsureSuccessStatusCode();
-
-        return (planId, dayId, rowId);
-    }
 
     [Fact]
     public async Task Concurrent_replays_of_one_create_all_succeed()
@@ -71,7 +37,7 @@ public class OfflineReplayTests(ApiFactory factory) : IClassFixture<ApiFactory>,
 
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.Equal(1, await db.TrainingPlans.CountAsync(p => p.Id == id));
     }
 
@@ -80,7 +46,7 @@ public class OfflineReplayTests(ApiFactory factory) : IClassFixture<ApiFactory>,
     {
         // Started in a basement gym from a day that, meanwhile, was deleted on the
         // user's other phone. The session happened; the sets were lifted.
-        var (_, dayId, _) = await PlanWithBenchDayAsync();
+        var (_, dayId, _) = await Mine().PlanWithBenchDayAsync();
         (await Mine().DeleteAsync($"/api/training-plans/days/{dayId}")).EnsureSuccessStatusCode();
 
         var workoutId = Guid.CreateVersion7();
@@ -98,7 +64,7 @@ public class OfflineReplayTests(ApiFactory factory) : IClassFixture<ApiFactory>,
             {
                 new
                 {
-                    workoutExerciseId, exerciseId = (Guid?)BenchPress, customExerciseName = (string?)null,
+                    workoutExerciseId, exerciseId = (Guid?)ExerciseSeed.BenchPress, customExerciseName = (string?)null,
                     targetSets = (int?)5, targetReps = (int?)5, restSeconds = (int?)180, orderIndex = 0,
                 },
             },
@@ -111,7 +77,7 @@ public class OfflineReplayTests(ApiFactory factory) : IClassFixture<ApiFactory>,
         });
         Assert.Equal(HttpStatusCode.OK, set.StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var stored = await db.WorkoutExercises.SingleAsync(e => e.Id == workoutExerciseId);
         Assert.Equal(workoutId, stored.WorkoutId);
         Assert.Equal(5, stored.TargetSets);
@@ -124,7 +90,7 @@ public class OfflineReplayTests(ApiFactory factory) : IClassFixture<ApiFactory>,
         // The phone's copy of the day carries a row id the server never kept (it was
         // created offline and replaced on the way). The session's ids are the phone's
         // own, and sets logged into them must not be dropped.
-        var (_, dayId, _) = await PlanWithBenchDayAsync();
+        var (_, dayId, _) = await Mine().PlanWithBenchDayAsync();
 
         var workoutId = Guid.CreateVersion7();
         var workoutExerciseId = Guid.CreateVersion7();
@@ -141,7 +107,7 @@ public class OfflineReplayTests(ApiFactory factory) : IClassFixture<ApiFactory>,
             {
                 new
                 {
-                    workoutExerciseId, exerciseId = (Guid?)BenchPress, customExerciseName = (string?)null,
+                    workoutExerciseId, exerciseId = (Guid?)ExerciseSeed.BenchPress, customExerciseName = (string?)null,
                     targetSets = (int?)3, targetReps = (int?)10, restSeconds = (int?)90, orderIndex = 0,
                 },
             },

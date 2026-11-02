@@ -1,5 +1,6 @@
 namespace GrowIt.Domain.Entities;
 
+/// The seeded, read-only exercise library. See Persistence/Seed/ExerciseSeed.
 public class Exercise
 {
     public Guid Id { get; set; }

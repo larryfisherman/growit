@@ -1,5 +1,6 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 import { tokens } from '../tokens';
+import { SectionLabel } from './SectionLabel';
 
 export type ScreenStateKind = 'loading' | 'offline' | 'error' | 'empty';
 
@@ -45,9 +46,7 @@ export const ScreenState = ({ kind, label, hint }: Props) => (
       <ActivityIndicator color={tokens.color.lime} />
     ) : (
       <>
-        <Text className="text-muted font-mono-md text-label tracking-label uppercase text-center">
-          {label ?? labels[kind]}
-        </Text>
+        <SectionLabel className="text-center">{label ?? labels[kind]}</SectionLabel>
         {(hint ?? hints[kind]) && (
           <Text className="text-dim font-sans-md text-body-sm mt-3 text-center">
             {hint ?? hints[kind]}

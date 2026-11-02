@@ -1,4 +1,3 @@
-// mobile/src/navigation/AuthStack.tsx
 // Hosts welcome + login/register + confirm sign-up + password reset screens.
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -8,20 +7,13 @@ import { RegisterScreen } from '../features/auth/screens/RegisterScreen';
 import { ConfirmSignUpScreen } from '../features/auth/screens/ConfirmSignUpScreen';
 import { ForgotPasswordScreen } from '../features/auth/screens/ForgotPasswordScreen';
 import { ResetPasswordScreen } from '../features/auth/screens/ResetPasswordScreen';
-
-export type AuthStackParamList = {
-  Welcome: undefined;
-  Login: undefined;
-  Register: undefined;
-  ConfirmSignUp: { email: string; password?: string };
-  ForgotPassword: { email?: string };
-  ResetPassword: { email: string };
-};
+import { tokens } from '../theme/tokens';
+import { AuthStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0a0a0a' } }}>
+  <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.color.bg } }}>
     <Stack.Screen name="Welcome" component={WelcomeScreen} />
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />

@@ -1,4 +1,3 @@
-// mobile/tailwind.config.js
 // Extends NativeWind/Tailwind with GrowIt tokens.
 // Keep in sync with src/theme/tokens.ts.
 

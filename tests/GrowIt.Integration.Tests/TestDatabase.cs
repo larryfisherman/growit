@@ -25,4 +25,19 @@ public static class TestDatabase
         new(new DbContextOptionsBuilder<GrowItDbContext>().UseNpgsql(ConnectionString).Options);
 
     public static Task EnsureMigratedAsync() => Migration.Value;
+
+    /// Removes every workout and training plan owned by the given users. Test classes call
+    /// it from DisposeAsync so each one cleans up what its own users created.
+    public static async Task DeleteUserDataAsync(params Guid[] userIds)
+    {
+        await using var db = NewContext();
+
+        // Sessions first, in a save of their own: a plan's days go with it by cascade in
+        // the database, where a session still pointing at one of them would stop it.
+        db.Workouts.RemoveRange(await db.Workouts.Where(w => userIds.Contains(w.UserId)).ToListAsync());
+        await db.SaveChangesAsync();
+
+        db.TrainingPlans.RemoveRange(await db.TrainingPlans.Where(p => userIds.Contains(p.UserId)).ToListAsync());
+        await db.SaveChangesAsync();
+    }
 }

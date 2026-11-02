@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Contracts.Workouts.Responses;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,11 +27,12 @@ public static class LastPerformanceLookup
     {
         if (exerciseIds.Count == 0) return new Dictionary<Guid, LastPerformanceResponse>();
 
-        var candidates = dbContext.WorkoutExercises.Where(we =>
-            we.ExerciseId != null
-            && exerciseIds.Contains(we.ExerciseId.Value)
-            && we.Workout.UserId == userId
-            && we.Sets.Any());
+        var candidates = dbContext.WorkoutExercises
+            .OwnedBy(userId)
+            .Where(we =>
+                we.ExerciseId != null
+                && exerciseIds.Contains(we.ExerciseId.Value)
+                && we.Sets.Any());
 
         if (before is not null)
         {

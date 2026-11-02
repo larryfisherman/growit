@@ -1,7 +1,10 @@
 namespace GrowIt.Domain.Entities;
 
-/// A named programme, e.g. "PUSH/PULL 4 dni". Groups the days it is made of.
-/// One plan per user is active at a time and drives the suggestion on the today screen.
+/// A named programme, e.g. "Push/Pull 4 days". Groups the days it is made of.
+/// One plan is meant to be active and drives the suggestion on the today screen. The
+/// database does not enforce this (two racing first-plan creates can both be active).
+/// GetNextPlanDayQueryHandler takes the oldest active one; GetTrainingPlans reports each
+/// plan's flag as stored.
 public class TrainingPlan
 {
     public Guid Id { get; set; }

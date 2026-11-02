@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
 import { usePutApiTrainingPlansPlanId } from '../../../api/generated/training-plans/training-plans';
 import { TrainingPlanResponse } from '../../../api/generated/schemas';
-import { useDebouncedWrite } from '../../../offline/useDebouncedWrite';
+import { useNameNotesAutoSave } from './useNameNotesAutoSave';
 
 type Args = {
   planId: string | null;
@@ -11,25 +10,18 @@ type Args = {
   delayMs?: number;
 };
 
-/// Saves the plan header a moment after typing stops, so the screen has no save button.
-///
-/// The optimistic patch and the invalidation live in the mutation registry now - passing
-/// them here would override what is registered rather than add to it.
-export const usePlanAutoSave = ({ planId, plan, name, notes, delayMs = 600 }: Args) => {
+/// Autosaves the plan header; see useNameNotesAutoSave. A plan not created yet (null id)
+/// has nothing to save to.
+export const usePlanAutoSave = ({ planId, plan, name, notes, delayMs }: Args) => {
   const { mutate: update } = usePutApiTrainingPlansPlanId();
-  const { schedule, cancel } = useDebouncedWrite(update, delayMs);
 
-  useEffect(() => {
-    if (!planId || !plan) return;
-    if (!name.trim()) return;
-
-    const trimmedNotes = notes.trim() || null;
-    if (name.trim() === plan.name && trimmedNotes === (plan.notes ?? null)) {
-      // Typed back to where it started, so anything waiting to be sent is now void.
-      cancel();
-      return;
-    }
-
-    schedule({ planId, data: { name: name.trim(), notes: trimmedNotes } });
-  }, [name, notes, plan, planId, schedule, cancel]);
+  useNameNotesAutoSave({
+    // `|| null`: an empty id has no plan to save to either, so it holds the write back like null.
+    target: planId || null,
+    saved: plan,
+    name,
+    notes,
+    delayMs,
+    write: (planId, data) => update({ planId, data }),
+  });
 };

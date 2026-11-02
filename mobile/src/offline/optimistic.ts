@@ -1,4 +1,5 @@
 import type { Query, QueryClient } from '@tanstack/react-query';
+import { KEY_PREFIX, keyStartsWith } from './queryKeys';
 import { WRITE_SCOPE } from './writeScope';
 
 /// Orval names query keys after the URL, so everything a write can disturb already
@@ -7,29 +8,15 @@ import { WRITE_SCOPE } from './writeScope';
 /// the first time a screen starts reading something the list does not mention. With a
 /// handful of queries the extra refetch costs nothing.
 const FAMILY_PREFIX = {
-  plans: '/api/training-plans',
-  workouts: '/api/Workouts',
+  plans: KEY_PREFIX.plans,
+  workouts: KEY_PREFIX.workouts,
 } as const;
 
 export type QueryFamily = keyof typeof FAMILY_PREFIX;
 
-const touching = (families: readonly QueryFamily[]) => (query: Query) => {
-  const [first] = query.queryKey;
-  return typeof first === 'string' && families.some((f) => first.startsWith(FAMILY_PREFIX[f]));
-};
+const touching = (families: readonly QueryFamily[]) => (query: Query) =>
+  families.some((f) => keyStartsWith(query.queryKey, FAMILY_PREFIX[f]));
 
-/// The shape every write in the app shares.
-///
-/// Two departures from the hooks this replaces, both forced by what happens after the
-/// app is killed with writes still queued:
-///
-///   - No snapshot, no rollback branch. The old handlers stashed the previous cache
-///     value in the mutation context, but context is written out to storage with the
-///     queue, and a mutation resumed from storage never runs onMutate - so the snapshot
-///     would not be there to roll back to anyway. onSettled refetches instead, which
-///     undoes a failed write and costs one request.
-///   - Nothing closes over component state. A resumed mutation has no component behind
-///     it; everything has to come from the variables or the cache.
 /// Families whose refetch is owed once the queue empties, per client.
 const owedRefetches = new WeakMap<QueryClient, Set<QueryFamily>>();
 
@@ -41,6 +28,17 @@ const queuedWrites = (queryClient: QueryClient) =>
       mutation.options.scope?.id === WRITE_SCOPE.id && mutation.state.status === 'pending',
   });
 
+/// The shape every write in the app shares.
+///
+/// Two constraints, both set by what happens after the app is killed with writes still
+/// queued:
+///
+///   - No snapshot, no rollback branch. Mutation context is written out to storage with
+///     the queue, but a mutation resumed from storage never runs onMutate, so a snapshot
+///     of the previous cache value would not be there to roll back to. onSettled
+///     refetches instead, which undoes a failed write and costs one request.
+///   - Nothing closes over component state. A resumed mutation has no component behind
+///     it; everything has to come from the variables or the cache.
 export const optimistic = <TVariables>(
   queryClient: QueryClient,
   families: readonly QueryFamily[],

@@ -32,191 +32,25 @@ import {
 } from '../api/generated/workouts/workouts';
 import type {
   ExerciseResponse,
-  LastPerformanceResponse,
   PlanDayResponse,
-  SetResponse,
-  WorkoutByDateResponse,
   WorkoutExerciseResponse,
   WorkoutResponse,
   TrainingPlanResponse,
   TrainingPlanSummaryResponse,
 } from '../api/generated/schemas';
+import {
+  clearLastPerformanceFrom,
+  forgetWorkout,
+  latestKnownPerformance,
+  patchPlanDayHolding,
+  patchSetHolding,
+  patchWorkoutHolding,
+  removeWorkoutFromLists,
+  seedWorkout,
+} from './cachePatches';
 import { newId } from './ids';
 import { RetiredClientError } from './retiredClient';
 import { type QueryFamily, optimistic } from './optimistic';
-
-const PLAN_DAY_KEY_PREFIX = '/api/training-plans/days/';
-
-/// Some writes name only the row, not the day it sits on, so the day has to be found by
-/// looking for whichever cached one is holding it.
-const patchPlanDayHolding = (
-  queryClient: QueryClient,
-  planDayExerciseId: string,
-  patch: (day: PlanDayResponse) => PlanDayResponse,
-) => {
-  const cached = queryClient.getQueriesData<PlanDayResponse>({
-    predicate: (query) => {
-      const [first] = query.queryKey;
-      return typeof first === 'string' && first.startsWith(PLAN_DAY_KEY_PREFIX);
-    },
-  });
-
-  for (const [queryKey, day] of cached) {
-    if (day?.exercises.some((exercise) => exercise.id === planDayExerciseId)) {
-      queryClient.setQueryData<PlanDayResponse>(queryKey, patch(day));
-    }
-  }
-};
-
-const WORKOUT_BY_DATE_KEY_MARKER = '/by-date';
-const WORKOUT_KEY_PREFIX = '/api/Workouts/';
-
-/// The "today" screen reads a workout by user and date, and the user id is not in the
-/// mutation variables - it was dropped from the contract once the server started taking
-/// it from the token. So the entry is found by what it is rather than by its key.
-const patchWorkoutForDate = (
-  queryClient: QueryClient,
-  performedAt: string,
-  entry: WorkoutByDateResponse,
-) => {
-  const cached = queryClient.getQueriesData<WorkoutByDateResponse>({
-    predicate: (query) => {
-      const [first, params] = query.queryKey;
-      if (typeof first !== 'string' || !first.includes(WORKOUT_BY_DATE_KEY_MARKER)) return false;
-      return (params as { date?: string } | undefined)?.date === performedAt;
-    },
-  });
-
-  for (const [queryKey] of cached) {
-    queryClient.setQueryData<WorkoutByDateResponse>(queryKey, entry);
-  }
-};
-
-/// A logged set names only the exercise it belongs to, not the session - so the session is
-/// found by looking for whichever cached one is holding that exercise. The shape of the
-/// data is what tells a workout apart from the by-date and history entries that share its
-/// key prefix.
-const patchWorkoutHolding = (
-  queryClient: QueryClient,
-  workoutExerciseId: string,
-  patch: (exercise: WorkoutExerciseResponse) => WorkoutExerciseResponse,
-) => {
-  const cached = queryClient.getQueriesData<WorkoutResponse>({
-    predicate: (query) => {
-      const [first] = query.queryKey;
-      if (typeof first !== 'string' || !first.startsWith(WORKOUT_KEY_PREFIX)) return false;
-
-      const workout = query.state.data as WorkoutResponse | undefined;
-      return workout?.exercises?.some((exercise) => exercise.id === workoutExerciseId) === true;
-    },
-  });
-
-  for (const [queryKey, workout] of cached) {
-    if (!workout) continue;
-
-    queryClient.setQueryData<WorkoutResponse>(queryKey, {
-      ...workout,
-      exercises: workout.exercises.map((exercise) =>
-        exercise.id === workoutExerciseId ? patch(exercise) : exercise,
-      ),
-    });
-  }
-};
-
-/// Every cached session, whatever key it sits under. The shape of the data is what tells a
-/// workout apart from the by-date and history entries that share its key prefix.
-const cachedWorkouts = (queryClient: QueryClient) =>
-  queryClient.getQueriesData<WorkoutResponse>({
-    predicate: (query) => {
-      const [first] = query.queryKey;
-      if (typeof first !== 'string' || !first.startsWith(WORKOUT_KEY_PREFIX)) return false;
-      return Array.isArray((query.state.data as WorkoutResponse | undefined)?.exercises);
-    },
-  });
-
-/// A set is named only by its own id, so the session holding it is found by looking.
-/// `patch` returning null takes the set out.
-const patchSetHolding = (
-  queryClient: QueryClient,
-  setId: string,
-  patch: (set: SetResponse) => SetResponse | null,
-) => {
-  const holds = (exercise: WorkoutExerciseResponse) => exercise.sets.some((set) => set.id === setId);
-
-  for (const [queryKey, workout] of cachedWorkouts(queryClient)) {
-    if (!workout?.exercises.some(holds)) continue;
-
-    queryClient.setQueryData<WorkoutResponse>(queryKey, {
-      ...workout,
-      exercises: workout.exercises.map((exercise) =>
-        holds(exercise)
-          ? {
-              ...exercise,
-              sets: exercise.sets.flatMap((set) => {
-                if (set.id !== setId) return [set];
-                const patched = patch(set);
-                return patched ? [patched] : [];
-              }),
-            }
-          : exercise,
-      ),
-    });
-  }
-};
-
-/// The "last time" for an exercise, from what the phone knows right now.
-///
-/// The server's answer rides on the plan day, but it is only as fresh as the last time the
-/// day was fetched - and sessions logged offline since are not in it at all. Those sit in
-/// the cache as workouts of their own, so the latest of the two wins - and on the same date
-/// the cached session, which carries any correction made since. Sessions dated after the
-/// one being filled in do not count, as on the server.
-export const latestKnownPerformance = (
-  queryClient: QueryClient,
-  exerciseId: string | null,
-  fromServer: LastPerformanceResponse | null,
-  session: { id: string; performedAt: string },
-): LastPerformanceResponse | null => {
-  if (!exerciseId) return fromServer;
-
-  let best = fromServer;
-  for (const [, workout] of cachedWorkouts(queryClient)) {
-    if (!workout || workout.id === session.id) continue;
-    if (workout.performedAt > session.performedAt) continue;
-    if (best && workout.performedAt < best.performedAt) continue;
-
-    const lifted = workout.exercises.find(
-      (exercise) => exercise.exerciseId === exerciseId && exercise.sets.length > 0,
-    );
-    if (!lifted) continue;
-
-    best = {
-      performedAt: workout.performedAt,
-      sets: lifted.sets.map((set) => ({ weightKg: set.weightKg, reps: set.reps })),
-    };
-  }
-
-  return best;
-};
-
-/// Seeds a session so the screen can be opened on our own id right away. Without this a
-/// tap made offline leaves the mutation paused forever, which reads on screen as a button
-/// stuck on "Zaczynam..." and an app that has hung.
-const seedWorkout = (queryClient: QueryClient, workout: WorkoutResponse) => {
-  queryClient.setQueryData<WorkoutResponse>(
-    getGetApiWorkoutsWorkoutIdQueryKey(workout.id),
-    workout,
-  );
-
-  patchWorkoutForDate(queryClient, workout.performedAt, {
-    id: workout.id,
-    name: workout.name,
-    performedAt: workout.performedAt,
-    exerciseCount: workout.exercises.length,
-    planDayId: workout.planDayId,
-    planDayName: workout.planDayName,
-  });
-};
 
 /// Everything a write does - the optimistic patch, the invalidation - lives here rather
 /// than at the call site, for two reasons.
@@ -310,7 +144,7 @@ export const registerMutationDefaults = (
   );
 
   registerDesiredState(
-getPutApiTrainingPlansPlanIdMutationOptions(),
+    getPutApiTrainingPlansPlanIdMutationOptions(),
     ['plans'],
     ({ planId, data }, client) => {
       client.setQueryData<TrainingPlanResponse>(
@@ -334,7 +168,7 @@ getPutApiTrainingPlansPlanIdMutationOptions(),
   );
 
   registerDesiredState(
-getPutApiTrainingPlansPlanIdActiveMutationOptions(),
+    getPutApiTrainingPlansPlanIdActiveMutationOptions(),
     ['plans'],
     ({ planId }, client) => {
       // Exactly one plan is active, so the others have to give it up in the same breath.
@@ -383,11 +217,10 @@ getPutApiTrainingPlansPlanIdActiveMutationOptions(),
     },
   );
 
-  registerDesiredState(
-getPutApiTrainingPlansPlanIdDaysOrderMutationOptions(), ['plans']);
+  registerDesiredState(getPutApiTrainingPlansPlanIdDaysOrderMutationOptions(), ['plans']);
 
   registerDesiredState(
-getPutApiTrainingPlansDaysDayIdMutationOptions(),
+    getPutApiTrainingPlansDaysDayIdMutationOptions(),
     ['plans'],
     ({ dayId, data }, client) => {
       client.setQueryData<PlanDayResponse>(getGetApiTrainingPlansDaysDayIdQueryKey(dayId), (old) =>
@@ -398,11 +231,11 @@ getPutApiTrainingPlansDaysDayIdMutationOptions(),
 
   register(getDeleteApiTrainingPlansDaysDayIdMutationOptions(), ['plans']);
   register(getPostApiTrainingPlansDaysDayIdExercisesMutationOptions(), ['plans']);
-  registerDesiredState(
-getPutApiTrainingPlansDaysDayIdExercisesMutationOptions(), ['plans']);
+  // No apply: the picker patches the day itself; see PlanDayExercisePickerScreen.
+  registerDesiredState(getPutApiTrainingPlansDaysDayIdExercisesMutationOptions(), ['plans']);
 
   registerDesiredState(
-getPutApiTrainingPlansExercisesPlanDayExerciseIdMutationOptions(),
+    getPutApiTrainingPlansExercisesPlanDayExerciseIdMutationOptions(),
     ['plans'],
     ({ planDayExerciseId, data }, client) => {
       patchPlanDayHolding(client, planDayExerciseId, (day) => ({
@@ -565,14 +398,7 @@ getPutApiTrainingPlansExercisesPlanDayExerciseIdMutationOptions(),
     getDeleteApiWorkoutsExercisesWorkoutExerciseIdMutationOptions(),
     ['workouts'],
     ({ workoutExerciseId }, client) => {
-      for (const [queryKey, workout] of cachedWorkouts(client)) {
-        if (!workout?.exercises.some((exercise) => exercise.id === workoutExerciseId)) continue;
-
-        client.setQueryData<WorkoutResponse>(queryKey, {
-          ...workout,
-          exercises: workout.exercises.filter((exercise) => exercise.id !== workoutExerciseId),
-        });
-      }
+      patchWorkoutHolding(client, workoutExerciseId, () => null);
     },
   );
 
@@ -582,75 +408,9 @@ getPutApiTrainingPlansExercisesPlanDayExerciseIdMutationOptions(),
     getDeleteApiWorkoutsWorkoutIdMutationOptions(),
     ['workouts', 'plans'],
     ({ workoutId }, client) => {
-      // The session's own entry goes too. Left behind it would keep feeding "last time"
-      // from a session that no longer exists - and it is persisted, so for good. The
-      // screen showing it is being closed, and an observer keeps what it last rendered.
-      const deleted = client.getQueryData<WorkoutResponse>(getGetApiWorkoutsWorkoutIdQueryKey(workoutId));
-      client.removeQueries({ queryKey: getGetApiWorkoutsWorkoutIdQueryKey(workoutId), exact: true });
-
-      // A plan day may hold the same session as the server's "last time". What came
-      // before it is not known here, so the hint is cleared rather than left wrong; the
-      // refetch owed to the plans family brings the right one back.
-      if (deleted) {
-        const lifted = new Set(deleted.exercises.map((exercise) => exercise.exerciseId));
-        const days = client.getQueriesData<PlanDayResponse>({
-          predicate: (query) => {
-            const [first] = query.queryKey;
-            return typeof first === 'string' && first.startsWith(PLAN_DAY_KEY_PREFIX);
-          },
-        });
-
-        for (const [queryKey, day] of days) {
-          if (!day?.exercises) continue;
-          client.setQueryData<PlanDayResponse>(queryKey, {
-            ...day,
-            exercises: day.exercises.map((exercise) =>
-              lifted.has(exercise.exerciseId) &&
-              exercise.lastPerformance?.performedAt === deleted.performedAt
-                ? { ...exercise, lastPerformance: null }
-                : exercise,
-            ),
-          });
-        }
-      }
-
-      // Every list the session appears on: today's entry, the calendar month and the
-      // history page.
-      const lists = client.getQueriesData<unknown>({
-        predicate: (query) => {
-          const [first] = query.queryKey;
-          return typeof first === 'string' && first.startsWith(WORKOUT_KEY_PREFIX);
-        },
-      });
-
-      for (const [queryKey, data] of lists) {
-        const [first] = queryKey;
-
-        if (typeof first === 'string' && first.includes(WORKOUT_BY_DATE_KEY_MARKER)) {
-          if ((data as WorkoutByDateResponse | undefined)?.id === workoutId) {
-            // The server answers 404 for a day with no session, which leaves the query
-            // without data; null is the closest a cache entry gets to that.
-            client.setQueryData(queryKey, null);
-          }
-          continue;
-        }
-
-        if (Array.isArray(data)) {
-          client.setQueryData(
-            queryKey,
-            data.filter((entry: { id?: string }) => entry.id !== workoutId),
-          );
-          continue;
-        }
-
-        const page = data as { items?: { id: string }[] } | undefined;
-        if (Array.isArray(page?.items)) {
-          client.setQueryData(queryKey, {
-            ...page,
-            items: page.items.filter((entry) => entry.id !== workoutId),
-          });
-        }
-      }
+      const deleted = forgetWorkout(client, workoutId);
+      if (deleted) clearLastPerformanceFrom(client, deleted);
+      removeWorkoutFromLists(client, workoutId);
     },
   );
 };

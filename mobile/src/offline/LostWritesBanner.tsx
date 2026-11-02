@@ -1,9 +1,11 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Alert, Pressable, Text } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../theme/tokens';
+import { CONNECTION_BANNER_CLEARANCE } from './ConnectionBanner';
 import { clearLostWrites, getLostWriteCount, subscribeToLostWrites } from './failedWrites';
+import { useFadeSlideIn } from './useFadeSlideIn';
 
 /// Sits below the connection banner and stays until acknowledged.
 ///
@@ -14,15 +16,7 @@ export const LostWritesBanner = () => {
   const lost = useSyncExternalStore(subscribeToLostWrites, getLostWriteCount);
   const insets = useSafeAreaInsets();
 
-  const progress = useSharedValue(0);
-  useEffect(() => {
-    progress.value = withTiming(lost > 0 ? 1 : 0, { duration: 220 });
-  }, [lost, progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * -12 }],
-  }));
+  const animatedStyle = useFadeSlideIn(lost > 0);
 
   const explain = () => {
     Alert.alert(
@@ -38,8 +32,7 @@ export const LostWritesBanner = () => {
       style={[
         {
           position: 'absolute',
-          // Clears the connection banner, which occupies the same corner.
-          top: insets.top + tokens.space[10],
+          top: insets.top + CONNECTION_BANNER_CLEARANCE,
           left: 0,
           right: 0,
           alignItems: 'center',

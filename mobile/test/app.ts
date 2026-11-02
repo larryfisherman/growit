@@ -1,8 +1,9 @@
 /// <reference types="node" />
 import { type Mutation, type QueryClient, type UseMutationOptions } from '@tanstack/react-query';
-import { persistQueryClientRestore, persistQueryClientSave } from '@tanstack/react-query-persist-client';
+import { persistQueryClientRestore } from '@tanstack/react-query-persist-client';
+import { getPostApiTrainingPlansMutationOptions } from '../src/api/generated/training-plans/training-plans.ts';
 import { createQueryClient } from '../src/offline/queryClient.ts';
-import { persistOptionsFor } from '../src/offline/persistence.ts';
+import { persistOptionsFor, savePersistedClient } from '../src/offline/persistence.ts';
 import { forceOffline } from '../src/offline/connectivity.ts';
 import { clearLostWrites, getLostWriteCount } from '../src/offline/failedWrites.ts';
 import { clearSession, saveSession } from '../src/auth/tokenStorage.ts';
@@ -70,15 +71,8 @@ export const write = <TVariables>(
 
 /// Writes the user's cache and queue to disk, as QueryLayer does on its throttle and
 /// sign-out does on demand.
-export const saveToDisk = (client: QueryClient, userId: string) => {
-  const options = persistOptionsFor(userId);
-  return persistQueryClientSave({
-    queryClient: client,
-    persister: options.persister,
-    buster: options.buster,
-    dehydrateOptions: options.dehydrateOptions,
-  });
-};
+export const saveToDisk = (client: QueryClient, userId: string) =>
+  savePersistedClient(client, persistOptionsFor(userId));
 
 /// The next launch: a fresh client, restored from disk the way PersistQueryClientProvider
 /// restores it, then resumed the way its onSuccess resumes it.
@@ -103,6 +97,15 @@ export const waitFor = async (condition: () => boolean, message: string, timeout
 
 export const requestsTo = (method: string, pathPrefix: string) =>
   fakeApi.requests.filter((r) => r.method === method && r.path.startsWith(pathPrefix));
+
+/// Creates a plan the way the plan screen does, without waiting for it to settle.
+export const createPlan = (app: QueryClient, id: string) =>
+  write(app, getPostApiTrainingPlansMutationOptions, { data: { id, name: 'Plan', notes: null } });
+
+/// Every attempt the fake API saw to create the plan with this id. An exact path, not
+/// requestsTo's prefix: a day or exercise added under the plan must not count.
+export const createsOf = (id: string) =>
+  fakeApi.requests.filter((r) => r.method === 'POST' && r.path === '/api/training-plans' && r.body?.id === id);
 
 /// A clean device between tests: nothing on disk, nobody signed in, link up, no lost
 /// writes on record, and every client from the previous test gone.

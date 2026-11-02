@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../theme/tokens';
 import { useConnectivity } from './useConnectivity';
+import { useFadeSlideIn } from './useFadeSlideIn';
 
 type Variant = 'offline' | 'unstable' | 'restored';
+
+/// Vertical space the connection banner occupies below the safe-area top; a banner
+/// stacked under it starts this far down.
+export const CONNECTION_BANNER_CLEARANCE = tokens.space[10];
 
 /// A connection wobbling around the threshold would otherwise flash the banner on and
 /// off; 'unstable' has to hold for this long before it is worth saying.
@@ -63,15 +68,7 @@ export const ConnectionBanner = () => {
   const shown = useRef<Variant>('offline');
   if (variant) shown.current = variant;
 
-  const progress = useSharedValue(0);
-  useEffect(() => {
-    progress.value = withTiming(variant ? 1 : 0, { duration: 220 });
-  }, [variant, progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * -12 }],
-  }));
+  const animatedStyle = useFadeSlideIn(variant !== null);
 
   const { label, color, ink } = copy[shown.current];
 

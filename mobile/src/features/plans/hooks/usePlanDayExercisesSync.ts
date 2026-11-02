@@ -19,10 +19,8 @@ const signatureOf = (items: PlanDayExerciseSelection[]) =>
 
 /// Keeps the server's copy of a day's exercise list in step with the local one.
 ///
-/// This used to be a sync engine of its own - retries, backoff, an in-flight slot, a flush
-/// on backgrounding, an alert on failure - written before there was a queue to put the
-/// write on. All of that belongs to the mutation layer now, and is done better there: a
-/// write made with no signal waits rather than failing after a minute, it is ordered
+/// Retries, ordering, persistence and coalescing all come from the mutation layer, not
+/// from this hook: a write made with no signal waits rather than failing, it is ordered
 /// against the writes creating the plan and day it belongs to, it survives the app being
 /// killed, and a run of edits collapses into the one that matters.
 ///

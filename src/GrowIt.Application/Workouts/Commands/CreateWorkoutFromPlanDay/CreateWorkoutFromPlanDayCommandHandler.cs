@@ -1,6 +1,7 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Contracts.Workouts.Requests;
 using GrowIt.Domain.Entities;
 using MediatR;
@@ -17,9 +18,8 @@ public class CreateWorkoutFromPlanDayCommandHandler(IApplicationDbContext dbCont
         // write should look like, so the idempotency check needs to know.
         var day = await dbContext.TrainingPlanDays
             .Include(d => d.Exercises)
-            .FirstOrDefaultAsync(
-                d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId,
-                cancellationToken);
+            .OwnedBy(request.UserId)
+            .FirstOrDefaultAsync(d => d.Id == request.PlanDayId, cancellationToken);
 
         // Without the phone's own copy there is nothing to build the session from.
         if (day is null && request.Exercises is null)
@@ -36,8 +36,9 @@ public class CreateWorkoutFromPlanDayCommandHandler(IApplicationDbContext dbCont
             .Where(w => w.Id == request.Id)
             .Select(w => new ExistingRow(w.UserId, w.PlanDayId ?? Guid.Empty));
 
-        if (await IdempotencyGuard.AlreadyCreatedAsync(
-                existing, request.Id, request.UserId, expectedParentId, cancellationToken))
+        var create = new IdempotentCreate(dbContext, existing, request.Id, request.UserId, expectedParentId);
+
+        if (await create.AlreadyCreatedAsync(cancellationToken))
         {
             return request.Id;
         }
@@ -58,8 +59,7 @@ public class CreateWorkoutFromPlanDayCommandHandler(IApplicationDbContext dbCont
         };
 
         dbContext.Workouts.Add(workout);
-        await IdempotencyGuard.SaveCreateAsync(
-            dbContext, existing, request.Id, request.UserId, expectedParentId, cancellationToken);
+        await create.SaveAsync(cancellationToken);
 
         return workout.Id;
     }

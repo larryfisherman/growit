@@ -1,5 +1,6 @@
 using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -15,8 +16,9 @@ public class CreateTrainingPlanCommandHandler(IApplicationDbContext dbContext)
             .Where(p => p.Id == request.Id)
             .Select(p => new ExistingRow(p.UserId, p.UserId));
 
-        if (await IdempotencyGuard.AlreadyCreatedAsync(
-                existing, request.Id, request.UserId, request.UserId, cancellationToken))
+        var create = new IdempotentCreate(dbContext, existing, request.Id, request.UserId, request.UserId);
+
+        if (await create.AlreadyCreatedAsync(cancellationToken))
         {
             return request.Id;
         }
@@ -24,7 +26,8 @@ public class CreateTrainingPlanCommandHandler(IApplicationDbContext dbContext)
         // The first plan becomes the active one, so a new user never ends up with
         // plans but no suggestion on the today screen.
         var isFirstPlan = !await dbContext.TrainingPlans
-            .AnyAsync(p => p.UserId == request.UserId, cancellationToken);
+            .OwnedBy(request.UserId)
+            .AnyAsync(cancellationToken);
 
         var plan = new TrainingPlan
         {
@@ -37,8 +40,7 @@ public class CreateTrainingPlanCommandHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.TrainingPlans.Add(plan);
-        await IdempotencyGuard.SaveCreateAsync(
-            dbContext, existing, request.Id, request.UserId, request.UserId, cancellationToken);
+        await create.SaveAsync(cancellationToken);
 
         return plan.Id;
     }

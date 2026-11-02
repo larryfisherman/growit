@@ -5,6 +5,7 @@ import { useAuth } from '../../../auth/AuthContext';
 import { forceOffline, isForcedOffline } from '../../../offline/connectivity';
 import { pendingWriteCount } from '../../../offline/pendingWrites';
 import { tokens } from '../../../theme/tokens';
+import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 /// Flips the same flag the circuit breaker uses, so the offline path under test is the
 /// one that ships - no radio, no simulator settings.
@@ -18,9 +19,9 @@ const OfflineSimulator = () => {
 
   return (
     <>
-      <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-3 mt-8">
+      <SectionLabel className="mb-3 mt-8">
         [ DEWELOPERSKIE ]
-      </Text>
+      </SectionLabel>
 
       <View className="bg-surface rounded-md p-4 border border-line flex-row items-center justify-between">
         <Text className="text-fg font-sans-md text-body">Symuluj tryb offline</Text>
@@ -60,9 +61,9 @@ export const SettingsScreen = () => {
 
   return (
     <View className="flex-1 bg-bg px-6 pt-6 pb-10">
-      <Text className="text-muted font-mono-md text-label tracking-label uppercase mb-3">
+      <SectionLabel className="mb-3">
         [ KONTO ]
-      </Text>
+      </SectionLabel>
 
       <View className="bg-surface rounded-md p-4 border border-line">
         <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase">Email</Text>

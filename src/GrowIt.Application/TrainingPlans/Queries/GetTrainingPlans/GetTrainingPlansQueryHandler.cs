@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Contracts.TrainingPlans.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ public class GetTrainingPlansQueryHandler(IApplicationDbContext dbContext)
         GetTrainingPlansQuery request, CancellationToken cancellationToken)
     {
         return await dbContext.TrainingPlans
-            .Where(p => p.UserId == request.UserId)
+            .OwnedBy(request.UserId)
             .OrderByDescending(p => p.IsActive)
             .ThenBy(p => p.CreatedAt)
             .Select(p => new TrainingPlanSummaryResponse(p.Id, p.Name, p.IsActive, p.Days.Count))

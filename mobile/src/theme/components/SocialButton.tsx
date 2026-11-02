@@ -1,4 +1,4 @@
-import { Pressable, Text, View, PressableProps } from 'react-native';
+import { Pressable, Text, PressableProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { tokens } from '../tokens';
 

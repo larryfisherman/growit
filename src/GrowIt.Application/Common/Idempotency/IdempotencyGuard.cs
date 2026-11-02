@@ -59,10 +59,9 @@ public static class IdempotencyGuard
     ///
     /// The check above runs before the insert, so two copies of one write arriving
     /// together - a client retrying after a timeout while the original is still being
-    /// processed - can both pass it, and one then hits the unique key. That one used to
-    /// come back as 409, and the client reported as lost a write that had landed. If the
-    /// row that beat us is ours, in the same place, the write is done; anything else is
-    /// still a conflict.
+    /// processed - can both pass it, and one then hits the unique key. Answering 409 here
+    /// would make the client report as lost a write that landed. If the row that beat us
+    /// is ours, in the same place, the write is done; anything else is still a conflict.
     public static async Task SaveCreateAsync(
         IApplicationDbContext dbContext,
         IQueryable<ExistingRow> rows,
@@ -80,4 +79,23 @@ public static class IdempotencyGuard
             if (!await AlreadyCreatedAsync(rows, id, userId, expectedParentId, cancellationToken)) throw;
         }
     }
+}
+
+/// One create's pre-check and save, bound to a single (id, owner, parent) tuple.
+///
+/// The pre-check and the race recovery in SaveCreateAsync must judge the same id, owner
+/// and parent. Passing the tuple twice by hand could let the two drift apart, so it is bound
+/// once here and each handler states it in one place.
+public sealed class IdempotentCreate(
+    IApplicationDbContext dbContext,
+    IQueryable<ExistingRow> rows,
+    Guid id,
+    Guid userId,
+    Guid expectedParentId)
+{
+    public Task<bool> AlreadyCreatedAsync(CancellationToken cancellationToken) =>
+        IdempotencyGuard.AlreadyCreatedAsync(rows, id, userId, expectedParentId, cancellationToken);
+
+    public Task SaveAsync(CancellationToken cancellationToken) =>
+        IdempotencyGuard.SaveCreateAsync(dbContext, rows, id, userId, expectedParentId, cancellationToken);
 }

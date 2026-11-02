@@ -11,8 +11,6 @@ const statusOf = (error: unknown): number | undefined => {
   return typeof response?.status === 'number' ? response.status : undefined;
 };
 
-export const httpStatusOf = statusOf;
-
 /// The request never got a verdict: no response came back at all. This is the only
 /// failure that says anything about connectivity, and the only one worth queueing on.
 export const isTransportError = (error: unknown): boolean => statusOf(error) === undefined;

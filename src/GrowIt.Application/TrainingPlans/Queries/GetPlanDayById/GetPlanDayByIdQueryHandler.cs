@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Application.Workouts.Common;
 using GrowIt.Contracts.TrainingPlans.Responses;
 using MediatR;
@@ -12,7 +13,8 @@ public class GetPlanDayByIdQueryHandler(IApplicationDbContext dbContext)
     public async Task<PlanDayResponse?> Handle(GetPlanDayByIdQuery request, CancellationToken cancellationToken)
     {
         var day = await dbContext.TrainingPlanDays
-            .Where(d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId)
+            .OwnedBy(request.UserId)
+            .Where(d => d.Id == request.PlanDayId)
             .Select(d => new PlanDayResponse(
                 d.Id,
                 d.PlanId,

@@ -1,13 +1,14 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Application.Workouts.Commands.AddExerciseToWorkout;
 
-public class AddExerciseToWorkoutHandler(IApplicationDbContext dbContext)
+public class AddExerciseToWorkoutCommandHandler(IApplicationDbContext dbContext)
     : IRequestHandler<AddExerciseToWorkoutCommand, Guid>
 {
     public async Task<Guid> Handle(AddExerciseToWorkoutCommand request, CancellationToken cancellationToken)
@@ -16,16 +17,17 @@ public class AddExerciseToWorkoutHandler(IApplicationDbContext dbContext)
             .Where(e => e.Id == request.Id)
             .Select(e => new ExistingRow(e.Workout.UserId, e.WorkoutId));
 
-        if (await IdempotencyGuard.AlreadyCreatedAsync(
-                existing, request.Id, request.UserId, request.WorkoutId, cancellationToken))
+        var create = new IdempotentCreate(dbContext, existing, request.Id, request.UserId, request.WorkoutId);
+
+        if (await create.AlreadyCreatedAsync(cancellationToken))
         {
             return request.Id;
         }
 
-        // This check did not exist: the workout id came off the route and was written to
-        // on trust, so anyone holding a valid token could append to anyone's session.
+        // The workout id comes from the route; only its owner may append to it.
         var workoutIsMine = await dbContext.Workouts
-            .AnyAsync(w => w.Id == request.WorkoutId && w.UserId == request.UserId, cancellationToken);
+            .OwnedBy(request.UserId)
+            .AnyAsync(w => w.Id == request.WorkoutId, cancellationToken);
 
         if (!workoutIsMine)
         {
@@ -46,8 +48,7 @@ public class AddExerciseToWorkoutHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.WorkoutExercises.Add(workoutExercise);
-        await IdempotencyGuard.SaveCreateAsync(
-            dbContext, existing, request.Id, request.UserId, request.WorkoutId, cancellationToken);
+        await create.SaveAsync(cancellationToken);
 
         return workoutExercise.Id;
     }

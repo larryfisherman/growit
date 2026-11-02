@@ -1,4 +1,6 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
+using GrowIt.Application.Workouts.Common;
 using GrowIt.Contracts.Workouts.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +13,7 @@ public class GetWorkoutHistoryQueryHandler(IApplicationDbContext dbContext)
     public async Task<WorkoutHistoryResponse> Handle(GetWorkoutHistoryQuery request, CancellationToken cancellationToken)
     {
         var query = dbContext.Workouts
-            .Where(w => w.UserId == request.UserId)
+            .OwnedBy(request.UserId)
             .OrderByDescending(w => w.PerformedAt);
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -19,13 +21,7 @@ public class GetWorkoutHistoryQueryHandler(IApplicationDbContext dbContext)
         var items = await query
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(w => new WorkoutSummaryResponse(
-                w.Id,
-                w.Name,
-                w.PerformedAt,
-                w.WorkoutExercises.Count,
-                w.PlanDayId,
-                w.PlanDay != null ? w.PlanDay.Name : null))
+            .Select(WorkoutProjections.Summary)
             .ToListAsync(cancellationToken);
 
         return new WorkoutHistoryResponse(items, totalCount);

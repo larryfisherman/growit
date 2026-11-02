@@ -1,19 +1,15 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.TrainingPlans.Commands.SetPlanDayExercises;
 using GrowIt.Domain.Entities;
-using GrowIt.Infrastructure.Persistence;
+using GrowIt.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Integration.Tests;
 
-/// Exercises the declarative "set the day's exercises" command against the local
-/// Postgres from docker-compose. Each test builds and tears down its own plan.
+/// Exercises the declarative "set the day's exercises" command against TestDatabase
+/// (the separate growit_test database). Each test builds and tears down its own plan.
 public class SetPlanDayExercisesTests : IAsyncLifetime
 {
-    private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
-    private static readonly Guid DumbbellPress = Guid.Parse("a1b2c3d4-0002-0000-0000-000000000000");
-    private static readonly Guid Deadlift = Guid.Parse("a1b2c3d4-0004-0000-0000-000000000000");
-
     private readonly Guid _userId = Guid.NewGuid();
     private Guid _planId;
     private readonly Guid _otherPlanId = Guid.CreateVersion7();
@@ -21,13 +17,11 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     private Guid _benchRowId;
     private Guid _dumbbellRowId;
 
-    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
-
     public async Task InitializeAsync()
     {
         await TestDatabase.EnsureMigratedAsync();
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
 
         _planId = Guid.NewGuid();
         _dayId = Guid.NewGuid();
@@ -53,12 +47,12 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
                         // Tuned away from the defaults - this is what must survive.
                         new TrainingPlanDayExercise
                         {
-                            Id = _benchRowId, ExerciseId = BenchPress,
+                            Id = _benchRowId, ExerciseId = ExerciseSeed.BenchPress,
                             TargetSets = 5, TargetReps = 5, RestSeconds = 180, OrderIndex = 0
                         },
                         new TrainingPlanDayExercise
                         {
-                            Id = _dumbbellRowId, ExerciseId = DumbbellPress,
+                            Id = _dumbbellRowId, ExerciseId = ExerciseSeed.DumbbellPress,
                             TargetSets = 3, TargetReps = 10, RestSeconds = 90, OrderIndex = 1
                         }
                     }
@@ -71,7 +65,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var plans = await db.TrainingPlans
             .Where(p => p.Id == _planId || p.Id == _otherPlanId)
             .ToListAsync();
@@ -87,7 +81,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     /// DisposeAsync along with the plan that owns it.
     private async Task<Guid> CreateRowOnAnotherDayAsync()
     {
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
 
         var rowId = Guid.CreateVersion7();
         db.TrainingPlans.Add(new TrainingPlan
@@ -108,7 +102,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
                     {
                         new TrainingPlanDayExercise
                         {
-                            Id = rowId, ExerciseId = BenchPress,
+                            Id = rowId, ExerciseId = ExerciseSeed.BenchPress,
                             TargetSets = 3, TargetReps = 10, RestSeconds = 90, OrderIndex = 0
                         }
                     }
@@ -122,7 +116,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
 
     private async Task<List<TrainingPlanDayExercise>> ReadDayAsync()
     {
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         return await db.TrainingPlanDayExercises
             .Where(e => e.PlanDayId == _dayId)
             .OrderBy(e => e.OrderIndex)
@@ -131,7 +125,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
 
     private async Task RunAsync(params PlanDayExerciseSelectionInput[] selections)
     {
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var handler = new SetPlanDayExercisesCommandHandler(db);
         await handler.Handle(
             new SetPlanDayExercisesCommand(_userId, _dayId, selections), CancellationToken.None);
@@ -142,7 +136,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     {
         await RunAsync(
             new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(null, Deadlift, null),
+            new PlanDayExerciseSelectionInput(null, ExerciseSeed.Deadlift, null),
             new PlanDayExerciseSelectionInput(null, null, "Pompki na poręczach"));
 
         var rows = await ReadDayAsync();
@@ -155,7 +149,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         Assert.Equal(180, rows[0].RestSeconds);
 
         // New library pick starts on the defaults.
-        Assert.Equal(Deadlift, rows[1].ExerciseId);
+        Assert.Equal(ExerciseSeed.Deadlift, rows[1].ExerciseId);
         Assert.Equal(3, rows[1].TargetSets);
         Assert.Equal(10, rows[1].TargetReps);
         Assert.Equal(90, rows[1].RestSeconds);
@@ -173,7 +167,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var selections = new[]
         {
             new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(null, Deadlift, null),
+            new PlanDayExerciseSelectionInput(null, ExerciseSeed.Deadlift, null),
             new PlanDayExerciseSelectionInput(null, null, "Pompki na poręczach")
         };
 
@@ -226,13 +220,13 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
 
         await RunAsync(
             new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(clientId, Deadlift, null));
+            new PlanDayExerciseSelectionInput(clientId, ExerciseSeed.Deadlift, null));
 
         var rows = await ReadDayAsync();
 
         Assert.Equal(2, rows.Count);
         Assert.Equal(clientId, rows[1].Id);
-        Assert.Equal(Deadlift, rows[1].ExerciseId);
+        Assert.Equal(ExerciseSeed.Deadlift, rows[1].ExerciseId);
     }
 
     [Fact]
@@ -242,7 +236,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var selections = new[]
         {
             new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(clientId, Deadlift, null)
+            new PlanDayExerciseSelectionInput(clientId, ExerciseSeed.Deadlift, null)
         };
 
         await RunAsync(selections);
@@ -265,14 +259,14 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var freshId = Guid.CreateVersion7();
 
         await RunAsync(
-            new PlanDayExerciseSelectionInput(freshId, BenchPress, null),
+            new PlanDayExerciseSelectionInput(freshId, ExerciseSeed.BenchPress, null),
             new PlanDayExerciseSelectionInput(_dumbbellRowId, null, null));
 
         var rows = await ReadDayAsync();
 
         Assert.Equal(2, rows.Count);
         Assert.Equal(freshId, rows[0].Id);
-        Assert.Equal(BenchPress, rows[0].ExerciseId);
+        Assert.Equal(ExerciseSeed.BenchPress, rows[0].ExerciseId);
         Assert.Equal(5, rows[0].TargetSets);
         Assert.Equal(5, rows[0].TargetReps);
         Assert.Equal(180, rows[0].RestSeconds);
@@ -286,10 +280,10 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var strangerRowId = await CreateRowOnAnotherDayAsync();
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            RunAsync(new PlanDayExerciseSelectionInput(strangerRowId, Deadlift, null)));
+            RunAsync(new PlanDayExerciseSelectionInput(strangerRowId, ExerciseSeed.Deadlift, null)));
 
         // And the row it pointed at is untouched.
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var stranger = await db.TrainingPlanDayExercises.FirstAsync(e => e.Id == strangerRowId);
         Assert.NotEqual(_dayId, stranger.PlanDayId);
     }

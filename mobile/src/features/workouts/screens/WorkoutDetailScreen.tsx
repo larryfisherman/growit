@@ -15,6 +15,7 @@ import { Button } from '../../../theme/components/Button';
 import { ScreenState, screenStateOf } from '../../../theme/components/ScreenState';
 import { formatDayMonth } from '../../../lib/date';
 import { tokens } from '../../../theme/tokens';
+import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'WorkoutDetail'>;
 
@@ -136,15 +137,7 @@ export const WorkoutDetailScreen = ({ route, navigation }: Props) => {
 
   if (screenState) return <ScreenState kind={screenState} />;
 
-  if (!workout) {
-    return (
-      <View className="flex-1 bg-bg items-center justify-center">
-        <Text className="text-muted font-mono-md text-label tracking-label uppercase">
-          [ NIE ZNALEZIONO ]
-        </Text>
-      </View>
-    );
-  }
+  if (!workout) return <ScreenState kind="empty" label="[ NIE ZNALEZIONO ]" />;
 
   return (
     <View className="flex-1 bg-bg">
@@ -153,9 +146,9 @@ export const WorkoutDetailScreen = ({ route, navigation }: Props) => {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View className="items-center justify-center py-10">
-            <Text className="text-muted font-mono-md text-label tracking-label uppercase">
+            <SectionLabel>
               [ BRAK ĆWICZEŃ ]
-            </Text>
+            </SectionLabel>
             <Text className="text-fg font-sans-md text-body mt-3">Dodaj pierwsze poniżej.</Text>
           </View>
         }

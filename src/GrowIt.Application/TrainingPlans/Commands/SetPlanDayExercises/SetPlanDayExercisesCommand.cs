@@ -10,7 +10,9 @@ public record SetPlanDayExercisesCommand(
     Guid PlanDayId,
     IReadOnlyList<PlanDayExerciseSelectionInput> Selections) : IRequest;
 
-/// Exactly one of the three identifies the entry; see SetPlanDayExercisesRequest.
+/// Names at least one of a row id, a library exercise or a custom name; a row id may come
+/// with the exercise it stands for, but a library exercise and a custom name never come
+/// together. See PlanDayExerciseSelection and SetPlanDayExercisesCommandValidator.
 public record PlanDayExerciseSelectionInput(
     Guid? PlanDayExerciseId,
     Guid? ExerciseId,

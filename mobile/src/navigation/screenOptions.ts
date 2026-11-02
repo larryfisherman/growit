@@ -12,3 +12,11 @@ export const darkStackOptions: NativeStackNavigationOptions = {
   headerBackTitle: '',
   contentStyle: { backgroundColor: tokens.color.bg },
 };
+
+/// Options for the plan-editing screens, shared by every stack that mounts them so their
+/// titles and presentation stay the same wherever a plan is edited from.
+export const planEditingScreenOptions = {
+  PlanDetail: { title: 'Plan' },
+  PlanDay: { title: 'Dzień planu' },
+  PlanDayExercisePicker: { title: 'Wybierz ćwiczenie', presentation: 'modal' },
+} satisfies Record<string, NativeStackNavigationOptions>;

@@ -6,6 +6,8 @@ public static class HttpContextExtensions
 {
     public static Guid GetUserId(this HttpContext context)
     {
+        // JwtBearer's default inbound claim mapping renames Cognito's `sub` to NameIdentifier;
+        // the integration-test auth handler issues a raw `sub`.
         var sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? context.User.FindFirst("sub")?.Value;
 

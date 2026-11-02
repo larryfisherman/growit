@@ -1,11 +1,11 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { after, beforeEach, describe, test } from 'node:test';
-import type { QueryClient } from '@tanstack/react-query';
-import { getPostApiTrainingPlansMutationOptions } from '../api/generated/training-plans/training-plans.ts';
 import {
   connectionDrops,
   connectionReturns,
+  createPlan,
+  createsOf,
   fakeApi,
   fakeCognito,
   getLostWriteCount,
@@ -21,17 +21,10 @@ import {
   stopApp,
   tokenOf,
   waitFor,
-  write,
 } from '../../test/app.ts';
 
 /// Sessions and the queue. A write belongs to the user who made it: it must not be lost
 /// because a token could not be refreshed, and it must never be sent as somebody else.
-
-const createPlan = (app: QueryClient, id: string) =>
-  write(app, getPostApiTrainingPlansMutationOptions, { data: { id, name: 'Plan', notes: null } });
-
-const createsOf = (id: string) =>
-  fakeApi.requests.filter((r) => r.method === 'POST' && r.path === '/api/training-plans' && r.body?.id === id);
 
 beforeEach(resetDevice);
 after(shutDown);

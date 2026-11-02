@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using GrowIt.Contracts.TrainingPlans.Responses;
 using GrowIt.Contracts.Workouts.Responses;
-using GrowIt.Infrastructure.Persistence;
+using GrowIt.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace GrowIt.Integration.Tests;
@@ -13,28 +13,12 @@ namespace GrowIt.Integration.Tests;
 /// its target is already gone - so each one is checked for its replay as well as for itself.
 public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsyncLifetime
 {
-    private static readonly Guid BenchPress = Guid.Parse("a1b2c3d4-0001-0000-0000-000000000000");
-
     private readonly Guid _userId = Guid.CreateVersion7();
     private readonly Guid _otherUserId = Guid.CreateVersion7();
 
-    private static GrowItDbContext NewContext() => TestDatabase.NewContext();
-
     public Task InitializeAsync() => TestDatabase.EnsureMigratedAsync();
 
-    public async Task DisposeAsync()
-    {
-        await using var db = NewContext();
-
-        // Sessions first, in a save of their own; see OfflineReplayTests.
-        db.Workouts.RemoveRange(
-            await db.Workouts.Where(w => w.UserId == _userId || w.UserId == _otherUserId).ToListAsync());
-        await db.SaveChangesAsync();
-
-        db.TrainingPlans.RemoveRange(
-            await db.TrainingPlans.Where(p => p.UserId == _userId || p.UserId == _otherUserId).ToListAsync());
-        await db.SaveChangesAsync();
-    }
+    public Task DisposeAsync() => TestDatabase.DeleteUserDataAsync(_userId, _otherUserId);
 
     private HttpClient Mine() => factory.ClientFor(_userId);
     private HttpClient Theirs() => factory.ClientFor(_otherUserId);
@@ -55,7 +39,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
 
         (await client.PostAsJsonAsync($"/api/Workouts/{workoutId}/exercises", new
         {
-            id = rowId, exerciseId = BenchPress, orderIndex = 0,
+            id = rowId, exerciseId = ExerciseSeed.BenchPress, orderIndex = 0,
             targetSets = (int?)null, targetReps = (int?)null, restSeconds = (int?)null,
         })).EnsureSuccessStatusCode();
 
@@ -85,7 +69,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var set = await db.Sets.SingleAsync(s => s.Id == setIds[0]);
         Assert.Equal(102.5m, set.WeightKg);
         Assert.Equal(4, set.Reps);
@@ -113,7 +97,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
         var delete = await Mine().DeleteAsync($"/api/Exercises/sets/{setIds[0]}");
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         var set = await db.Sets.SingleAsync(s => s.Id == setIds[0]);
         Assert.Equal(60m, set.WeightKg);
     }
@@ -126,7 +110,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
         Assert.Equal(HttpStatusCode.NoContent, (await Mine().DeleteAsync($"/api/Exercises/sets/{setIds[0]}")).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await Mine().DeleteAsync($"/api/Exercises/sets/{setIds[0]}")).StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.False(await db.Sets.AnyAsync(s => s.Id == setIds[0]));
         Assert.True(await db.Sets.AnyAsync(s => s.Id == setIds[1]));
     }
@@ -141,7 +125,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
         Assert.Equal(HttpStatusCode.NoContent, (await Mine().DeleteAsync($"/api/Workouts/exercises/{rowId}")).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await Mine().DeleteAsync($"/api/Workouts/exercises/{rowId}")).StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.False(await db.WorkoutExercises.AnyAsync(e => e.Id == rowId));
         Assert.False(await db.Sets.AnyAsync(s => s.Id == setIds[0]));
         Assert.True(await db.Workouts.AnyAsync(w => w.Id == workoutId));
@@ -155,7 +139,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
         Assert.Equal(HttpStatusCode.NoContent, (await Mine().DeleteAsync($"/api/Workouts/{workoutId}")).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await Mine().DeleteAsync($"/api/Workouts/{workoutId}")).StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.False(await db.Workouts.AnyAsync(w => w.Id == workoutId));
         Assert.False(await db.WorkoutExercises.AnyAsync(e => e.Id == rowId));
         Assert.False(await db.Sets.AnyAsync(s => s.Id == setIds[0]));
@@ -168,7 +152,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
 
         Assert.Equal(HttpStatusCode.NoContent, (await Mine().DeleteAsync($"/api/Workouts/{workoutId}")).StatusCode);
 
-        await using var db = NewContext();
+        await using var db = TestDatabase.NewContext();
         Assert.True(await db.Workouts.AnyAsync(w => w.Id == workoutId));
     }
 
@@ -223,17 +207,7 @@ public class WorkoutCorrectionTests(ApiFactory factory) : IClassFixture<ApiFacto
     {
         // The phone copies the hint from the day when a session is started from it, often
         // with no signal - so the day has to carry it.
-        var planId = Guid.CreateVersion7();
-        var dayId = Guid.CreateVersion7();
-
-        (await Mine().PostAsJsonAsync("/api/training-plans", new { id = planId, name = "Plan", notes = (string?)null }))
-            .EnsureSuccessStatusCode();
-        (await Mine().PostAsJsonAsync($"/api/training-plans/{planId}/days", new { id = dayId, name = "Push", notes = (string?)null }))
-            .EnsureSuccessStatusCode();
-        (await Mine().PutAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
-        {
-            exercises = new[] { new { planDayExerciseId = (Guid?)Guid.CreateVersion7(), exerciseId = (Guid?)BenchPress, customExerciseName = (string?)null } },
-        })).EnsureSuccessStatusCode();
+        var (_, dayId, _) = await Mine().PlanWithBenchDayAsync();
 
         await SessionAsync(Mine(), Today.AddDays(-7), (80m, 8));
         await SessionAsync(Mine(), Today.AddDays(-2), (90m, 5), (90m, 5));

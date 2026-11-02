@@ -1,4 +1,6 @@
+using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,10 +13,9 @@ public class UpdateSetCommandHandler(IApplicationDbContext dbContext) : IRequest
         // Carries the whole desired state of the set, so a replay changes nothing and the
         // phone may drop older queued copies of it. See coalesce.ts.
         var set = await dbContext.Sets
-            .FirstOrDefaultAsync(
-                s => s.Id == request.SetId && s.WorkoutExercise.Workout.UserId == request.UserId,
-                cancellationToken)
-            ?? throw new KeyNotFoundException($"Set {request.SetId} not found");
+            .OwnedBy(request.UserId)
+            .FirstOrDefaultAsync(s => s.Id == request.SetId, cancellationToken)
+            ?? throw new NotFoundException($"Set {request.SetId} not found");
 
         set.WeightKg = request.WeightKg;
         set.Reps = request.Reps;

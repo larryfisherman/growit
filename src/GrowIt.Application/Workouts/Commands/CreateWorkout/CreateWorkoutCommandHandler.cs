@@ -14,8 +14,9 @@ public class CreateWorkoutCommandHandler(IApplicationDbContext dbContext)
             .Where(w => w.Id == request.Id)
             .Select(w => new ExistingRow(w.UserId, w.UserId));
 
-        if (await IdempotencyGuard.AlreadyCreatedAsync(
-                existing, request.Id, request.UserId, request.UserId, cancellationToken))
+        var create = new IdempotentCreate(dbContext, existing, request.Id, request.UserId, request.UserId);
+
+        if (await create.AlreadyCreatedAsync(cancellationToken))
         {
             return request.Id;
         }
@@ -31,8 +32,7 @@ public class CreateWorkoutCommandHandler(IApplicationDbContext dbContext)
         };
 
         dbContext.Workouts.Add(workout);
-        await IdempotencyGuard.SaveCreateAsync(
-            dbContext, existing, request.Id, request.UserId, request.UserId, cancellationToken);
+        await create.SaveAsync(cancellationToken);
 
         return workout.Id;
     }

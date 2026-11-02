@@ -512,3 +512,6 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 infra/build/
+
+# oh-my-claudecode (Claude Code plugin) local session state
+.omc/

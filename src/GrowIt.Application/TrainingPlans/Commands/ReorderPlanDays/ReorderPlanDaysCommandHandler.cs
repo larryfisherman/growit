@@ -1,6 +1,7 @@
 using FluentValidation;
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +13,8 @@ public class ReorderPlanDaysCommandHandler(IApplicationDbContext dbContext)
     public async Task Handle(ReorderPlanDaysCommand request, CancellationToken cancellationToken)
     {
         var days = await dbContext.TrainingPlanDays
-            .Where(d => d.PlanId == request.PlanId && d.Plan.UserId == request.UserId)
+            .OwnedBy(request.UserId)
+            .Where(d => d.PlanId == request.PlanId)
             .ToListAsync(cancellationToken);
 
         if (days.Count == 0)

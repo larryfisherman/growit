@@ -1,4 +1,5 @@
 using FluentValidation;
+using GrowIt.Application.Common.Validation;
 
 namespace GrowIt.Application.TrainingPlans.Commands.UpdateTrainingPlan;
 
@@ -8,7 +9,7 @@ public class UpdateTrainingPlanCommandValidator : AbstractValidator<UpdateTraini
     {
         RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.PlanId).NotEmpty();
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.Notes).MaximumLength(1000);
+        RuleFor(x => x.Name).EntityName();
+        RuleFor(x => x.Notes).EntityNotes();
     }
 }

@@ -1,4 +1,4 @@
-import { View, FlatList, Text, Pressable, ActivityIndicator } from 'react-native';
+import { FlatList, Text, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { TodayStackParamList } from '../../../navigation/types';
@@ -8,8 +8,9 @@ import {
   getGetApiWorkoutsWorkoutIdQueryKey,
 } from '../../../api/generated/workouts/workouts';
 import { WorkoutResponse } from '../../../api/generated/schemas';
-import { tokens } from '../../../theme/tokens';
+import { ScreenState } from '../../../theme/components/ScreenState';
 import { newId } from '../../../offline/ids';
+import { isInFlight } from '../../../offline/isInFlight';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'AddExerciseToWorkout'>;
 
@@ -21,25 +22,21 @@ export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
     query: { staleTime: Infinity },
   });
 
-  // Position is the client's to decide now - the server no longer guesses it. The
-  // workout is already in cache because the screen we came from rendered it.
+  // The request carries the position, and the client picks it so the row the registry
+  // appends to the cached workout sits where the server will store it. The workout is
+  // already in cache because the screen we came from rendered it.
   const nextOrderIndex = () => {
     const workout = queryClient.getQueryData<WorkoutResponse>(
       getGetApiWorkoutsWorkoutIdQueryKey(workoutId),
     );
     return workout?.exercises.length ?? 0;
   };
-  // See WorkoutsScreen: a paused write never settles, so isPending alone would leave
-  // every row in the list disabled after the first tap.
-  const { mutate: addExercise, isPending, isPaused } = usePostApiWorkoutsWorkoutIdExercises();
-  const isAddingNow = isPending && !isPaused;
+  const addExerciseMutation = usePostApiWorkoutsWorkoutIdExercises();
+  const { mutate: addExercise } = addExerciseMutation;
+  const isAddingNow = isInFlight(addExerciseMutation);
 
   if (isLoading) {
-    return (
-      <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color={tokens.color.lime} />
-      </View>
-    );
+    return <ScreenState kind="loading" />;
   }
 
   return (

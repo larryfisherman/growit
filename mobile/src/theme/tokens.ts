@@ -1,4 +1,3 @@
-// mobile/src/theme/tokens.ts
 // GrowIt design tokens — single source of truth.
 // Mirror this file to tailwind.config.js (colors/fontFamily/spacing).
 // Use `tokens.color.lime` inline when className isn't enough.
@@ -40,36 +39,36 @@ export { palettes, semantic };
 export type ThemeMode = keyof typeof palettes;
 export type PaletteColors = Record<keyof typeof palettes.dark, string>;
 
+// These names match those loaded via @expo-google-fonts in App.tsx.
+const font = {
+  sansRegular:  'SpaceGrotesk_400Regular',
+  sansMedium:   'SpaceGrotesk_500Medium',
+  sansSemi:     'SpaceGrotesk_600SemiBold',
+  sansBold:     'SpaceGrotesk_700Bold',
+  monoRegular:  'JetBrainsMono_400Regular',
+  monoMedium:   'JetBrainsMono_500Medium',
+};
+
 export const tokens = {
   color: {
     ...palettes.dark,
     ...semantic,
   },
 
-  font: {
-    // these names match those loaded via @expo-google-fonts in App.tsx
-    sansRegular:  'SpaceGrotesk_400Regular',
-    sansMedium:   'SpaceGrotesk_500Medium',
-    sansSemi:     'SpaceGrotesk_600SemiBold',
-    sansBold:     'SpaceGrotesk_700Bold',
-    monoRegular:  'JetBrainsMono_400Regular',
-    monoMedium:   'JetBrainsMono_500Medium',
-  },
+  font,
 
   type: {
-    display: { fontSize: 50, lineHeight: 48, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: -2 },
-    h1:      { fontSize: 32, lineHeight: 34, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: -1 },
-    h2:      { fontSize: 24, lineHeight: 28, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: -0.6 },
-    h3:      { fontSize: 19, lineHeight: 23, fontFamily: 'SpaceGrotesk_700Bold', letterSpacing: -0.4 },
-    bodyLg:  { fontSize: 17, lineHeight: 24, fontFamily: 'SpaceGrotesk_500Medium' },
-    body:    { fontSize: 15, lineHeight: 22, fontFamily: 'SpaceGrotesk_500Medium' },
-    bodySm:  { fontSize: 13, lineHeight: 18, fontFamily: 'SpaceGrotesk_500Medium' },
-    label:   { fontSize: 11, lineHeight: 15, fontFamily: 'JetBrainsMono_500Medium', letterSpacing: 1.8, textTransform: 'uppercase' as const },
-    labelSm: { fontSize:  9, lineHeight: 13, fontFamily: 'JetBrainsMono_500Medium', letterSpacing: 1.6, textTransform: 'uppercase' as const },
+    display: { fontSize: 50, lineHeight: 48, fontFamily: font.sansBold, letterSpacing: -2 },
+    h1:      { fontSize: 32, lineHeight: 34, fontFamily: font.sansBold, letterSpacing: -1 },
+    h2:      { fontSize: 24, lineHeight: 28, fontFamily: font.sansBold, letterSpacing: -0.6 },
+    h3:      { fontSize: 19, lineHeight: 23, fontFamily: font.sansBold, letterSpacing: -0.4 },
+    bodyLg:  { fontSize: 17, lineHeight: 24, fontFamily: font.sansMedium },
+    body:    { fontSize: 15, lineHeight: 22, fontFamily: font.sansMedium },
+    bodySm:  { fontSize: 13, lineHeight: 18, fontFamily: font.sansMedium },
+    label:   { fontSize: 11, lineHeight: 15, fontFamily: font.monoMedium, letterSpacing: 1.8, textTransform: 'uppercase' as const },
+    labelSm: { fontSize:  9, lineHeight: 13, fontFamily: font.monoMedium, letterSpacing: 1.6, textTransform: 'uppercase' as const },
   },
 
   space: { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 28, 8: 32, 10: 40, 12: 48, 16: 64 },
   radius: { sm: 4, md: 6, lg: 10, xl: 16, pill: 999 },
 };
-
-export type Tokens = typeof tokens;

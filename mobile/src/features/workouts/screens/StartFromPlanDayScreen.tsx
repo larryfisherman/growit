@@ -1,26 +1,19 @@
-import { View, Text, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { View, FlatList } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TodayStackParamList } from '../../../navigation/types';
 import {
   useGetApiTrainingPlans,
   useGetApiTrainingPlansPlanId,
 } from '../../../api/generated/training-plans/training-plans';
-import {
-  usePostApiWorkoutsFromPlanDay,
-} from '../../../api/generated/workouts/workouts';
 import { Button } from '../../../theme/components/Button';
-import { tokens } from '../../../theme/tokens';
-import { newId } from '../../../offline/ids';
-import { planDaySessionCopy } from '../planDayAssignments';
-import { useQueryClient } from '@tanstack/react-query';
-import { getToday } from '../../../lib/date';
-import { exerciseCountLabel } from '../../../lib/plurals';
+import { ScreenState } from '../../../theme/components/ScreenState';
+import { SectionLabel } from '../../../theme/components/SectionLabel';
+import { PlanDayRow } from '../../plans/components/PlanDayRow';
+import { useStartWorkoutFromPlanDay } from '../hooks/useStartWorkoutFromPlanDay';
 
 type Props = NativeStackScreenProps<TodayStackParamList, 'StartFromPlanDay'>;
 
 export const StartFromPlanDayScreen = ({ navigation }: Props) => {
-  const today = getToday();
-
   const { data: plans, isLoading: isLoadingPlans } = useGetApiTrainingPlans();
   const activePlan = plans?.find((p) => p.isActive) ?? plans?.[0];
 
@@ -28,19 +21,10 @@ export const StartFromPlanDayScreen = ({ navigation }: Props) => {
     query: { enabled: !!activePlan },
   });
 
-  const queryClient = useQueryClient();
-
-  // See WorkoutsScreen: a paused write is pending indefinitely, which would leave every
-  // row disabled until the network comes back.
-  const { mutate: start, isPending, isPaused } = usePostApiWorkoutsFromPlanDay();
-  const isStartingNow = isPending && !isPaused;
+  const { start, isStartingNow } = useStartWorkoutFromPlanDay();
 
   if (isLoadingPlans || isLoadingPlan) {
-    return (
-      <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color={tokens.color.lime} />
-      </View>
-    );
+    return <ScreenState kind="loading" />;
   }
 
   return (
@@ -50,45 +34,26 @@ export const StartFromPlanDayScreen = ({ navigation }: Props) => {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           plan ? (
-            <Text className="text-muted font-mono-md text-label tracking-label uppercase px-4 pt-4">
+            <SectionLabel className="px-4 pt-4">
               [ {plan.name} ]
-            </Text>
+            </SectionLabel>
           ) : null
         }
         renderItem={({ item, index }) => (
-          <Pressable
-            onPress={() =>
-              {
-                const id = newId();
-                start({
-                  data: {
-                    id,
-                    planDayId: item.id,
-                    performedAt: today,
-                    ...planDaySessionCopy(queryClient, item.id),
-                  },
-                });
-                navigation.replace('WorkoutDetail', { workoutId: id });
-              }
-            }
+          <PlanDayRow
+            name={item.name}
+            exerciseCount={item.exerciseCount}
+            position={index + 1}
+            onPress={() => navigation.replace('WorkoutDetail', { workoutId: start(item.id) })}
             disabled={isStartingNow}
-            className="bg-surface rounded-md p-4 border border-line flex-row items-center gap-3"
-          >
-            <Text className="text-lime font-mono-md text-label tracking-label">{index + 1}</Text>
-            <View className="flex-1">
-              <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
-              <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-                {exerciseCountLabel(item.exerciseCount)}
-              </Text>
-            </View>
-          </Pressable>
+          />
         )}
         contentContainerClassName="p-4 gap-2"
         ListEmptyComponent={
           <View className="items-center justify-center p-10 gap-4">
-            <Text className="text-muted font-mono-md text-label tracking-label uppercase text-center">
+            <SectionLabel className="text-center">
               [ {plans?.length ? 'PLAN BEZ DNI' : 'BRAK PLANÓW'} ]
-            </Text>
+            </SectionLabel>
             <Button
               label={plans?.length ? 'Otwórz plan' : '+ Utwórz plan'}
               variant="primary"

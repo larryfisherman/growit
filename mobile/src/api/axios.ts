@@ -31,9 +31,9 @@ const AXIOS_INSTANCE = axios.create({ baseURL, timeout: REQUEST_TIMEOUT_MS });
 type TimedConfig = { metadata?: { start: number } };
 type RetriableConfig = InternalAxiosRequestConfig & { retried?: boolean };
 
-/// A refresh either worked, was refused, or never got an answer. Collapsing the last
-/// two into a plain failure is what used to sign people out the moment they lost
-/// signal - and the sign-out took the query cache with it.
+/// A refresh either worked, was refused, or never got an answer. Keep the last two
+/// apart: collapsing them into a plain failure would sign people out the moment they
+/// lost signal, and the sign-out would take the query cache with it.
 type RefreshResult =
   | { status: 'ok'; token: string }
   | { status: 'expired' }

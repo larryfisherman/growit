@@ -1,9 +1,8 @@
-// mobile/src/theme/components/Button.tsx
 // Two variants: primary (lime) + secondary (outline).
 // Reusable across the app. Add more variants as the design grows.
 
 import { Pressable, Text, ActivityIndicator, PressableProps } from 'react-native';
-import { cssInterop } from 'nativewind';
+import { tokens } from '../tokens';
 
 type Variant = 'primary' | 'secondary';
 
@@ -21,12 +20,12 @@ const variants: Record<Variant, { container: string; text: string; spinner: stri
   primary: {
     container: 'bg-lime',
     text: 'text-lime-ink font-sans-b text-body-sm tracking-label uppercase',
-    spinner: '#0a0a0a',
+    spinner: tokens.color.limeInk,
   },
   secondary: {
     container: 'bg-transparent border border-line',
     text: 'text-fg font-sans-sb text-body-sm tracking-label uppercase',
-    spinner: '#f5f5f3',
+    spinner: tokens.color.fg,
   },
 };
 

@@ -1,5 +1,6 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using GrowIt.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,9 +20,8 @@ public class SetPlanDayExercisesCommandHandler(IApplicationDbContext dbContext)
     {
         var day = await dbContext.TrainingPlanDays
             .Include(d => d.Exercises)
-            .FirstOrDefaultAsync(
-                d => d.Id == request.PlanDayId && d.Plan.UserId == request.UserId,
-                cancellationToken);
+            .OwnedBy(request.UserId)
+            .FirstOrDefaultAsync(d => d.Id == request.PlanDayId, cancellationToken);
 
         if (day is null)
         {

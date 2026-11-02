@@ -1,4 +1,5 @@
 using GrowIt.Application.Common.Interfaces;
+using GrowIt.Application.Common.Ownership;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,9 +11,8 @@ public class RemoveExerciseFromPlanDayCommandHandler(IApplicationDbContext dbCon
     public async Task Handle(RemoveExerciseFromPlanDayCommand request, CancellationToken cancellationToken)
     {
         var exercise = await dbContext.TrainingPlanDayExercises
-            .FirstOrDefaultAsync(
-                e => e.Id == request.PlanDayExerciseId && e.PlanDay.Plan.UserId == request.UserId,
-                cancellationToken);
+            .OwnedBy(request.UserId)
+            .FirstOrDefaultAsync(e => e.Id == request.PlanDayExerciseId, cancellationToken);
 
         // Already gone is the requested state; see DeleteTrainingPlanCommandHandler.
         if (exercise is null) return;
