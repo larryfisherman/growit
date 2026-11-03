@@ -39,18 +39,89 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
         });
         Assert.Equal(HttpStatusCode.BadRequest, replace.StatusCode);
 
-        var add = await Mine().PostAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
-        {
-            id = Guid.CreateVersion7(), exerciseId = (Guid?)null, customExerciseName = tooLong,
-            targetSets = 3, targetReps = 10, restSeconds = 90,
-        });
-        Assert.Equal(HttpStatusCode.BadRequest, add.StatusCode);
-
         var atLimit = await Mine().PutAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
         {
             exercises = new[] { new { planDayExerciseId = (Guid?)null, exerciseId = (Guid?)null, customExerciseName = (string?)new string('x', 100) } },
         });
         Assert.True(atLimit.IsSuccessStatusCode, $"100 characters must still be accepted, got {atLimit.StatusCode}");
+    }
+
+    [Fact]
+    public async Task A_day_takes_its_exercises_only_as_a_whole_list()
+    {
+        // Adding a single exercise by POST was a second way in that drifted from the PUT
+        // (its own defaults, no tests) and the app never used it, so it was removed.
+        var (_, dayId, _) = await Mine().PlanWithBenchDayAsync();
+
+        var add = await Mine().PostAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
+        {
+            id = Guid.CreateVersion7(), exerciseId = ExerciseSeed.BenchPress, customExerciseName = (string?)null,
+            targetSets = 3, targetReps = 10, restSeconds = 90,
+        });
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, add.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(0, null, null, 0)]
+    [InlineData(null, 0, null, 0)]
+    [InlineData(null, null, -1, 0)]
+    [InlineData(null, null, null, -1)]
+    public async Task A_workout_row_follows_the_plan_row_rules(
+        int? targetSets, int? targetReps, int? restSeconds, int orderIndex)
+    {
+        // Workout rows share the plan-day rules: targets are optional, but when given they
+        // must make sense, and a position is never negative.
+        var workoutId = Guid.CreateVersion7();
+        await Mine().PostAsJsonAsync("/api/Workouts", new
+        {
+            id = workoutId,
+            name = "Trening",
+            performedAt = DateOnly.FromDateTime(DateTime.UtcNow),
+            notes = (string?)null,
+        });
+
+        var response = await Mine().PostAsJsonAsync($"/api/Workouts/{workoutId}/exercises", new
+        {
+            id = Guid.CreateVersion7(),
+            exerciseId = ExerciseSeed.BenchPress,
+            orderIndex,
+            targetSets,
+            targetReps,
+            restSeconds,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_copied_session_row_cannot_be_both_a_library_and_a_custom_exercise()
+    {
+        var (_, dayId, _) = await Mine().PlanWithBenchDayAsync();
+
+        var response = await Mine().PostAsJsonAsync("/api/Workouts/from-plan-day", new
+        {
+            id = Guid.CreateVersion7(),
+            planDayId = dayId,
+            performedAt = DateOnly.FromDateTime(DateTime.UtcNow),
+            exerciseIds = Array.Empty<object>(),
+            name = "Push",
+            exercises = new[]
+            {
+                new
+                {
+                    workoutExerciseId = Guid.CreateVersion7(),
+                    exerciseId = (Guid?)ExerciseSeed.BenchPress,
+                    customExerciseName = (string?)"Moje ćwiczenie",
+                    targetSets = (int?)3,
+                    targetReps = (int?)10,
+                    restSeconds = (int?)90,
+                    orderIndex = 0,
+                },
+            },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
