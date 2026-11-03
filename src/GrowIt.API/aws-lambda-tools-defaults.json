@@ -1,0 +1,12 @@
+{
+  "Information": [
+    "Build settings for `dotnet lambda package` only.",
+    "The function itself (memory, timeout, env vars, IAM role) is defined in Terraform (infra/), not here.",
+    "Package: dotnet lambda package -pl src/GrowIt.API -o artifacts/growit-api.zip"
+  ],
+  "configuration": "Release",
+  "framework": "net10.0",
+  "function-runtime": "dotnet10",
+  "function-architecture": "arm64",
+  "function-handler": "GrowIt.API"
+}

@@ -92,8 +92,13 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-using (var scope = app.Services.CreateScope())
+// On by default so `dotnet run` and the tests keep a migrated database. Lambda turns it
+// off: parallel cold starts would race each other on the schema, every cold start would
+// pay for the migration check, and the runtime DB role may not alter tables. Production
+// migrations run by hand with `dotnet ef database update` instead.
+if (app.Configuration.GetValue("Database:MigrateOnStartup", defaultValue: true))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<GrowItDbContext>();
     await db.Database.MigrateAsync();
 }
