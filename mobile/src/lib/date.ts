@@ -7,7 +7,20 @@ export const getToday = () => new Date().toLocaleDateString('sv-SE');
 export const formatWeekdayDayMonth = (date: Date = new Date()) =>
   date.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/// A date-only string ('YYYY-MM-DD', what the API sends for performedAt) is a calendar
+/// date, so it is read in local time. new Date() would read it as UTC midnight, which is
+/// still the previous day anywhere west of UTC.
+const parseDate = (iso: string) => {
+  const dateOnly = DATE_ONLY.exec(iso);
+  if (!dateOnly) return new Date(iso);
+
+  const [, year, month, day] = dateOnly;
+  return new Date(Number(year), Number(month) - 1, Number(day));
+};
+
 export const formatDayMonth = (iso: string) =>
-  new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+  parseDate(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
 
 export const formatShortDate = (date: Date = new Date()) => date.toLocaleDateString('pl-PL');

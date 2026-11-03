@@ -2,6 +2,7 @@ using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Idempotency;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Application.Common.Ownership;
+using GrowIt.Application.Common.Validation;
 using GrowIt.Contracts.Workouts.Requests;
 using GrowIt.Domain.Entities;
 using MediatR;
@@ -74,13 +75,18 @@ public class CreateWorkoutFromPlanDayCommandHandler(IApplicationDbContext dbCont
             {
                 Id = e.WorkoutExerciseId,
                 ExerciseId = e.ExerciseId,
-                CustomExerciseName = e.CustomExerciseName,
+                CustomExerciseName = WithinNameLimit(e.CustomExerciseName),
                 TargetSets = e.TargetSets,
                 TargetReps = e.TargetReps,
                 RestSeconds = e.RestSeconds,
                 OrderIndex = e.OrderIndex
             })
             .ToList();
+
+    /// A plan-day row saved before custom names were limited can carry a longer name. The
+    /// session is kept and the name shortened, rather than refusing the whole copy.
+    private static string? WithinNameLimit(string? name) =>
+        name is { Length: > FieldLimits.NameMaxLength } ? name[..FieldLimits.NameMaxLength] : name;
 
     /// The copy made here, for clients that do not send their own.
     private static List<WorkoutExercise> FromDay(

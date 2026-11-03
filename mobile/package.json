@@ -51,6 +51,7 @@
   "devDependencies": {
     "@types/node": "^26.4.1",
     "@types/react": "~19.2.18",
+    "babel-preset-expo": "~57.0.10",
     "orval": "^8.8.1",
     "typescript": "~6.0.3"
   },

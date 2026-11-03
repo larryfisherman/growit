@@ -31,7 +31,10 @@ public class CreateWorkoutFromPlanDayCommandValidator : AbstractValidator<Create
 
         // The phone's copy of the session. Each row is named once and follows the plan-day
         // row rules it was copied from: a library exercise or a custom name (never both),
-        // sensible targets where present, and a non-negative position.
+        // sensible targets where present, and a non-negative position. A custom name is not
+        // length-checked here: it is copied from a stored row, and rows saved before the
+        // plan-day limit existed can be longer. Refusing the copy would lose the session and
+        // every set logged into it, so the handler shortens the name instead.
         RuleForEach(x => x.Exercises).ChildRules(copied =>
         {
             copied.RuleFor(e => e.WorkoutExerciseId).NotEmpty();
@@ -42,7 +45,6 @@ public class CreateWorkoutFromPlanDayCommandValidator : AbstractValidator<Create
             copied.RuleFor(e => e)
                 .Must(e => ExerciseIdentity.IsExactlyOne(e.ExerciseId, e.CustomExerciseName))
                 .WithMessage(ExerciseIdentity.ExactlyOneMessage);
-            copied.RuleFor(e => e.CustomExerciseName).CustomExerciseName();
         });
 
         RuleFor(x => x.Exercises)

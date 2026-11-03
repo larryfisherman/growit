@@ -47,6 +47,72 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
     }
 
     [Fact]
+    public async Task A_custom_name_saved_before_the_limit_does_not_lock_its_day_or_its_sessions()
+    {
+        // Rows saved before the limit existed can hold a longer name, and the phone sends a
+        // row's stored name back every time it lists it by id. Refusing that made every edit
+        // of the day fail, and refusing the session copy lost the session with its sets.
+        var (_, dayId, benchRowId) = await Mine().PlanWithBenchDayAsync();
+        var legacyName = new string('x', 150);
+        var legacyRowId = Guid.CreateVersion7();
+
+        await using (var seed = TestDatabase.NewContext())
+        {
+            seed.TrainingPlanDayExercises.Add(new TrainingPlanDayExercise
+            {
+                Id = legacyRowId, PlanDayId = dayId, CustomExerciseName = legacyName,
+                TargetSets = 3, TargetReps = 10, RestSeconds = 90, OrderIndex = 1,
+            });
+            await seed.SaveChangesAsync();
+        }
+
+        var edit = await Mine().PutAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
+        {
+            exercises = new[]
+            {
+                new { planDayExerciseId = (Guid?)benchRowId, exerciseId = (Guid?)null, customExerciseName = (string?)null },
+                new { planDayExerciseId = (Guid?)legacyRowId, exerciseId = (Guid?)null, customExerciseName = (string?)legacyName },
+                new { planDayExerciseId = (Guid?)null, exerciseId = (Guid?)ExerciseSeed.Deadlift, customExerciseName = (string?)null },
+            },
+        });
+        Assert.True(edit.IsSuccessStatusCode, $"Editing a day holding a legacy name must succeed, got {edit.StatusCode}");
+
+        // A row the phone minted an id for is still a new row, so the limit holds for it.
+        var minted = await Mine().PutAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
+        {
+            exercises = new[]
+            {
+                new { planDayExerciseId = (Guid?)Guid.CreateVersion7(), exerciseId = (Guid?)null, customExerciseName = (string?)new string('y', 101) },
+            },
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, minted.StatusCode);
+
+        var workoutId = Guid.CreateVersion7();
+        var workoutExerciseId = Guid.CreateVersion7();
+        var started = await Mine().PostAsJsonAsync("/api/Workouts/from-plan-day", new
+        {
+            id = workoutId,
+            planDayId = dayId,
+            performedAt = DateOnly.FromDateTime(DateTime.UtcNow),
+            name = "Push",
+            exerciseIds = new[] { new { planDayExerciseId = legacyRowId, workoutExerciseId } },
+            exercises = new[]
+            {
+                new
+                {
+                    workoutExerciseId, exerciseId = (Guid?)null, customExerciseName = (string?)legacyName,
+                    targetSets = (int?)3, targetReps = (int?)10, restSeconds = (int?)90, orderIndex = 0,
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.OK, started.StatusCode);
+
+        await using var db = TestDatabase.NewContext();
+        var copied = await db.WorkoutExercises.SingleAsync(e => e.Id == workoutExerciseId);
+        Assert.Equal(legacyName[..100], copied.CustomExerciseName);
+    }
+
+    [Fact]
     public async Task A_day_takes_its_exercises_only_as_a_whole_list()
     {
         // Adding a single exercise by POST was a second way in that drifted from the PUT

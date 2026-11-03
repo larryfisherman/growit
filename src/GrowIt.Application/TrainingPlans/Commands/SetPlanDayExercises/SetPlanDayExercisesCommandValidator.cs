@@ -18,8 +18,14 @@ public class SetPlanDayExercisesCommandValidator : AbstractValidator<SetPlanDayE
             .Must(HasUsableIdentity)
             .WithMessage("Each entry must name a row, a library exercise, or a custom name - and never both an exercise and a custom name");
 
+        // The length limit applies to rows being created. An entry that names a row by id
+        // may be one the day already holds, and the phone re-sends its stored name with it;
+        // names saved before the limit existed can be longer, and the handler never reads
+        // the name of a row it finds by id. A client-minted id that creates a row is checked
+        // in the handler, where it is known that a row is being created.
         RuleForEach(x => x.Selections).ChildRules(selection =>
-            selection.RuleFor(s => s.CustomExerciseName).CustomExerciseName());
+            selection.RuleFor(s => s.CustomExerciseName).CustomExerciseName()
+                .When(s => s.PlanDayExerciseId is null));
 
         RuleFor(x => x.Selections)
             .Must(NoRepeatedRows)

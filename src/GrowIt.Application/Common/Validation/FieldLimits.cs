@@ -7,6 +7,10 @@ namespace GrowIt.Application.Common.Validation;
 /// name and its exercises' custom names, which is why all of them share NameMaxLength:
 /// anything a day accepts must also be accepted when it is copied into a session, or
 /// starting that day would fail with a 400 the offline queue can never get past.
+///
+/// Rows saved before the plan-day custom-name limit existed can still hold a longer name.
+/// So SetPlanDayExercises checks the limit only on rows it creates, and
+/// CreateWorkoutFromPlanDay shortens a copied name instead of refusing the session.
 public static class FieldLimits
 {
     public const int NameMaxLength = 100;

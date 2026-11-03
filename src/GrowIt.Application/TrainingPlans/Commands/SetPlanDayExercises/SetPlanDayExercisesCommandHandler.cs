@@ -1,9 +1,11 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Application.Common.Ownership;
+using GrowIt.Application.Common.Validation;
 using GrowIt.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using ValidationException = FluentValidation.ValidationException;
 
 namespace GrowIt.Application.TrainingPlans.Commands.SetPlanDayExercises;
 
@@ -111,6 +113,14 @@ public class SetPlanDayExercisesCommandHandler(IApplicationDbContext dbContext)
             // answering them with a row they cannot find would drop them. What the user
             // tuned on the old row is carried over rather than reset to the defaults; the
             // old row itself goes with the rest of the unclaimed ones below.
+            // Checked here rather than in the validator: only now is it known that this
+            // entry creates a row, and an existing row's stored name may predate the limit.
+            if (selection.CustomExerciseName is { Length: > FieldLimits.NameMaxLength })
+            {
+                throw new ValidationException(
+                    $"A custom exercise name can be at most {FieldLimits.NameMaxLength} characters long");
+            }
+
             var created = new TrainingPlanDayExercise
             {
                 Id = idsToCreateWith[index] ?? Guid.CreateVersion7(),

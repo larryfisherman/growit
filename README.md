@@ -78,8 +78,9 @@ Prerequisites: .NET 10 SDK, Docker, Node with pnpm.
    ```
 
    With `EXPO_PUBLIC_API_URL` empty the app targets the local API (the Expo dev server's
-   LAN IP on a device, `localhost` on web). A script pointing at production comes with
-   deploy Stage 7 (see `docs/deploy-plan.md`).
+   LAN IP on a device, `localhost` on web). There is no script pointing at production:
+   production builds read `mobile/.env.production`, filled in at deploy Stage 7 (see
+   `docs/deploy-plan.md`).
 
 ### After changing the backend contract
 

@@ -285,8 +285,8 @@ Warunek wejścia: limit konta ≥105 albo przyjęty fallback z Pułapki 17.
 - **Pliki:**
   - `mobile/.env.production` (nieśledzony): `EXPO_PUBLIC_API_URL` = `terraform output -raw api_url` (bez końcowego `/`).
   - `mobile/src/api/baseUrl.ts`: normalizacja `prodUrl.replace(/\/+$/, '')`. Function URL kończy się `/`, a `healthUrl` to `${baseURL}/health`. Bez normalizacji probe trafia w `//health` i obwód offline się nie zamyka.
-  - `mobile/package.json`: skrypt `dev:prod` wskazuje dziś na martwy CloudFront. Usuwamy go albo zmieniamy na wczytywanie `.env.production`.
-  - `mobile/.env.example`: komentarz „wartości z `terraform -chdir=infra output`” zamiast „CloudFront URL”.
+  - `mobile/package.json`: martwy skrypt `dev:prod` (CloudFront) jest już usunięty. Nowego skryptu „na produkcję” nie dodajemy: build produkcyjny (`expo export`, NODE_ENV=production) sam wczytuje `mobile/.env.production`.
+  - `mobile/.env.example`: komentarz o „CloudFront URL” jest już usunięty. W tym etapie tylko wpisujemy wartości z `terraform -chdir=infra output` do `.env.production`.
   - `mobile/src/auth/cognito.ts`:
     - `LimitExceededException` przy SignUp oznacza „konto utworzone, kod nie dotarł”. Komunikat: „Spróbuj ponownie wysłać kod później”, plus przejście do ekranu potwierdzenia z opcją ResendConfirmationCode.
     - `NotAuthorizedException` przy SignUp: „Rejestracja chwilowo wyłączona”

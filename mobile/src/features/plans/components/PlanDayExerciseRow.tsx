@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { PlanDayExerciseResponse } from '../../../api/generated/schemas';
 import { usePutApiTrainingPlansExercisesPlanDayExerciseId } from '../../../api/generated/training-plans/training-plans';
 import { useDebouncedWrite } from '../../../offline/useDebouncedWrite';
+import { parsePlanDayTargets } from '../planDayTargets';
 import { Input } from '../../../theme/components/Input';
 import { SwipeToDelete } from '../../../theme/components/SwipeToDelete';
 
@@ -30,10 +31,9 @@ export const PlanDayExerciseRow = ({ exercise, onDelete }: Props) => {
   useEffect(() => {
     if (!isEditing) return;
 
-    const targetSets = parseInt(targets.sets, 10);
-    const targetReps = parseInt(targets.reps, 10);
-    const restSeconds = parseInt(targets.rest, 10);
-    if (!targetSets || !targetReps || isNaN(restSeconds)) return;
+    const parsed = parsePlanDayTargets(targets);
+    if (!parsed) return;
+    const { targetSets, targetReps, restSeconds } = parsed;
 
     const unchanged =
       targetSets === exercise.targetSets &&
