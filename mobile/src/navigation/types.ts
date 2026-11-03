@@ -6,6 +6,13 @@ type PlanEditingParamList = {
   PlanDayExercisePicker: { dayId: string; planId: string };
 };
 
+/// The workout-session screens, mounted in both the Today and Calendar stacks so a session
+/// opened from either tab can be viewed and extended in place.
+export type WorkoutSessionParamList = {
+  WorkoutDetail: { workoutId: string };
+  AddExerciseToWorkout: { workoutId: string };
+};
+
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
@@ -17,15 +24,13 @@ export type AuthStackParamList = {
 
 export type TodayStackParamList = {
   TodayWorkout: undefined;
-  WorkoutDetail: { workoutId: string };
-  AddExerciseToWorkout: { workoutId: string };
   StartFromPlanDay: undefined;
-} & PlanEditingParamList;
+} & WorkoutSessionParamList &
+  PlanEditingParamList;
 
 export type CalendarStackParamList = {
   CalendarHome: undefined;
-  WorkoutDetail: { workoutId: string };
-};
+} & WorkoutSessionParamList;
 
 export type PlansStackParamList = {
   PlansList: undefined;

@@ -15,7 +15,7 @@ public class GetWorkoutsByMonthQueryHandler(IApplicationDbContext dbContext)
         return await dbContext.Workouts
             .OwnedBy(request.UserId)
             .Where(w => w.PerformedAt.Year == request.Year && w.PerformedAt.Month == request.Month)
-            .OrderByDescending(w => w.PerformedAt)
+            .NewestFirst()
             .Select(WorkoutProjections.Summary)
             .ToListAsync(cancellationToken);
     }

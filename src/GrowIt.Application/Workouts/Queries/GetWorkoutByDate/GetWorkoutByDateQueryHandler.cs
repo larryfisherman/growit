@@ -1,5 +1,6 @@
 using GrowIt.Application.Common.Interfaces;
 using GrowIt.Application.Common.Ownership;
+using GrowIt.Application.Workouts.Common;
 using GrowIt.Contracts.Workouts.Responses;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,8 @@ public class GetWorkoutByDateQueryHandler(IApplicationDbContext dbContext)
         return await dbContext.Workouts
             .OwnedBy(request.UserId)
             .Where(w => w.PerformedAt == request.Date)
+            // Several sessions can share a date; the day view shows the latest recorded one.
+            .NewestFirst()
             // Mirrors WorkoutProjections.Summary field for field on purpose; a field added to one belongs in the other.
             .Select(w => new WorkoutByDateResponse(
                 w.Id,

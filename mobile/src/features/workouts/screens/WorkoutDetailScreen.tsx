@@ -2,7 +2,7 @@ import { useLayoutEffect } from 'react';
 import { View, Text, FlatList, Pressable, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { TodayStackParamList } from '../../../navigation/types';
+import { WorkoutSessionParamList } from '../../../navigation/types';
 import {
   useDeleteApiWorkoutsExercisesWorkoutExerciseId,
   useDeleteApiWorkoutsWorkoutId,
@@ -17,7 +17,7 @@ import { formatDayMonth } from '../../../lib/date';
 import { tokens } from '../../../theme/tokens';
 import { SectionLabel } from '../../../theme/components/SectionLabel';
 
-type Props = NativeStackScreenProps<TodayStackParamList, 'WorkoutDetail'>;
+type Props = NativeStackScreenProps<WorkoutSessionParamList, 'WorkoutDetail'>;
 
 /// What was lifted last time, so the number to match is on screen while logging.
 const LastTime = ({ last }: { last: NonNullable<LastPerformanceResponse> }) => (

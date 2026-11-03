@@ -483,14 +483,6 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
-
-# Elastic Beanstalk deployment artifact
-growit-api-app.zip
-
 # Environment files: only the *.example templates belong in git
 .env.*
 !.env.example

@@ -7,7 +7,11 @@ import { PlanDetailScreen } from '../features/plans/screens/PlanDetailScreen';
 import { PlanDayScreen } from '../features/plans/screens/PlanDayScreen';
 import { PlanDayExercisePickerScreen } from '../features/plans/screens/PlanDayExercisePickerScreen';
 import { TodayStackParamList } from './types';
-import { darkStackOptions, planEditingScreenOptions } from './screenOptions';
+import {
+  darkStackOptions,
+  planEditingScreenOptions,
+  workoutSessionScreenOptions,
+} from './screenOptions';
 import { SettingsButton } from '../theme/components/SettingsButton';
 
 const Stack = createNativeStackNavigator<TodayStackParamList>();
@@ -19,11 +23,15 @@ export const TodayStack = () => (
       component={WorkoutsScreen}
       options={{ title: 'Dzisiaj', headerRight: () => <SettingsButton /> }}
     />
-    <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} options={{ title: 'Trening' }} />
+    <Stack.Screen
+      name="WorkoutDetail"
+      component={WorkoutDetailScreen}
+      options={workoutSessionScreenOptions.WorkoutDetail}
+    />
     <Stack.Screen
       name="AddExerciseToWorkout"
       component={AddExerciseToWorkoutScreen}
-      options={{ title: 'Dodaj ćwiczenie' }}
+      options={workoutSessionScreenOptions.AddExerciseToWorkout}
     />
     <Stack.Screen
       name="StartFromPlanDay"

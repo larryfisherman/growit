@@ -14,7 +14,7 @@ public class GetWorkoutHistoryQueryHandler(IApplicationDbContext dbContext)
     {
         var query = dbContext.Workouts
             .OwnedBy(request.UserId)
-            .OrderByDescending(w => w.PerformedAt);
+            .NewestFirst();
 
         var totalCount = await query.CountAsync(cancellationToken);
 

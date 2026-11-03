@@ -22,10 +22,10 @@ public class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : IExcepti
             ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
             // Missing and not-yours answer alike: confirming that someone else's id
-            // exists would leak it. Application code throws NotFoundException; the
-            // KeyNotFoundException arm is kept as before, though it also turns a library
-            // KeyNotFoundException (a bug) into a 404 rather than a logged 500.
-            NotFoundException or KeyNotFoundException => (StatusCodes.Status404NotFound, "Not found"),
+            // exists would leak it. Only our own NotFoundException maps here; anything
+            // else (e.g. a stray KeyNotFoundException from a dictionary lookup) is a bug
+            // and falls through to a logged 500.
+            NotFoundException => (StatusCodes.Status404NotFound, "Not found"),
             ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
             _ => (StatusCodes.Status500InternalServerError, "Unexpected error"),
         };

@@ -4,7 +4,8 @@ import { usePostApiExercisesWorkoutExerciseIdSets } from '../../../api/generated
 import { WorkoutExerciseResponse } from '../../../api/generated/schemas';
 import { newId } from '../../../offline/ids';
 import { tokens } from '../../../theme/tokens';
-import { nextSetPosition, parseSetInput } from '../setInput';
+import { parseSetInput } from '../setInput';
+import { nextPosition } from '../../../lib/position';
 
 type Props = { exercise: WorkoutExerciseResponse };
 
@@ -37,7 +38,7 @@ export const SetLogger = ({ exercise }: Props) => {
         ...parsed,
         // The position is the client's to decide: several sets can be logged with no
         // signal, and nothing on the server could work out what order they happened in.
-        orderIndex: nextSetPosition(exercise.sets),
+        orderIndex: nextPosition(exercise.sets),
       },
     });
   };

@@ -1,5 +1,4 @@
 using GrowIt.API.Authorization;
-using GrowIt.Application.TrainingPlans.Commands.AddExerciseToPlanDay;
 using GrowIt.Application.TrainingPlans.Commands.CreatePlanDay;
 using GrowIt.Application.TrainingPlans.Commands.CreateTrainingPlan;
 using GrowIt.Application.TrainingPlans.Commands.DeletePlanDay;
@@ -137,23 +136,6 @@ public class TrainingPlansController(IMediator mediator) : ControllerBase
     }
 
     // ---- exercises within a day ----
-
-    [HttpPost("days/{dayId:guid}/exercises")]
-    public async Task<ActionResult<AddExerciseToPlanDayResponse>> AddExercise(
-        Guid dayId, [FromBody] AddExerciseToPlanDayRequest request, CancellationToken ct)
-    {
-        var id = await mediator.Send(new AddExerciseToPlanDayCommand(
-            request.Id,
-            HttpContext.GetUserId(),
-            dayId,
-            request.ExerciseId,
-            request.CustomExerciseName,
-            request.TargetSets,
-            request.TargetReps,
-            request.RestSeconds), ct);
-
-        return Ok(new AddExerciseToPlanDayResponse(id));
-    }
 
     [HttpPut("days/{dayId:guid}/exercises")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

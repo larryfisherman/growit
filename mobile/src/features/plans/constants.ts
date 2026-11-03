@@ -13,3 +13,8 @@ export const isDefaultTargets = (t: {
   t.targetReps === DEFAULT_TARGETS.reps &&
   t.restSeconds === DEFAULT_TARGETS.restSeconds;
 
+
+/// Longest hand-typed exercise name the backend accepts (FieldLimits.NameMaxLength). The
+/// day and every session started from it share the limit, so a name the picker lets
+/// through can always be copied into a workout.
+export const CUSTOM_EXERCISE_NAME_MAX_LENGTH = 100;

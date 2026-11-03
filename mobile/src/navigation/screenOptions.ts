@@ -20,3 +20,9 @@ export const planEditingScreenOptions = {
   PlanDay: { title: 'Dzień planu' },
   PlanDayExercisePicker: { title: 'Wybierz ćwiczenie', presentation: 'modal' },
 } satisfies Record<string, NativeStackNavigationOptions>;
+
+/// Options for the workout-session screens, shared by the Today and Calendar stacks.
+export const workoutSessionScreenOptions = {
+  WorkoutDetail: { title: 'Trening' },
+  AddExerciseToWorkout: { title: 'Dodaj ćwiczenie' },
+} satisfies Record<string, NativeStackNavigationOptions>;

@@ -10,8 +10,3 @@ export const parseSetInput = (weight: string, reps: string) => {
   if (!Number.isFinite(weightKg) || weightKg < 0 || !(parsedReps > 0)) return null;
   return { weightKg, reps: parsedReps };
 };
-
-/// Where the next set goes. Not the count of sets: once one is deleted the count lands on
-/// a position that is still taken.
-export const nextSetPosition = (sets: readonly { orderIndex: number }[]) =>
-  sets.reduce((highest, set) => Math.max(highest, set.orderIndex + 1), 0);

@@ -29,19 +29,20 @@ public class CreateWorkoutFromPlanDayCommandValidator : AbstractValidator<Create
         // Same limit as a session created by hand; the phone takes it from the day.
         RuleFor(x => x.Name).MaximumLength(FieldLimits.NameMaxLength);
 
-        // The phone's copy of the session. Each row is named once and either comes from the
-        // library or carries a hand-typed name. Both may be present, because the copy is
-        // accepted exactly as the phone made it (unlike a row added to a plan day, where
-        // they are exclusive).
+        // The phone's copy of the session. Each row is named once and follows the plan-day
+        // row rules it was copied from: a library exercise or a custom name (never both),
+        // sensible targets where present, and a non-negative position.
         RuleForEach(x => x.Exercises).ChildRules(copied =>
         {
             copied.RuleFor(e => e.WorkoutExerciseId).NotEmpty();
-            copied.RuleFor(e => e.OrderIndex).GreaterThanOrEqualTo(0);
+            copied.RuleFor(e => e.OrderIndex).Position();
+            copied.RuleFor(e => e.TargetSets).TargetCount();
+            copied.RuleFor(e => e.TargetReps).TargetCount();
+            copied.RuleFor(e => e.RestSeconds).RestSeconds();
             copied.RuleFor(e => e)
-                .Must(e => e.ExerciseId.HasValue || !string.IsNullOrWhiteSpace(e.CustomExerciseName))
-                .WithMessage("Each exercise must come from the library or have a name");
-            // The plan-day side has no such limit; see the known gap in FieldLimits.
-            copied.RuleFor(e => e.CustomExerciseName).MaximumLength(FieldLimits.NameMaxLength);
+                .Must(e => ExerciseIdentity.IsExactlyOne(e.ExerciseId, e.CustomExerciseName))
+                .WithMessage(ExerciseIdentity.ExactlyOneMessage);
+            copied.RuleFor(e => e.CustomExerciseName).CustomExerciseName();
         });
 
         RuleFor(x => x.Exercises)

@@ -1,4 +1,5 @@
 using FluentValidation;
+using GrowIt.Application.Common.Validation;
 
 namespace GrowIt.Application.TrainingPlans.Commands.SetPlanDayExercises;
 
@@ -16,6 +17,9 @@ public class SetPlanDayExercisesCommandValidator : AbstractValidator<SetPlanDayE
             .Must(HasUsableIdentity)
             .WithMessage("Each entry must name a row, a library exercise, or a custom name - and never both an exercise and a custom name");
 
+        RuleForEach(x => x.Selections).ChildRules(selection =>
+            selection.RuleFor(s => s.CustomExerciseName).CustomExerciseName());
+
         RuleFor(x => x.Selections)
             .Must(NoRepeatedRows)
             .WithMessage("The same existing exercise cannot be listed twice");
@@ -27,8 +31,8 @@ public class SetPlanDayExercisesCommandValidator : AbstractValidator<SetPlanDayE
     /// exercise and a hand-typed name at once, and naming nothing at all.
     private static bool HasUsableIdentity(PlanDayExerciseSelectionInput selection)
     {
-        var namesLibraryExercise = selection.ExerciseId.HasValue;
-        var namesCustomExercise = !string.IsNullOrWhiteSpace(selection.CustomExerciseName);
+        var namesLibraryExercise = ExerciseIdentity.NamesLibraryExercise(selection.ExerciseId);
+        var namesCustomExercise = ExerciseIdentity.NamesCustomExercise(selection.CustomExerciseName);
 
         if (namesLibraryExercise && namesCustomExercise) return false;
 

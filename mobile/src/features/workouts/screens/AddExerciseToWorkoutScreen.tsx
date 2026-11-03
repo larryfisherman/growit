@@ -1,7 +1,7 @@
 import { FlatList, Text, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
-import { TodayStackParamList } from '../../../navigation/types';
+import { WorkoutSessionParamList } from '../../../navigation/types';
 import { useGetApiExercises } from '../../../api/generated/exercises/exercises';
 import {
   usePostApiWorkoutsWorkoutIdExercises,
@@ -11,8 +11,9 @@ import { WorkoutResponse } from '../../../api/generated/schemas';
 import { ScreenState } from '../../../theme/components/ScreenState';
 import { newId } from '../../../offline/ids';
 import { isInFlight } from '../../../offline/isInFlight';
+import { nextPosition } from '../../../lib/position';
 
-type Props = NativeStackScreenProps<TodayStackParamList, 'AddExerciseToWorkout'>;
+type Props = NativeStackScreenProps<WorkoutSessionParamList, 'AddExerciseToWorkout'>;
 
 export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
   const { workoutId } = route.params;
@@ -29,7 +30,7 @@ export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
     const workout = queryClient.getQueryData<WorkoutResponse>(
       getGetApiWorkoutsWorkoutIdQueryKey(workoutId),
     );
-    return workout?.exercises.length ?? 0;
+    return nextPosition(workout?.exercises ?? []);
   };
   const addExerciseMutation = usePostApiWorkoutsWorkoutIdExercises();
   const { mutate: addExercise } = addExerciseMutation;

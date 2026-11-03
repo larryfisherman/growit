@@ -25,6 +25,35 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
     private HttpClient Theirs() => factory.ClientFor(_strangerId);
 
     [Fact]
+    public async Task A_custom_exercise_name_a_session_could_not_copy_is_refused_on_the_day()
+    {
+        // A session started from a day copies its custom names, and the copy is capped at
+        // 100 characters. Accepting a longer name on the day made every later "start this
+        // day" fail with a 400 that the offline queue could never get past.
+        var (_, dayId, _) = await Mine().PlanWithBenchDayAsync();
+        var tooLong = new string('x', 101);
+
+        var replace = await Mine().PutAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
+        {
+            exercises = new[] { new { planDayExerciseId = (Guid?)null, exerciseId = (Guid?)null, customExerciseName = (string?)tooLong } },
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, replace.StatusCode);
+
+        var add = await Mine().PostAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
+        {
+            id = Guid.CreateVersion7(), exerciseId = (Guid?)null, customExerciseName = tooLong,
+            targetSets = 3, targetReps = 10, restSeconds = 90,
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, add.StatusCode);
+
+        var atLimit = await Mine().PutAsJsonAsync($"/api/training-plans/days/{dayId}/exercises", new
+        {
+            exercises = new[] { new { planDayExerciseId = (Guid?)null, exerciseId = (Guid?)null, customExerciseName = (string?)new string('x', 100) } },
+        });
+        Assert.True(atLimit.IsSuccessStatusCode, $"100 characters must still be accepted, got {atLimit.StatusCode}");
+    }
+
+    [Fact]
     public async Task A_create_without_an_id_is_refused()
     {
         // A Guid is a value type, so leaving the field out of the body does not fail

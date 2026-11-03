@@ -15,6 +15,7 @@ import {
   PlanDayResponse,
 } from '../../../api/generated/schemas';
 import { usePlanDayExercisesSync } from '../hooks/usePlanDayExercisesSync';
+import { CUSTOM_EXERCISE_NAME_MAX_LENGTH } from '../constants';
 import {
   ExercisePick,
   PickerSnapshot,
@@ -204,6 +205,7 @@ export const PlanDayExercisePickerScreen = ({ route }: Props) => {
               value={customName}
               onChangeText={setCustomName}
               placeholder="np. Pompki na poręczach"
+              maxLength={CUSTOM_EXERCISE_NAME_MAX_LENGTH}
               autoFocus
               onSubmitEditing={addCustom}
             />
