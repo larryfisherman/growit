@@ -5,7 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type GetApiWorkoutsUserIdHistoryParams = {
+export type GetApiWorkoutsHistoryParams = {
 page?: number;
 pageSize?: number;
 };

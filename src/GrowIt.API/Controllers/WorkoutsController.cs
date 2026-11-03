@@ -31,16 +31,13 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
         return Ok(new CreateWorkoutResponse(id));
     }
 
-    // The {userId} route segment on history, by-date and by-month is legacy: it stays only because the
-    // generated mobile client sends it (it is also part of the client's query cache key). Never pass it
-    // to a query - identity always comes from the token (HttpContext.GetUserId()); using the route value
-    // would let any user read anyone's workouts.
-    [HttpGet("{userId:guid}/history")]
+    // Reads are always scoped to the caller: the user comes from the token
+    // (HttpContext.GetUserId()), never from the URL.
+    [HttpGet("history")]
     public async Task<ActionResult<WorkoutHistoryResponse>> GetHistory(
-        Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
-        var authenticatedUserId = HttpContext.GetUserId();
-        var result = await mediator.Send(new GetWorkoutHistoryQuery(authenticatedUserId, page, pageSize), ct);
+        var result = await mediator.Send(new GetWorkoutHistoryQuery(HttpContext.GetUserId(), page, pageSize), ct);
         return Ok(result);
     }
 
@@ -52,22 +49,20 @@ public class WorkoutsController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{userId:guid}/by-date")]
+    [HttpGet("by-date")]
     public async Task<ActionResult<WorkoutByDateResponse>> GetWorkoutByDate(
-        Guid userId, [FromQuery] DateOnly date, CancellationToken ct)
+        [FromQuery] DateOnly date, CancellationToken ct)
     {
-        var authenticatedUserId = HttpContext.GetUserId();
-        var result = await mediator.Send(new GetWorkoutByDateQuery(authenticatedUserId, date), ct);
+        var result = await mediator.Send(new GetWorkoutByDateQuery(HttpContext.GetUserId(), date), ct);
         if (result is null) return NotFound();
         return Ok(result);
     }
 
-    [HttpGet("{userId:guid}/by-month")]
+    [HttpGet("by-month")]
     public async Task<ActionResult<List<WorkoutSummaryResponse>>> GetWorkoutsByMonth(
-        Guid userId, [FromQuery] int year, [FromQuery] int month, CancellationToken ct)
+        [FromQuery] int year, [FromQuery] int month, CancellationToken ct)
     {
-        var authenticatedUserId = HttpContext.GetUserId();
-        var result = await mediator.Send(new GetWorkoutsByMonthQuery(authenticatedUserId, year, month), ct);
+        var result = await mediator.Send(new GetWorkoutsByMonthQuery(HttpContext.GetUserId(), year, month), ct);
         return Ok(result);
     }
 

@@ -6,7 +6,8 @@ import {
   useDeleteApiTrainingPlansPlanId,
 } from '../../../api/generated/training-plans/training-plans';
 import { Button } from '../../../theme/components/Button';
-import { ScreenState, screenStateOf } from '../../../theme/components/ScreenState';
+import { ScreenState } from '../../../theme/components/ScreenState';
+import { screenStateOf } from '../../../offline/screenStateOf';
 import { PlanRow } from '../components/PlanRow';
 import { SectionLabel } from '../../../theme/components/SectionLabel';
 

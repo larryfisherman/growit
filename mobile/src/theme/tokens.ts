@@ -1,53 +1,16 @@
-// GrowIt design tokens — single source of truth.
-// Mirror this file to tailwind.config.js (colors/fontFamily/spacing).
-// Use `tokens.color.lime` inline when className isn't enough.
+// GrowIt design tokens for inline styles - use `tokens.color.lime` when className isn't
+// enough. The values come from ./palette.js, which tailwind.config.js reads as well.
 
-const palettes = {
-  dark: {
-    bg:         '#0a0a0a',
-    surface:    '#141414',
-    surface2:   '#1c1c1c',
-    fg:         '#f5f5f3',
-    muted:      '#8a8a86',
-    dim:        '#5a5a56',
-    lime:       '#d4ff3a',
-    limeInk:    '#0a0a0a',
-    line:       'rgba(255,255,255,0.08)',
-    lineStrong: 'rgba(255,255,255,0.16)',
-  },
-  light: {
-    bg:         '#fafaf7',
-    surface:    '#ffffff',
-    surface2:   '#f3f3ee',
-    fg:         '#0a0a0a',
-    muted:      '#6a6a66',
-    dim:        '#a0a09a',
-    lime:       '#a3cc1f',
-    limeInk:    '#0a0a0a',
-    line:       'rgba(0,0,0,0.08)',
-    lineStrong: 'rgba(0,0,0,0.16)',
-  },
-} as const;
-
-const semantic = {
-  success: '#52d97c',
-  danger:  '#ff5a4e',
-  warning: '#ffb84e',
-} as const;
+import { font, palettes, radius, semantic, typeScale } from './palette';
 
 export { palettes, semantic };
 export type ThemeMode = keyof typeof palettes;
-export type PaletteColors = Record<keyof typeof palettes.dark, string>;
+export type PaletteColors = (typeof palettes)['dark'];
 
-// These names match those loaded via @expo-google-fonts in App.tsx.
-const font = {
-  sansRegular:  'SpaceGrotesk_400Regular',
-  sansMedium:   'SpaceGrotesk_500Medium',
-  sansSemi:     'SpaceGrotesk_600SemiBold',
-  sansBold:     'SpaceGrotesk_700Bold',
-  monoRegular:  'JetBrainsMono_400Regular',
-  monoMedium:   'JetBrainsMono_500Medium',
-};
+const type = (step: keyof typeof typeScale) => ({
+  fontSize: typeScale[step].size,
+  lineHeight: typeScale[step].lineHeight,
+});
 
 export const tokens = {
   color: {
@@ -58,17 +21,17 @@ export const tokens = {
   font,
 
   type: {
-    display: { fontSize: 50, lineHeight: 48, fontFamily: font.sansBold, letterSpacing: -2 },
-    h1:      { fontSize: 32, lineHeight: 34, fontFamily: font.sansBold, letterSpacing: -1 },
-    h2:      { fontSize: 24, lineHeight: 28, fontFamily: font.sansBold, letterSpacing: -0.6 },
-    h3:      { fontSize: 19, lineHeight: 23, fontFamily: font.sansBold, letterSpacing: -0.4 },
-    bodyLg:  { fontSize: 17, lineHeight: 24, fontFamily: font.sansMedium },
-    body:    { fontSize: 15, lineHeight: 22, fontFamily: font.sansMedium },
-    bodySm:  { fontSize: 13, lineHeight: 18, fontFamily: font.sansMedium },
-    label:   { fontSize: 11, lineHeight: 15, fontFamily: font.monoMedium, letterSpacing: 1.8, textTransform: 'uppercase' as const },
-    labelSm: { fontSize:  9, lineHeight: 13, fontFamily: font.monoMedium, letterSpacing: 1.6, textTransform: 'uppercase' as const },
+    display: { ...type('display'), fontFamily: font.sansBold, letterSpacing: -2 },
+    h1:      { ...type('h1'), fontFamily: font.sansBold, letterSpacing: -1 },
+    h2:      { ...type('h2'), fontFamily: font.sansBold, letterSpacing: -0.6 },
+    h3:      { ...type('h3'), fontFamily: font.sansBold, letterSpacing: -0.4 },
+    bodyLg:  { ...type('bodyLg'), fontFamily: font.sansMedium },
+    body:    { ...type('body'), fontFamily: font.sansMedium },
+    bodySm:  { ...type('bodySm'), fontFamily: font.sansMedium },
+    label:   { ...type('label'), fontFamily: font.monoMedium, letterSpacing: 1.8, textTransform: 'uppercase' as const },
+    labelSm: { ...type('labelSm'), fontFamily: font.monoMedium, letterSpacing: 1.6, textTransform: 'uppercase' as const },
   },
 
   space: { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 28, 8: 32, 10: 40, 12: 48, 16: 64 },
-  radius: { sm: 4, md: 6, lg: 10, xl: 16, pill: 999 },
+  radius: { ...radius, pill: 999 },
 };

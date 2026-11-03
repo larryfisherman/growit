@@ -50,14 +50,14 @@ public class WorkoutOrderingTests(ApiFactory factory) : IClassFixture<ApiFactory
         await RecordedAtAsync(first, baseTime);
         await RecordedAtAsync(second, baseTime.AddHours(10));
         var shown = await Mine().GetFromJsonAsync<WorkoutByDateResponse>(
-            $"/api/Workouts/{_userId}/by-date?date={SharedDate:yyyy-MM-dd}");
+            $"/api/Workouts/by-date?date={SharedDate:yyyy-MM-dd}");
         Assert.Equal(second, shown!.Id);
 
         // Swap which one was recorded later: the answer follows the record time, not the
         // order the rows were inserted in.
         await RecordedAtAsync(first, baseTime.AddHours(12));
         shown = await Mine().GetFromJsonAsync<WorkoutByDateResponse>(
-            $"/api/Workouts/{_userId}/by-date?date={SharedDate:yyyy-MM-dd}");
+            $"/api/Workouts/by-date?date={SharedDate:yyyy-MM-dd}");
         Assert.Equal(first, shown!.Id);
     }
 
@@ -76,11 +76,11 @@ public class WorkoutOrderingTests(ApiFactory factory) : IClassFixture<ApiFactory
         Guid[] expected = [first, second, older];
 
         var history = await Mine().GetFromJsonAsync<WorkoutHistoryResponse>(
-            $"/api/Workouts/{_userId}/history?page=1&pageSize=20");
+            $"/api/Workouts/history?page=1&pageSize=20");
         Assert.Equal(expected, history!.Items.Select(w => w.Id));
 
         var month = await Mine().GetFromJsonAsync<List<WorkoutSummaryResponse>>(
-            $"/api/Workouts/{_userId}/by-month?year=2026&month=3");
+            $"/api/Workouts/by-month?year=2026&month=3");
         Assert.Equal(expected, month!.Select(w => w.Id));
 
         // Pages of one never repeat or skip a session.
@@ -88,7 +88,7 @@ public class WorkoutOrderingTests(ApiFactory factory) : IClassFixture<ApiFactory
         for (var page = 1; page <= expected.Length; page++)
         {
             var onePage = await Mine().GetFromJsonAsync<WorkoutHistoryResponse>(
-                $"/api/Workouts/{_userId}/history?page={page}&pageSize=1");
+                $"/api/Workouts/history?page={page}&pageSize=1");
             paged.AddRange(onePage!.Items.Select(w => w.Id));
         }
         Assert.Equal(expected, paged);

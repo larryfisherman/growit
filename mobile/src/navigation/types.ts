@@ -3,7 +3,7 @@
 type PlanEditingParamList = {
   PlanDetail: { planId: string | null };
   PlanDay: { dayId: string };
-  PlanDayExercisePicker: { dayId: string; planId: string };
+  PlanDayExercisePicker: { dayId: string };
 };
 
 /// The workout-session screens, mounted in both the Today and Calendar stacks so a session

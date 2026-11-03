@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface AddExerciseToPlanDayResponse {
-  id: string;
-}
+export type GetApiWorkoutsByMonthParams = {
+year?: number;
+month?: number;
+};

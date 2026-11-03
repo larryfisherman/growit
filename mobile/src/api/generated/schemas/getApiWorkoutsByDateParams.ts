@@ -5,7 +5,6 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type GetApiWorkoutsUserIdByMonthParams = {
-year?: number;
-month?: number;
+export type GetApiWorkoutsByDateParams = {
+date?: string;
 };

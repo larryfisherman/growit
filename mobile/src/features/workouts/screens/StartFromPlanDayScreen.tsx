@@ -7,6 +7,7 @@ import {
 } from '../../../api/generated/training-plans/training-plans';
 import { Button } from '../../../theme/components/Button';
 import { ScreenState } from '../../../theme/components/ScreenState';
+import { screenStateOf } from '../../../offline/screenStateOf';
 import { SectionLabel } from '../../../theme/components/SectionLabel';
 import { PlanDayRow } from '../../plans/components/PlanDayRow';
 import { useStartWorkoutFromPlanDay } from '../hooks/useStartWorkoutFromPlanDay';
@@ -14,17 +15,22 @@ import { useStartWorkoutFromPlanDay } from '../hooks/useStartWorkoutFromPlanDay'
 type Props = NativeStackScreenProps<TodayStackParamList, 'StartFromPlanDay'>;
 
 export const StartFromPlanDayScreen = ({ navigation }: Props) => {
-  const { data: plans, isLoading: isLoadingPlans } = useGetApiTrainingPlans();
+  const plansQuery = useGetApiTrainingPlans();
+  const plans = plansQuery.data;
   const activePlan = plans?.find((p) => p.isActive) ?? plans?.[0];
 
-  const { data: plan, isLoading: isLoadingPlan } = useGetApiTrainingPlansPlanId(activePlan?.id ?? '', {
+  const planQuery = useGetApiTrainingPlansPlanId(activePlan?.id ?? '', {
     query: { enabled: !!activePlan },
   });
+  const plan = planQuery.data;
 
   const { start, isStartingNow } = useStartWorkoutFromPlanDay();
 
-  if (isLoadingPlans || isLoadingPlan) {
-    return <ScreenState kind="loading" />;
+  // Offline with nothing cached, "no plans" would be a lie: say there is no connection.
+  // The plan query only counts once there is a plan to load (disabled reads as pending).
+  const screenState = screenStateOf(plansQuery) ?? (activePlan ? screenStateOf(planQuery) : null);
+  if (screenState) {
+    return <ScreenState kind={screenState} />;
   }
 
   return (

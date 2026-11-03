@@ -1,4 +1,5 @@
 import { QueryClient, type UseMutationOptions } from '@tanstack/react-query';
+import { nextPosition } from '../lib/position';
 import {
   getDeleteApiExercisesSetsSetIdMutationOptions,
   getGetApiExercisesQueryKey,
@@ -12,7 +13,6 @@ import {
   getGetApiTrainingPlansPlanIdQueryKey,
   getGetApiTrainingPlansQueryKey,
   getGetApiTrainingPlansDaysDayIdQueryKey,
-  getPostApiTrainingPlansDaysDayIdExercisesMutationOptions,
   getPostApiTrainingPlansMutationOptions,
   getPostApiTrainingPlansPlanIdDaysMutationOptions,
   getPutApiTrainingPlansDaysDayIdExercisesMutationOptions,
@@ -42,6 +42,7 @@ import {
   clearLastPerformanceFrom,
   forgetWorkout,
   latestKnownPerformance,
+  patchCachedPlans,
   patchPlanDayHolding,
   patchSetHolding,
   patchWorkoutHolding,
@@ -171,9 +172,13 @@ export const registerMutationDefaults = (
     getPutApiTrainingPlansPlanIdActiveMutationOptions(),
     ['plans'],
     ({ planId }, client) => {
-      // Exactly one plan is active, so the others have to give it up in the same breath.
+      // Exactly one plan is active, so the others have to give it up in the same breath -
+      // on the list and on every plan screen already in cache.
       client.setQueryData<TrainingPlanSummaryResponse[]>(getGetApiTrainingPlansQueryKey(), (old) =>
         old?.map((plan) => ({ ...plan, isActive: plan.id === planId })),
+      );
+      patchCachedPlans(client, (plan) =>
+        plan.isActive === (plan.id === planId) ? plan : { ...plan, isActive: plan.id === planId },
       );
     },
   );
@@ -184,7 +189,9 @@ export const registerMutationDefaults = (
     ({ planId, data }, client) => {
       const planKey = getGetApiTrainingPlansPlanIdQueryKey(planId);
       const plan = client.getQueryData<TrainingPlanResponse>(planKey);
-      const orderIndex = plan?.days.length ?? 0;
+      // The server appends after the highest position, not after the count: after a day
+      // is deleted the two differ, and the patch must agree with what will be stored.
+      const orderIndex = nextPosition(plan?.days ?? []);
 
       // Seeded so the day screen can be opened on our own id straight away, instead of
       // arriving before the write and reading a 404.
@@ -230,7 +237,6 @@ export const registerMutationDefaults = (
   );
 
   register(getDeleteApiTrainingPlansDaysDayIdMutationOptions(), ['plans']);
-  register(getPostApiTrainingPlansDaysDayIdExercisesMutationOptions(), ['plans']);
   // No apply: the picker patches the day itself; see PlanDayExercisePickerScreen.
   registerDesiredState(getPutApiTrainingPlansDaysDayIdExercisesMutationOptions(), ['plans']);
 

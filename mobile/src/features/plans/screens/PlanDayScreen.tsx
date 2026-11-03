@@ -9,7 +9,8 @@ import {
 import { PlanDayExerciseRow } from '../components/PlanDayExerciseRow';
 import { usePlanDayAutoSave } from '../hooks/usePlanDayAutoSave';
 import { Input } from '../../../theme/components/Input';
-import { ScreenState, screenStateOf } from '../../../theme/components/ScreenState';
+import { ScreenState } from '../../../theme/components/ScreenState';
+import { screenStateOf } from '../../../offline/screenStateOf';
 import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDay'>;
@@ -70,9 +71,7 @@ export const PlanDayScreen = ({ route, navigation }: Props) => {
         )}
 
         <Pressable
-          onPress={() =>
-            day && navigation.navigate('PlanDayExercisePicker', { dayId, planId: day.planId })
-          }
+          onPress={() => navigation.navigate('PlanDayExercisePicker', { dayId })}
           className="border border-line rounded-md py-4 items-center"
         >
           <Text className="text-fg font-sans-sb text-body-sm tracking-label uppercase">

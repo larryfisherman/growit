@@ -4,7 +4,7 @@ import { WorkoutDetailScreen } from '../features/workouts/screens/WorkoutDetailS
 import { AddExerciseToWorkoutScreen } from '../features/workouts/screens/AddExerciseToWorkoutScreen';
 import { CalendarStackParamList } from './types';
 import { darkStackOptions, workoutSessionScreenOptions } from './screenOptions';
-import { SettingsButton } from '../theme/components/SettingsButton';
+import { SettingsButton } from '../features/settings/components/SettingsButton';
 
 const Stack = createNativeStackNavigator<CalendarStackParamList>();
 

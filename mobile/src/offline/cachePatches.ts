@@ -4,6 +4,7 @@ import type {
   LastPerformanceResponse,
   PlanDayResponse,
   SetResponse,
+  TrainingPlanResponse,
   WorkoutByDateResponse,
   WorkoutExerciseResponse,
   WorkoutResponse,
@@ -20,6 +21,30 @@ const cachedPlanDays = (queryClient: QueryClient) =>
     predicate: (query) => keyStartsWith(query.queryKey, KEY_PREFIX.planDay),
   });
 
+/// Every cached plan screen. The shape tells a plan apart from the list, day and next-day
+/// entries that share its key prefix.
+const cachedPlans = (queryClient: QueryClient) =>
+  queryClient.getQueriesData<TrainingPlanResponse>({
+    predicate: (query) => {
+      if (!keyStartsWith(query.queryKey, KEY_PREFIX.plans)) return false;
+      const data = query.state.data as TrainingPlanResponse | undefined;
+      return !!data && !Array.isArray(data) && Array.isArray(data.days);
+    },
+  });
+
+/// Applies `patch` to every cached plan screen; a patch returning its input unchanged
+/// leaves that entry alone.
+export const patchCachedPlans = (
+  queryClient: QueryClient,
+  patch: (plan: TrainingPlanResponse) => TrainingPlanResponse,
+) => {
+  for (const [queryKey, plan] of cachedPlans(queryClient)) {
+    if (!plan) continue;
+    const patched = patch(plan);
+    if (patched !== plan) queryClient.setQueryData<TrainingPlanResponse>(queryKey, patched);
+  }
+};
+
 /// Some writes name only the row, not the day it sits on, so the day has to be found by
 /// looking for whichever cached one is holding it.
 export const patchPlanDayHolding = (
@@ -34,9 +59,9 @@ export const patchPlanDayHolding = (
   }
 };
 
-/// The "today" screen reads a workout by user and date, but the user id is not in the
-/// mutation variables because the server takes it from the token. So the entry is found
-/// by what it is rather than by its key.
+/// The "today" screen reads a workout by date. Its key holds the date as a query param
+/// object, so the entry is found by what it is (the by-date family, that date) rather
+/// than by rebuilding the key - which would have to match the param object exactly.
 const patchWorkoutForDate = (
   queryClient: QueryClient,
   performedAt: string,

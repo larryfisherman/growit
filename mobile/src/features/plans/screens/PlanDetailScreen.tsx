@@ -14,6 +14,8 @@ import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
 import { ScreenState } from '../../../theme/components/ScreenState';
 import { newId } from '../../../offline/ids';
+import { isInFlight } from '../../../offline/isInFlight';
+import { screenStateOf } from '../../../offline/screenStateOf';
 import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDetail'>;
@@ -23,9 +25,12 @@ export const PlanDetailScreen = ({ route, navigation }: Props) => {
 
   const isNew = planId === null;
 
-  const { data: plan, isLoading } = useGetApiTrainingPlansPlanId(planId ?? '', {
+  const planQuery = useGetApiTrainingPlansPlanId(planId ?? '', {
     query: { enabled: !isNew },
   });
+  const plan = planQuery.data;
+  // A new plan has no query to wait on (it is disabled, which reads as pending forever).
+  const screenState = isNew ? null : screenStateOf(planQuery);
 
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
@@ -41,9 +46,15 @@ export const PlanDetailScreen = ({ route, navigation }: Props) => {
 
   const { mutate: create, isPending: isCreating } = usePostApiTrainingPlans();
 
-  const { mutate: addDay, isPending: isAddingDay } = usePostApiTrainingPlansPlanIdDays();
+  // Offline these writes wait in the queue paused; the buttons only wait on a write that
+  // is actually on the wire.
+  const addDayMutation = usePostApiTrainingPlansPlanIdDays();
+  const { mutate: addDay } = addDayMutation;
+  const isAddingDay = isInFlight(addDayMutation);
 
-  const { mutate: setActive, isPending: isActivating } = usePutApiTrainingPlansPlanIdActive();
+  const setActiveMutation = usePutApiTrainingPlansPlanIdActive();
+  const { mutate: setActive } = setActiveMutation;
+  const isActivating = isInFlight(setActiveMutation);
 
   const handleCreate = () => {
     if (!name.trim()) return;
@@ -66,8 +77,8 @@ export const PlanDetailScreen = ({ route, navigation }: Props) => {
     navigation.navigate('PlanDay', { dayId: id });
   };
 
-  if (!isNew && isLoading) {
-    return <ScreenState kind="loading" />;
+  if (screenState) {
+    return <ScreenState kind={screenState} />;
   }
 
   return (

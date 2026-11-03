@@ -37,11 +37,14 @@ registerHooks({
     const stubbed = STUBS[specifier];
     if (stubbed) return { url: stubbed, shortCircuit: true };
 
+    // Only the app's own imports are written without an extension; packages resolve
+    // themselves (and a CommonJS require handed a file URL would fail).
     const relative = specifier.startsWith('./') || specifier.startsWith('../');
-    if (relative && context.parentURL?.startsWith('file:')) {
+    const fromApp = context.parentURL?.startsWith('file:') && !context.parentURL.includes('/node_modules/');
+    if (relative && fromApp) {
       const target = new URL(specifier, context.parentURL);
       if (!isFile(target)) {
-        for (const suffix of ['.ts', '/index.ts']) {
+        for (const suffix of ['.ts', '.js', '/index.ts']) {
           const candidate = new URL(target.href + suffix);
           if (isFile(candidate)) return nextResolve(candidate.href, context);
         }

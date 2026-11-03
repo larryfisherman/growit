@@ -142,13 +142,8 @@ public class TrainingPlansController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> SetDayExercises(
         Guid dayId, [FromBody] SetPlanDayExercisesRequest request, CancellationToken ct)
     {
-        var selections = request.Exercises
-            .Select(e => new PlanDayExerciseSelectionInput(
-                e.PlanDayExerciseId, e.ExerciseId, e.CustomExerciseName))
-            .ToList();
-
         await mediator.Send(
-            new SetPlanDayExercisesCommand(HttpContext.GetUserId(), dayId, selections), ct);
+            new SetPlanDayExercisesCommand(HttpContext.GetUserId(), dayId, request.Exercises), ct);
 
         return NoContent();
     }

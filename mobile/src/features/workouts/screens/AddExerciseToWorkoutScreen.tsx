@@ -11,6 +11,7 @@ import { WorkoutResponse } from '../../../api/generated/schemas';
 import { ScreenState } from '../../../theme/components/ScreenState';
 import { newId } from '../../../offline/ids';
 import { isInFlight } from '../../../offline/isInFlight';
+import { screenStateOf } from '../../../offline/screenStateOf';
 import { nextPosition } from '../../../lib/position';
 
 type Props = NativeStackScreenProps<WorkoutSessionParamList, 'AddExerciseToWorkout'>;
@@ -19,9 +20,11 @@ export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
   const { workoutId } = route.params;
   const queryClient = useQueryClient();
 
-  const { data: exercises, isLoading } = useGetApiExercises({
+  const exercisesQuery = useGetApiExercises({
     query: { staleTime: Infinity },
   });
+  const exercises = exercisesQuery.data;
+  const screenState = screenStateOf(exercisesQuery);
 
   // The request carries the position, and the client picks it so the row the registry
   // appends to the cached workout sits where the server will store it. The workout is
@@ -36,8 +39,8 @@ export const AddExerciseToWorkoutScreen = ({ route, navigation }: Props) => {
   const { mutate: addExercise } = addExerciseMutation;
   const isAddingNow = isInFlight(addExerciseMutation);
 
-  if (isLoading) {
-    return <ScreenState kind="loading" />;
+  if (screenState) {
+    return <ScreenState kind={screenState} />;
   }
 
   return (

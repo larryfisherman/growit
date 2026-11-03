@@ -24,8 +24,6 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AddExerciseToPlanDayRequest,
-  AddExerciseToPlanDayResponse,
   CreatePlanDayRequest,
   CreatePlanDayResponse,
   CreateTrainingPlanRequest,
@@ -843,64 +841,6 @@ const {mutation: mutationOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteApiTrainingPlansDaysDayIdMutationOptions(options), queryClient);
-    }
-    export const postApiTrainingPlansDaysDayIdExercises = (
-    dayId: string,
-    addExerciseToPlanDayRequest: AddExerciseToPlanDayRequest,
- signal?: AbortSignal
-) => {
-
-
-      return customInstance<AddExerciseToPlanDayResponse>(
-      {url: `/api/training-plans/days/${dayId}/exercises`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: addExerciseToPlanDayRequest, signal
-    },
-      );
-    }
-
-
-
-export const getPostApiTrainingPlansDaysDayIdExercisesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiTrainingPlansDaysDayIdExercises>>, TError,{dayId: string;data: AddExerciseToPlanDayRequest}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postApiTrainingPlansDaysDayIdExercises>>, TError,{dayId: string;data: AddExerciseToPlanDayRequest}, TContext> => {
-
-const mutationKey = ['postApiTrainingPlansDaysDayIdExercises'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiTrainingPlansDaysDayIdExercises>>, {dayId: string;data: AddExerciseToPlanDayRequest}> = (props) => {
-          const {dayId,data} = props ?? {};
-
-          return  postApiTrainingPlansDaysDayIdExercises(dayId,data,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostApiTrainingPlansDaysDayIdExercisesMutationResult = NonNullable<Awaited<ReturnType<typeof postApiTrainingPlansDaysDayIdExercises>>>
-    export type PostApiTrainingPlansDaysDayIdExercisesMutationBody = AddExerciseToPlanDayRequest
-    export type PostApiTrainingPlansDaysDayIdExercisesMutationError = unknown
-
-    export const usePostApiTrainingPlansDaysDayIdExercises = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiTrainingPlansDaysDayIdExercises>>, TError,{dayId: string;data: AddExerciseToPlanDayRequest}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postApiTrainingPlansDaysDayIdExercises>>,
-        TError,
-        {dayId: string;data: AddExerciseToPlanDayRequest},
-        TContext
-      > => {
-      return useMutation(getPostApiTrainingPlansDaysDayIdExercisesMutationOptions(options), queryClient);
     }
     export const putApiTrainingPlansDaysDayIdExercises = (
     dayId: string,

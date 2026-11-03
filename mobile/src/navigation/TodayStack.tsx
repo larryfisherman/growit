@@ -12,7 +12,7 @@ import {
   planEditingScreenOptions,
   workoutSessionScreenOptions,
 } from './screenOptions';
-import { SettingsButton } from '../theme/components/SettingsButton';
+import { SettingsButton } from '../features/settings/components/SettingsButton';
 
 const Stack = createNativeStackNavigator<TodayStackParamList>();
 

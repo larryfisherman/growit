@@ -2,56 +2,36 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
-  useGetApiWorkoutsUserIdByDate,
-  useGetApiWorkoutsUserIdHistory,
+  useGetApiWorkoutsByDate,
+  useGetApiWorkoutsHistory,
   usePostApiWorkouts,
 } from '../../../api/generated/workouts/workouts';
 import {
   useGetApiTrainingPlansNextDay,
 } from '../../../api/generated/training-plans/training-plans';
-import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
 import { TodayStackParamList } from '../../../navigation/types';
-import { useAuth, useUserId } from '../../../auth/AuthContext';
+import { useAuth } from '../../../auth/AuthContext';
 import { Button } from '../../../theme/components/Button';
 import { ScreenState } from '../../../theme/components/ScreenState';
 import { SectionLabel } from '../../../theme/components/SectionLabel';
 import { newId } from '../../../offline/ids';
 import { isInFlight } from '../../../offline/isInFlight';
-import { getToday, formatWeekdayDayMonth, formatDayMonth, formatShortDate } from '../../../lib/date';
+import { getToday, formatWeekdayDayMonth, formatShortDate } from '../../../lib/date';
 import { exerciseCountLabel } from '../../../lib/plurals';
 import { useStartWorkoutFromPlanDay } from '../hooks/useStartWorkoutFromPlanDay';
-
-const LastWorkoutCard = ({
-  workout,
-  onPress,
-}: {
-  workout: WorkoutSummaryResponse;
-  onPress: () => void;
-}) => (
-  <Pressable className="bg-surface rounded-md p-4 border border-line" onPress={onPress}>
-    <Text className="text-fg font-sans-sb text-body-lg">{workout.name}</Text>
-    <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-      {workout.planDayName ? `Z planu · ${workout.planDayName}` : 'Poza planem'}
-    </Text>
-    <Text className="text-muted font-sans-md text-body-sm mt-2">
-      {formatDayMonth(workout.performedAt)} · {exerciseCountLabel(workout.exerciseCount)}
-    </Text>
-  </Pressable>
-);
+import { WorkoutSummaryCard } from '../components/WorkoutSummaryCard';
 
 export const WorkoutsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<TodayStackParamList>>();
-  const userId = useUserId();
   const { name } = useAuth();
   const today = getToday();
 
-  const { data: workout, isLoading } = useGetApiWorkoutsUserIdByDate(
-    userId,
+  const { data: workout, isLoading } = useGetApiWorkoutsByDate(
     { date: today },
     // 404 means nothing is logged today - an expected answer, not a failure worth retrying.
     { query: { retry: false } },
   );
-  const { data: history } = useGetApiWorkoutsUserIdHistory(userId, { page: 1, pageSize: 2 });
+  const { data: history } = useGetApiWorkoutsHistory({ page: 1, pageSize: 2 });
 
   // The endpoint answers 204 when there is no active plan, which axios hands over as
   // an empty string - falsy either way, so the check below covers both.
@@ -177,7 +157,7 @@ export const WorkoutsScreen = () => {
           <SectionLabel>
             [ OSTATNI TRENING ]
           </SectionLabel>
-          <LastWorkoutCard
+          <WorkoutSummaryCard
             workout={lastWorkout}
             onPress={() => navigation.navigate('WorkoutDetail', { workoutId: lastWorkout.id })}
           />

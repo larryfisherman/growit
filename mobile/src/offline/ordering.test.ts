@@ -7,6 +7,7 @@ import {
   getPostApiTrainingPlansPlanIdDaysMutationOptions,
   getPutApiTrainingPlansDaysDayIdExercisesMutationOptions,
   getPutApiTrainingPlansExercisesPlanDayExerciseIdMutationOptions,
+  getPutApiTrainingPlansPlanIdActiveMutationOptions,
 } from '../api/generated/training-plans/training-plans.ts';
 import type { TrainingPlanResponse } from '../api/generated/schemas/index.ts';
 import {
@@ -133,5 +134,78 @@ describe('the optimistic view while the queue drains', () => {
     const days = screen.getCurrentResult().data?.days.map((d) => d.id) ?? [];
     unsubscribe();
     assert.deepEqual(days, [firstDay, secondDay], 'the day still on its way must not vanish from the screen');
+  });
+
+  test('a day added offline after a deletion takes the next free position, not the count', async () => {
+    const planId = newId();
+    const kept = newId();
+    const added = newId();
+
+    // Days 0 and 1 existed, day 0 was deleted: one day left, at position 1.
+    const serverPlan: TrainingPlanResponse = {
+      id: planId,
+      name: 'Plan',
+      notes: null,
+      isActive: true,
+      days: [{ id: kept, name: 'Pull', orderIndex: 1, exerciseCount: 0 }],
+    };
+    fakeApi.respondWith((request) => {
+      if (request.method === 'GET' && request.path === `/api/training-plans/${planId}`) {
+        return { status: 200, body: serverPlan };
+      }
+      return { status: 200, body: {} };
+    });
+
+    const app = startApp();
+    const screen = new QueryObserver(app, getGetApiTrainingPlansPlanIdQueryOptions(planId));
+    const unsubscribe = screen.subscribe(() => {});
+    await waitFor(() => screen.getCurrentResult().isSuccess, 'the plan loaded');
+
+    connectionDrops();
+    write(app, getPostApiTrainingPlansPlanIdDaysMutationOptions, { planId, data: { id: added, name: 'Legs', notes: null } });
+    await waitFor(() => screen.getCurrentResult().data?.days.length === 2, 'the new day shows while offline');
+
+    const newDay = screen.getCurrentResult().data?.days.find((d) => d.id === added);
+    unsubscribe();
+    // The server appends after the highest position (2); the count (1) would collide.
+    assert.equal(newDay?.orderIndex, 2);
+  });
+});
+
+describe('activating a plan offline', () => {
+  test('flips isActive on every cached plan screen, not only on the list', async () => {
+    const wasActive = newId();
+    const activated = newId();
+    const plan = (id: string, isActive: boolean): TrainingPlanResponse => ({
+      id, name: id === activated ? 'Nowy' : 'Stary', notes: null, isActive, days: [],
+    });
+    fakeApi.respondWith((request) => {
+      if (request.method === 'GET' && request.path === `/api/training-plans/${wasActive}`) {
+        return { status: 200, body: plan(wasActive, true) };
+      }
+      if (request.method === 'GET' && request.path === `/api/training-plans/${activated}`) {
+        return { status: 200, body: plan(activated, false) };
+      }
+      return { status: 200, body: {} };
+    });
+
+    const app = startApp();
+    const screens = [wasActive, activated].map((id) => {
+      const observer = new QueryObserver(app, getGetApiTrainingPlansPlanIdQueryOptions(id));
+      return { observer, unsubscribe: observer.subscribe(() => {}) };
+    });
+    await waitFor(() => screens.every((s) => s.observer.getCurrentResult().isSuccess), 'both plans loaded');
+
+    connectionDrops();
+    write(app, getPutApiTrainingPlansPlanIdActiveMutationOptions, { planId: activated });
+    await waitFor(
+      () => screens[1].observer.getCurrentResult().data?.isActive === true,
+      'the activated plan shows as active while offline',
+    );
+
+    const [old, current] = screens.map((s) => s.observer.getCurrentResult().data?.isActive);
+    screens.forEach((s) => s.unsubscribe());
+    assert.equal(current, true);
+    assert.equal(old, false, 'only one plan is active at a time');
   });
 });

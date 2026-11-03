@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { isConflict, isPermanentError, isTransportError } from './errors.ts';
+import { isPermanentError, isTransportError } from './errors.ts';
 
 const responded = (status: number) => Object.assign(new Error(`HTTP ${status}`), {
   response: { status },
@@ -47,19 +47,10 @@ describe('isPermanentError', () => {
   });
 });
 
-describe('isConflict', () => {
-  test('spots 409 and nothing else', () => {
-    assert.equal(isConflict(responded(409)), true);
-    assert.equal(isConflict(responded(400)), false);
-    assert.equal(isConflict(neverLanded()), false);
-  });
-});
-
 describe('junk input', () => {
   test('does not throw on null, undefined or a bare string', () => {
     for (const value of [null, undefined, 'boom', 42, {}]) {
       assert.equal(isPermanentError(value), false);
-      assert.equal(isConflict(value), false);
     }
   });
 });

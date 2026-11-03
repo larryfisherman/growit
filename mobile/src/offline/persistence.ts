@@ -7,7 +7,9 @@ import { KEY_PREFIX, keyStartsWith } from './queryKeys';
 /// Bump when the shape of the cached reads changes. Only the reads are discarded on a
 /// mismatch - the write queue is kept, because it holds things the user did that the
 /// server has not seen yet, and an app update is no reason to lose them.
-export const CACHE_VERSION = 'v1';
+///
+/// v2: the workout history / by-date / by-month keys lost their user segment.
+export const CACHE_VERSION = 'v2';
 
 /// Everything the app reads from the API, and nothing else. The exercise library is in
 /// here on purpose: without it a session opened offline after a restart would show rows

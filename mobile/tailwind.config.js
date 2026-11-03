@@ -1,5 +1,11 @@
-// Extends NativeWind/Tailwind with GrowIt tokens.
-// Keep in sync with src/theme/tokens.ts.
+// Extends NativeWind/Tailwind with GrowIt tokens. The values come from
+// src/theme/palette.js, which src/theme/tokens.ts reads as well.
+
+const { palettes, semantic, font, typeScale, radius } = require('./src/theme/palette');
+
+const dark = palettes.dark;
+const px = (value) => `${value}px`;
+const fontSize = (step) => [px(step.size), px(step.lineHeight)];
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -9,45 +15,45 @@ module.exports = {
     extend: {
       colors: {
         // surfaces
-        bg:         '#0a0a0a',
-        surface:    '#141414',
-        surface2:   '#1c1c1c',
+        bg:       dark.bg,
+        surface:  dark.surface,
+        surface2: dark.surface2,
         // text
-        fg:         '#f5f5f3',
-        muted:      '#8a8a86',
-        dim:        '#5a5a56',
+        fg:    dark.fg,
+        muted: dark.muted,
+        dim:   dark.dim,
         // accent
-        lime:       '#d4ff3a',
-        'lime-ink': '#0a0a0a',
+        lime:       dark.lime,
+        'lime-ink': dark.limeInk,
         // semantic
-        success:    '#52d97c',
-        danger:     '#ff5a4e',
-        warning:    '#ffb84e',
+        success: semantic.success,
+        danger:  semantic.danger,
+        warning: semantic.warning,
         // strokes (use as border-line / border-line-strong)
-        line:         'rgba(255,255,255,0.08)',
-        'line-strong':'rgba(255,255,255,0.16)',
+        line:          dark.line,
+        'line-strong': dark.lineStrong,
       },
 
       fontFamily: {
-        sans:      ['SpaceGrotesk_500Medium'],
-        'sans-md': ['SpaceGrotesk_500Medium'],
-        'sans-sb': ['SpaceGrotesk_600SemiBold'],
-        'sans-b':  ['SpaceGrotesk_700Bold'],
-        mono:      ['JetBrainsMono_400Regular'],
-        'mono-md': ['JetBrainsMono_500Medium'],
+        sans:      [font.sansMedium],
+        'sans-md': [font.sansMedium],
+        'sans-sb': [font.sansSemi],
+        'sans-b':  [font.sansBold],
+        mono:      [font.monoRegular],
+        'mono-md': [font.monoMedium],
       },
 
+      // [size, lineHeight]
       fontSize: {
-        // [size, lineHeight]
-        display:  ['50px', '48px'],
-        h1:       ['32px', '34px'],
-        h2:       ['24px', '28px'],
-        h3:       ['19px', '23px'],
-        'body-lg':['17px', '24px'],
-        body:     ['15px', '22px'],
-        'body-sm':['13px', '18px'],
-        label:    ['11px', '15px'],
-        'label-sm':['9px', '13px'],
+        display:    fontSize(typeScale.display),
+        h1:         fontSize(typeScale.h1),
+        h2:         fontSize(typeScale.h2),
+        h3:         fontSize(typeScale.h3),
+        'body-lg':  fontSize(typeScale.bodyLg),
+        body:       fontSize(typeScale.body),
+        'body-sm':  fontSize(typeScale.bodySm),
+        label:      fontSize(typeScale.label),
+        'label-sm': fontSize(typeScale.labelSm),
       },
 
       letterSpacing: {
@@ -62,10 +68,10 @@ module.exports = {
       },
 
       borderRadius: {
-        sm:   '4px',
-        md:   '6px',
-        lg:   '10px',
-        xl:   '16px',
+        sm:   px(radius.sm),
+        md:   px(radius.md),
+        lg:   px(radius.lg),
+        xl:   px(radius.xl),
         pill: '9999px',
       },
     },

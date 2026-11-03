@@ -45,7 +45,3 @@ export class SessionUnavailableError extends Error {
 
 export const isSessionUnavailable = (error: unknown): boolean =>
   error instanceof SessionUnavailableError;
-
-/// Someone else's row, or ours arriving twice. Worth telling apart because it is the
-/// one permanent failure the offline queue can produce by itself.
-export const isConflict = (error: unknown): boolean => statusOf(error) === 409;

@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react';
-import { View, Text, FlatList, Pressable } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useGetApiWorkoutsUserIdByMonth } from '../../../api/generated/workouts/workouts';
+import { useGetApiWorkoutsByMonth } from '../../../api/generated/workouts/workouts';
 import { CalendarStackParamList } from '../../../navigation/types';
 import { WorkoutSummaryResponse } from '../../../api/generated/schemas';
 import { useTheme } from '../../../theme/useTheme';
 import { tokens } from '../../../theme/tokens';
-import { exerciseCountLabel } from '../../../lib/plurals';
-import { useUserId } from '../../../auth/AuthContext';
+import { WorkoutSummaryCard } from '../../workouts/components/WorkoutSummaryCard';
 
+const CardGap = () => <View className="h-2" />;
 
 type NavProp = NativeStackNavigationProp<CalendarStackParamList, 'CalendarHome'>;
 
@@ -21,12 +21,11 @@ const getInitial = () => {
 
 export const CalendarScreen = () => {
   const navigation = useNavigation<NavProp>();
-  const userId = useUserId();
   const { mode, colors } = useTheme();
   const [{ year, month }, setMonth] = useState(getInitial);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { data: workouts } = useGetApiWorkoutsUserIdByMonth(userId, { year, month });
+  const { data: workouts } = useGetApiWorkoutsByMonth({ year, month });
 
   const markedDates = useMemo(() => {
     const acc: Record<string, { marked?: boolean; dotColor?: string; selected?: boolean; selectedColor?: string }> = {};
@@ -75,22 +74,15 @@ export const CalendarScreen = () => {
     return workouts.filter((w) => w.performedAt === selectedDate);
   }, [workouts, selectedDate]);
 
+  // Same card as the last workout on the today screen. Colours come from the theme's
+  // token classes; the Calendar widget itself takes plain values, hence useTheme above.
   const renderItem = ({ item }: { item: WorkoutSummaryResponse }) => (
-    <Pressable
-      onPress={() => navigation.navigate('WorkoutDetail', { workoutId: item.id })}
-      className="px-4 py-3"
-      style={{ borderBottomColor: colors.line, borderBottomWidth: 1 }}
-    >
-      <Text className="text-xs" style={{ color: colors.muted }}>
-        {item.performedAt}
-      </Text>
-      <Text className="text-base font-medium" style={{ color: colors.fg }}>
-        {item.name}
-      </Text>
-      <Text className="text-sm" style={{ color: colors.muted }}>
-        {exerciseCountLabel(item.exerciseCount)}
-      </Text>
-    </Pressable>
+    <View className="px-4">
+      <WorkoutSummaryCard
+        workout={item}
+        onPress={() => navigation.navigate('WorkoutDetail', { workoutId: item.id })}
+      />
+    </View>
   );
 
   return (
@@ -99,18 +91,22 @@ export const CalendarScreen = () => {
         data={visibleWorkouts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        contentContainerClassName="pb-10"
+        ItemSeparatorComponent={CardGap}
         ListHeaderComponent={
-          <Calendar
-            key={mode}
-            onDayPress={handleDayPress}
-            onMonthChange={handleMonthChange}
-            markedDates={markedDates}
-            theme={calendarTheme}
-          />
+          <View className="mb-4">
+            <Calendar
+              key={mode}
+              onDayPress={handleDayPress}
+              onMonthChange={handleMonthChange}
+              markedDates={markedDates}
+              theme={calendarTheme}
+            />
+          </View>
         }
         ListEmptyComponent={
           <View className="items-center justify-center p-6">
-            <Text style={{ color: colors.muted }}>
+            <Text className="text-muted font-sans-md text-body-sm">
               {selectedDate ? 'Brak treningu w tym dniu' : 'Brak treningów w tym miesiącu'}
             </Text>
           </View>

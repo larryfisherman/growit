@@ -1,3 +1,3 @@
-namespace GrowIt.Contracts.Exercises.Requests;
+namespace GrowIt.Contracts.Workouts.Requests;
 
 public record UpdateSetRequest(decimal WeightKg, int Reps);

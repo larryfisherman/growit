@@ -1,5 +1,6 @@
 using FluentValidation;
 using GrowIt.Application.Common.Validation;
+using GrowIt.Contracts.TrainingPlans.Requests;
 
 namespace GrowIt.Application.TrainingPlans.Commands.SetPlanDayExercises;
 
@@ -29,7 +30,7 @@ public class SetPlanDayExercisesCommandValidator : AbstractValidator<SetPlanDayE
     /// offline arrives: the client minted the id itself and still has to say which
     /// exercise it stands for. What stays forbidden is claiming to be a library
     /// exercise and a hand-typed name at once, and naming nothing at all.
-    private static bool HasUsableIdentity(PlanDayExerciseSelectionInput selection)
+    private static bool HasUsableIdentity(PlanDayExerciseSelection selection)
     {
         var namesLibraryExercise = ExerciseIdentity.NamesLibraryExercise(selection.ExerciseId);
         var namesCustomExercise = ExerciseIdentity.NamesCustomExercise(selection.CustomExerciseName);
@@ -39,7 +40,7 @@ public class SetPlanDayExercisesCommandValidator : AbstractValidator<SetPlanDayE
         return selection.PlanDayExerciseId.HasValue || namesLibraryExercise || namesCustomExercise;
     }
 
-    private static bool NoRepeatedRows(IReadOnlyList<PlanDayExerciseSelectionInput> selections)
+    private static bool NoRepeatedRows(IReadOnlyList<PlanDayExerciseSelection> selections)
     {
         var rowIds = selections.Where(s => s.PlanDayExerciseId.HasValue)
             .Select(s => s.PlanDayExerciseId!.Value)

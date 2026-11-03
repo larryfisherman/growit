@@ -259,7 +259,7 @@ public class ApiContractTests(ApiFactory factory) : IClassFixture<ApiFactory>, I
     {
         // Skip((page - 1) * pageSize) turned this into a negative OFFSET, which Postgres
         // rejects outright - a 500 reachable from a query string.
-        var response = await Mine().GetAsync($"/api/Workouts/{_userId}/history?page=0");
+        var response = await Mine().GetAsync($"/api/Workouts/history?page=0");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

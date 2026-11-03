@@ -12,7 +12,8 @@ import { LastPerformanceResponse, WorkoutExerciseResponse } from '../../../api/g
 import { SetLogger } from '../components/SetLogger';
 import { SetRow } from '../components/SetRow';
 import { Button } from '../../../theme/components/Button';
-import { ScreenState, screenStateOf } from '../../../theme/components/ScreenState';
+import { ScreenState } from '../../../theme/components/ScreenState';
+import { screenStateOf } from '../../../offline/screenStateOf';
 import { formatDayMonth } from '../../../lib/date';
 import { tokens } from '../../../theme/tokens';
 import { SectionLabel } from '../../../theme/components/SectionLabel';

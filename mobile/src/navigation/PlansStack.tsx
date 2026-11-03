@@ -5,7 +5,7 @@ import { PlanDayScreen } from '../features/plans/screens/PlanDayScreen';
 import { PlanDayExercisePickerScreen } from '../features/plans/screens/PlanDayExercisePickerScreen';
 import { PlansStackParamList } from './types';
 import { darkStackOptions, planEditingScreenOptions } from './screenOptions';
-import { SettingsButton } from '../theme/components/SettingsButton';
+import { SettingsButton } from '../features/settings/components/SettingsButton';
 
 const Stack = createNativeStackNavigator<PlansStackParamList>();
 

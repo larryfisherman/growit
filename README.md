@@ -21,7 +21,7 @@ src/
   GrowIt.Contracts/         request/response DTOs, one folder per area (Requests/, Responses/)
   GrowIt.Application/       MediatR commands and queries per area (Exercises, TrainingPlans, Workouts)
     Common/                 validation pipeline behaviour, exceptions, ownership queries,
-                            IdempotencyGuard (client-supplied ids), field limits
+                            IdempotencyGuard (client-supplied ids), shared validation rules
   GrowIt.Infrastructure/    GrowItDbContext, EF migrations, exercise seed data
   GrowIt.API/               Program.cs (auth, OpenAPI, Lambda hosting), controllers,
                             exception -> ProblemDetails mapping
@@ -39,8 +39,9 @@ mobile/
     navigation/             stacks and the root navigator
     offline/                query client, persisted write queue, optimistic patches,
                             connectivity / circuit breaker - see docs/offline-first.md
-    theme/                  design tokens, ThemeProvider, shared UI components
-    lib/                    small shared helpers (dates, plurals, text)
+    theme/                  design tokens (palette.js feeds both tailwind.config.js and
+                            tokens.ts), ThemeProvider, shared presentational components
+    lib/                    small shared helpers (dates, plurals, text, list positions)
   test/                     node:test setup, native-module stubs, a fake HTTP API server
 docs/
   deploy-plan.md            production deployment plan (Neon + Lambda + Cognito, Terraform)
@@ -77,7 +78,8 @@ Prerequisites: .NET 10 SDK, Docker, Node with pnpm.
    ```
 
    With `EXPO_PUBLIC_API_URL` empty the app targets the local API (the Expo dev server's
-   LAN IP on a device, `localhost` on web). `pnpm dev:prod` points it at the production URL.
+   LAN IP on a device, `localhost` on web). A script pointing at production comes with
+   deploy Stage 7 (see `docs/deploy-plan.md`).
 
 ### After changing the backend contract
 

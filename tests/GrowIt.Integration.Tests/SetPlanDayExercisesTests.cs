@@ -1,5 +1,6 @@
 using GrowIt.Application.Common.Exceptions;
 using GrowIt.Application.TrainingPlans.Commands.SetPlanDayExercises;
+using GrowIt.Contracts.TrainingPlans.Requests;
 using GrowIt.Domain.Entities;
 using GrowIt.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -123,7 +124,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
             .ToListAsync();
     }
 
-    private async Task RunAsync(params PlanDayExerciseSelectionInput[] selections)
+    private async Task RunAsync(params PlanDayExerciseSelection[] selections)
     {
         await using var db = TestDatabase.NewContext();
         var handler = new SetPlanDayExercisesCommandHandler(db);
@@ -135,9 +136,9 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     public async Task Applies_the_desired_list_keeping_tuned_targets_and_dropping_the_rest()
     {
         await RunAsync(
-            new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(null, ExerciseSeed.Deadlift, null),
-            new PlanDayExerciseSelectionInput(null, null, "Pompki na poręczach"));
+            new PlanDayExerciseSelection(_benchRowId, null, null),
+            new PlanDayExerciseSelection(null, ExerciseSeed.Deadlift, null),
+            new PlanDayExerciseSelection(null, null, "Pompki na poręczach"));
 
         var rows = await ReadDayAsync();
 
@@ -166,9 +167,9 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     {
         var selections = new[]
         {
-            new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(null, ExerciseSeed.Deadlift, null),
-            new PlanDayExerciseSelectionInput(null, null, "Pompki na poręczach")
+            new PlanDayExerciseSelection(_benchRowId, null, null),
+            new PlanDayExerciseSelection(null, ExerciseSeed.Deadlift, null),
+            new PlanDayExerciseSelection(null, null, "Pompki na poręczach")
         };
 
         await RunAsync(selections);
@@ -186,8 +187,8 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
     public async Task Position_in_the_list_becomes_the_order()
     {
         await RunAsync(
-            new PlanDayExerciseSelectionInput(_dumbbellRowId, null, null),
-            new PlanDayExerciseSelectionInput(_benchRowId, null, null));
+            new PlanDayExerciseSelection(_dumbbellRowId, null, null),
+            new PlanDayExerciseSelection(_benchRowId, null, null));
 
         var rows = await ReadDayAsync();
 
@@ -208,7 +209,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         // An unknown id with no exercise behind it is not something we can act on:
         // the caller is pointing at a row that does not exist.
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            RunAsync(new PlanDayExerciseSelectionInput(Guid.NewGuid(), null, null)));
+            RunAsync(new PlanDayExerciseSelection(Guid.NewGuid(), null, null)));
     }
 
     [Fact]
@@ -219,8 +220,8 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var clientId = Guid.CreateVersion7();
 
         await RunAsync(
-            new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(clientId, ExerciseSeed.Deadlift, null));
+            new PlanDayExerciseSelection(_benchRowId, null, null),
+            new PlanDayExerciseSelection(clientId, ExerciseSeed.Deadlift, null));
 
         var rows = await ReadDayAsync();
 
@@ -235,8 +236,8 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var clientId = Guid.CreateVersion7();
         var selections = new[]
         {
-            new PlanDayExerciseSelectionInput(_benchRowId, null, null),
-            new PlanDayExerciseSelectionInput(clientId, ExerciseSeed.Deadlift, null)
+            new PlanDayExerciseSelection(_benchRowId, null, null),
+            new PlanDayExerciseSelection(clientId, ExerciseSeed.Deadlift, null)
         };
 
         await RunAsync(selections);
@@ -259,8 +260,8 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var freshId = Guid.CreateVersion7();
 
         await RunAsync(
-            new PlanDayExerciseSelectionInput(freshId, ExerciseSeed.BenchPress, null),
-            new PlanDayExerciseSelectionInput(_dumbbellRowId, null, null));
+            new PlanDayExerciseSelection(freshId, ExerciseSeed.BenchPress, null),
+            new PlanDayExerciseSelection(_dumbbellRowId, null, null));
 
         var rows = await ReadDayAsync();
 
@@ -280,7 +281,7 @@ public class SetPlanDayExercisesTests : IAsyncLifetime
         var strangerRowId = await CreateRowOnAnotherDayAsync();
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            RunAsync(new PlanDayExerciseSelectionInput(strangerRowId, ExerciseSeed.Deadlift, null)));
+            RunAsync(new PlanDayExerciseSelection(strangerRowId, ExerciseSeed.Deadlift, null)));
 
         // And the row it pointed at is untouched.
         await using var db = TestDatabase.NewContext();

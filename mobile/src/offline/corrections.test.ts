@@ -10,8 +10,8 @@ import { getGetApiTrainingPlansDaysDayIdQueryKey } from '../api/generated/traini
 import {
   getDeleteApiWorkoutsExercisesWorkoutExerciseIdMutationOptions,
   getDeleteApiWorkoutsWorkoutIdMutationOptions,
-  getGetApiWorkoutsUserIdByDateQueryKey,
-  getGetApiWorkoutsUserIdByMonthQueryKey,
+  getGetApiWorkoutsByDateQueryKey,
+  getGetApiWorkoutsByMonthQueryKey,
   getGetApiWorkoutsWorkoutIdQueryKey,
   getPostApiWorkoutsFromPlanDayMutationOptions,
 } from '../api/generated/workouts/workouts.ts';
@@ -180,8 +180,8 @@ describe('removing from a session', () => {
 
   test('a deleted session leaves today and the calendar month at once', async () => {
     const workout = session();
-    const todayKey = getGetApiWorkoutsUserIdByDateQueryKey(USER, { date: workout.performedAt });
-    const monthKey = getGetApiWorkoutsUserIdByMonthQueryKey(USER, { year: 2026, month: 10 });
+    const todayKey = getGetApiWorkoutsByDateQueryKey({ date: workout.performedAt });
+    const monthKey = getGetApiWorkoutsByMonthQueryKey({ year: 2026, month: 10 });
     const other: WorkoutSummaryResponse = {
       id: newId(), name: 'Pull', performedAt: '2026-10-19', exerciseCount: 3, planDayId: null, planDayName: null,
     };

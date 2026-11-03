@@ -29,6 +29,7 @@ import { Button } from '../../../theme/components/Button';
 import { Input } from '../../../theme/components/Input';
 import { tokens } from '../../../theme/tokens';
 import { ScreenState } from '../../../theme/components/ScreenState';
+import { screenStateOf } from '../../../offline/screenStateOf';
 import { searchable } from '../../../lib/text';
 import { SectionLabel } from '../../../theme/components/SectionLabel';
 
@@ -48,8 +49,12 @@ export const PlanDayExercisePickerScreen = ({ route }: Props) => {
   // Exercises the user already OK'd removing this session - don't ask twice.
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
 
-  const { data: exercises, isLoading } = useGetApiExercises({ query: { staleTime: Infinity } });
-  const { data: day } = useGetApiTrainingPlansDaysDayId(dayId);
+  const exercisesQuery = useGetApiExercises({ query: { staleTime: Infinity } });
+  const exercises = exercisesQuery.data;
+  const dayQuery = useGetApiTrainingPlansDaysDayId(dayId);
+  const day = dayQuery.data;
+  // Both are needed: the library to pick from, and the day to seed the current picks.
+  const screenState = screenStateOf(exercisesQuery) ?? screenStateOf(dayQuery);
 
   // The day as it looked when the picker opened. This is what separates a pick made just
   // now from one that has been around - and it carries the performed flag and the
@@ -166,8 +171,8 @@ export const PlanDayExercisePickerScreen = ({ route }: Props) => {
     );
   }, [exercises, query]);
 
-  if (isLoading) {
-    return <ScreenState kind="loading" />;
+  if (screenState) {
+    return <ScreenState kind={screenState} />;
   }
 
   const renderHeader = () => (

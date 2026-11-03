@@ -17,7 +17,7 @@ export const KEY_PREFIX = {
   workoutEntry: '/api/Workouts/',
 } as const;
 
-/// Sits inside the key of the "workout on a given date" query, after the user segment.
+/// Sits inside the key of the "workout on a given date" query.
 export const BY_DATE_MARKER = '/by-date';
 
 /// The URL part of a query key, or undefined for a key orval did not make.

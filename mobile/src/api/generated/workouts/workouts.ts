@@ -30,9 +30,9 @@ import type {
   CreateWorkoutFromPlanDayResponse,
   CreateWorkoutRequest,
   CreateWorkoutResponse,
-  GetApiWorkoutsUserIdByDateParams,
-  GetApiWorkoutsUserIdByMonthParams,
-  GetApiWorkoutsUserIdHistoryParams,
+  GetApiWorkoutsByDateParams,
+  GetApiWorkoutsByMonthParams,
+  GetApiWorkoutsHistoryParams,
   WorkoutByDateResponse,
   WorkoutHistoryResponse,
   WorkoutResponse,
@@ -101,15 +101,14 @@ const {mutation: mutationOptions} = options ?
       > => {
       return useMutation(getPostApiWorkoutsMutationOptions(options), queryClient);
     }
-    export const getApiWorkoutsUserIdHistory = (
-    userId: string,
-    params?: GetApiWorkoutsUserIdHistoryParams,
+    export const getApiWorkoutsHistory = (
+    params?: GetApiWorkoutsHistoryParams,
  signal?: AbortSignal
 ) => {
 
 
       return customInstance<WorkoutHistoryResponse>(
-      {url: `/api/Workouts/${userId}/history`, method: 'GET',
+      {url: `/api/Workouts/history`, method: 'GET',
         params, signal
     },
       );
@@ -118,72 +117,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getGetApiWorkoutsUserIdHistoryQueryKey = (userId: string,
-    params?: GetApiWorkoutsUserIdHistoryParams,) => {
+export const getGetApiWorkoutsHistoryQueryKey = (params?: GetApiWorkoutsHistoryParams,) => {
     return [
-    `/api/Workouts/${userId}/history`, ...(params ? [params] : [])
+    `/api/Workouts/history`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiWorkoutsUserIdHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError = unknown>(userId: string,
-    params?: GetApiWorkoutsUserIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError, TData>>, }
+export const getGetApiWorkoutsHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError = unknown>(params?: GetApiWorkoutsHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiWorkoutsUserIdHistoryQueryKey(userId,params);
+  const queryKey =  queryOptions?.queryKey ?? getGetApiWorkoutsHistoryQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>> = ({ signal }) => getApiWorkoutsUserIdHistory(userId,params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiWorkoutsHistory>>> = ({ signal }) => getApiWorkoutsHistory(params, signal);
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiWorkoutsUserIdHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>>
-export type GetApiWorkoutsUserIdHistoryQueryError = unknown
+export type GetApiWorkoutsHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getApiWorkoutsHistory>>>
+export type GetApiWorkoutsHistoryQueryError = unknown
 
 
-export function useGetApiWorkoutsUserIdHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError = unknown>(
- userId: string,
-    params: undefined |  GetApiWorkoutsUserIdHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError, TData>> & Pick<
+export function useGetApiWorkoutsHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError = unknown>(
+ params: undefined |  GetApiWorkoutsHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>,
+          Awaited<ReturnType<typeof getApiWorkoutsHistory>>,
           TError,
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>
+          Awaited<ReturnType<typeof getApiWorkoutsHistory>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiWorkoutsUserIdHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError, TData>> & Pick<
+export function useGetApiWorkoutsHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError = unknown>(
+ params?: GetApiWorkoutsHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>,
+          Awaited<ReturnType<typeof getApiWorkoutsHistory>>,
           TError,
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>
+          Awaited<ReturnType<typeof getApiWorkoutsHistory>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiWorkoutsUserIdHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError, TData>>, }
+export function useGetApiWorkoutsHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError = unknown>(
+ params?: GetApiWorkoutsHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useGetApiWorkoutsUserIdHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdHistory>>, TError, TData>>, }
+export function useGetApiWorkoutsHistory<TData = Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError = unknown>(
+ params?: GetApiWorkoutsHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsHistory>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetApiWorkoutsUserIdHistoryQueryOptions(userId,params,options)
+  const queryOptions = getGetApiWorkoutsHistoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -336,15 +329,14 @@ const {mutation: mutationOptions} = options ?
       > => {
       return useMutation(getDeleteApiWorkoutsWorkoutIdMutationOptions(options), queryClient);
     }
-    export const getApiWorkoutsUserIdByDate = (
-    userId: string,
-    params?: GetApiWorkoutsUserIdByDateParams,
+    export const getApiWorkoutsByDate = (
+    params?: GetApiWorkoutsByDateParams,
  signal?: AbortSignal
 ) => {
 
 
       return customInstance<WorkoutByDateResponse>(
-      {url: `/api/Workouts/${userId}/by-date`, method: 'GET',
+      {url: `/api/Workouts/by-date`, method: 'GET',
         params, signal
     },
       );
@@ -353,72 +345,66 @@ const {mutation: mutationOptions} = options ?
 
 
 
-export const getGetApiWorkoutsUserIdByDateQueryKey = (userId: string,
-    params?: GetApiWorkoutsUserIdByDateParams,) => {
+export const getGetApiWorkoutsByDateQueryKey = (params?: GetApiWorkoutsByDateParams,) => {
     return [
-    `/api/Workouts/${userId}/by-date`, ...(params ? [params] : [])
+    `/api/Workouts/by-date`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiWorkoutsUserIdByDateQueryOptions = <TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError = unknown>(userId: string,
-    params?: GetApiWorkoutsUserIdByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError, TData>>, }
+export const getGetApiWorkoutsByDateQueryOptions = <TData = Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError = unknown>(params?: GetApiWorkoutsByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiWorkoutsUserIdByDateQueryKey(userId,params);
+  const queryKey =  queryOptions?.queryKey ?? getGetApiWorkoutsByDateQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>> = ({ signal }) => getApiWorkoutsUserIdByDate(userId,params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiWorkoutsByDate>>> = ({ signal }) => getApiWorkoutsByDate(params, signal);
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiWorkoutsUserIdByDateQueryResult = NonNullable<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>>
-export type GetApiWorkoutsUserIdByDateQueryError = unknown
+export type GetApiWorkoutsByDateQueryResult = NonNullable<Awaited<ReturnType<typeof getApiWorkoutsByDate>>>
+export type GetApiWorkoutsByDateQueryError = unknown
 
 
-export function useGetApiWorkoutsUserIdByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError = unknown>(
- userId: string,
-    params: undefined |  GetApiWorkoutsUserIdByDateParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError, TData>> & Pick<
+export function useGetApiWorkoutsByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError = unknown>(
+ params: undefined |  GetApiWorkoutsByDateParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>,
+          Awaited<ReturnType<typeof getApiWorkoutsByDate>>,
           TError,
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>
+          Awaited<ReturnType<typeof getApiWorkoutsByDate>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiWorkoutsUserIdByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError, TData>> & Pick<
+export function useGetApiWorkoutsByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError = unknown>(
+ params?: GetApiWorkoutsByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>,
+          Awaited<ReturnType<typeof getApiWorkoutsByDate>>,
           TError,
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>
+          Awaited<ReturnType<typeof getApiWorkoutsByDate>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiWorkoutsUserIdByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError, TData>>, }
+export function useGetApiWorkoutsByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError = unknown>(
+ params?: GetApiWorkoutsByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useGetApiWorkoutsUserIdByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByDate>>, TError, TData>>, }
+export function useGetApiWorkoutsByDate<TData = Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError = unknown>(
+ params?: GetApiWorkoutsByDateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByDate>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetApiWorkoutsUserIdByDateQueryOptions(userId,params,options)
+  const queryOptions = getGetApiWorkoutsByDateQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -430,15 +416,14 @@ export function useGetApiWorkoutsUserIdByDate<TData = Awaited<ReturnType<typeof 
 
 
 
-export const getApiWorkoutsUserIdByMonth = (
-    userId: string,
-    params?: GetApiWorkoutsUserIdByMonthParams,
+export const getApiWorkoutsByMonth = (
+    params?: GetApiWorkoutsByMonthParams,
  signal?: AbortSignal
 ) => {
 
 
       return customInstance<WorkoutSummaryResponse[]>(
-      {url: `/api/Workouts/${userId}/by-month`, method: 'GET',
+      {url: `/api/Workouts/by-month`, method: 'GET',
         params, signal
     },
       );
@@ -447,72 +432,66 @@ export const getApiWorkoutsUserIdByMonth = (
 
 
 
-export const getGetApiWorkoutsUserIdByMonthQueryKey = (userId: string,
-    params?: GetApiWorkoutsUserIdByMonthParams,) => {
+export const getGetApiWorkoutsByMonthQueryKey = (params?: GetApiWorkoutsByMonthParams,) => {
     return [
-    `/api/Workouts/${userId}/by-month`, ...(params ? [params] : [])
+    `/api/Workouts/by-month`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetApiWorkoutsUserIdByMonthQueryOptions = <TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError = unknown>(userId: string,
-    params?: GetApiWorkoutsUserIdByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError, TData>>, }
+export const getGetApiWorkoutsByMonthQueryOptions = <TData = Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError = unknown>(params?: GetApiWorkoutsByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApiWorkoutsUserIdByMonthQueryKey(userId,params);
+  const queryKey =  queryOptions?.queryKey ?? getGetApiWorkoutsByMonthQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>> = ({ signal }) => getApiWorkoutsUserIdByMonth(userId,params, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>> = ({ signal }) => getApiWorkoutsByMonth(params, signal);
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetApiWorkoutsUserIdByMonthQueryResult = NonNullable<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>>
-export type GetApiWorkoutsUserIdByMonthQueryError = unknown
+export type GetApiWorkoutsByMonthQueryResult = NonNullable<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>>
+export type GetApiWorkoutsByMonthQueryError = unknown
 
 
-export function useGetApiWorkoutsUserIdByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError = unknown>(
- userId: string,
-    params: undefined |  GetApiWorkoutsUserIdByMonthParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError, TData>> & Pick<
+export function useGetApiWorkoutsByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError = unknown>(
+ params: undefined |  GetApiWorkoutsByMonthParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>,
+          Awaited<ReturnType<typeof getApiWorkoutsByMonth>>,
           TError,
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>
+          Awaited<ReturnType<typeof getApiWorkoutsByMonth>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiWorkoutsUserIdByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError, TData>> & Pick<
+export function useGetApiWorkoutsByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError = unknown>(
+ params?: GetApiWorkoutsByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>,
+          Awaited<ReturnType<typeof getApiWorkoutsByMonth>>,
           TError,
-          Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>
+          Awaited<ReturnType<typeof getApiWorkoutsByMonth>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiWorkoutsUserIdByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError, TData>>, }
+export function useGetApiWorkoutsByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError = unknown>(
+ params?: GetApiWorkoutsByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useGetApiWorkoutsUserIdByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError = unknown>(
- userId: string,
-    params?: GetApiWorkoutsUserIdByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsUserIdByMonth>>, TError, TData>>, }
+export function useGetApiWorkoutsByMonth<TData = Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError = unknown>(
+ params?: GetApiWorkoutsByMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiWorkoutsByMonth>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetApiWorkoutsUserIdByMonthQueryOptions(userId,params,options)
+  const queryOptions = getGetApiWorkoutsByMonthQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

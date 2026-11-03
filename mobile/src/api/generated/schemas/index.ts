@@ -5,8 +5,6 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export * from './addExerciseToPlanDayRequest';
-export * from './addExerciseToPlanDayResponse';
 export * from './addExerciseToWorkoutRequest';
 export * from './addExerciseToWorkoutResponse';
 export * from './createPlanDayRequest';
@@ -18,9 +16,9 @@ export * from './createWorkoutFromPlanDayResponse';
 export * from './createWorkoutRequest';
 export * from './createWorkoutResponse';
 export * from './exerciseResponse';
-export * from './getApiWorkoutsUserIdByDateParams';
-export * from './getApiWorkoutsUserIdByMonthParams';
-export * from './getApiWorkoutsUserIdHistoryParams';
+export * from './getApiWorkoutsByDateParams';
+export * from './getApiWorkoutsByMonthParams';
+export * from './getApiWorkoutsHistoryParams';
 export * from './lastPerformanceResponse';
 export * from './lastSetResponse';
 export * from './logSetRequest';
