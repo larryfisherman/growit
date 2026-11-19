@@ -137,16 +137,15 @@ export const WorkoutsScreen = () => {
             variant="secondary"
             loading={isCreatingNow}
             disabled={isCreatingNow}
-            onPress={() =>
+            onPress={() => {
+              // Our own id: the registry seeds the workout into the cache, so the session
+              // opens straight away, the same way starting from a plan day does.
+              const id = newId();
               createWorkout({
-                data: {
-                  id: newId(),
-                  name: `Trening ${formatShortDate()}`,
-                  performedAt: today,
-                  notes: null,
-                },
-              })
-            }
+                data: { id, name: `Trening ${formatShortDate()}`, performedAt: today, notes: null },
+              });
+              navigation.navigate('WorkoutDetail', { workoutId: id });
+            }}
           />
         </View>
       )}

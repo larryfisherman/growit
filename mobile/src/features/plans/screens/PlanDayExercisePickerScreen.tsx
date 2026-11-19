@@ -35,7 +35,7 @@ import { SectionLabel } from '../../../theme/components/SectionLabel';
 
 type Props = NativeStackScreenProps<PlansStackParamList, 'PlanDayExercisePicker'>;
 
-export const PlanDayExercisePickerScreen = ({ route }: Props) => {
+export const PlanDayExercisePickerScreen = ({ route, navigation }: Props) => {
   const { dayId } = route.params;
   const queryClient = useQueryClient();
 
@@ -245,39 +245,51 @@ export const PlanDayExercisePickerScreen = ({ route }: Props) => {
     </View>
   );
 
+  const selectedCount = picks?.length ?? 0;
+
   return (
-    <FlatList
-      className="bg-bg"
-      data={filtered}
-      keyExtractor={(item) => item.id}
-      keyboardShouldPersistTaps="handled"
-      ListHeaderComponent={renderHeader()}
-      renderItem={({ item }) => {
-        const isSelected = selectedIds.has(item.id);
-        return (
-          <Pressable
-            onPress={() => toggle(item)}
-            className={`px-4 py-4 border-b border-line flex-row items-center justify-between ${
-              isSelected ? 'bg-surface2' : ''
-            }`}
-          >
-            <View className="flex-1">
-              <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
-              <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
-                {item.category}
-              </Text>
-            </View>
-            {isSelected && <Ionicons name="checkmark" size={20} color={tokens.color.lime} />}
-          </Pressable>
-        );
-      }}
-      ListEmptyComponent={
-        <View className="items-center justify-center p-10">
-          <Text className="text-muted font-sans-md text-body text-center">
-            Nic nie pasuje do „{query}". Możesz dodać własne ćwiczenie.
-          </Text>
-        </View>
-      }
-    />
+    <View className="flex-1 bg-bg">
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={renderHeader()}
+        renderItem={({ item }) => {
+          const isSelected = selectedIds.has(item.id);
+          return (
+            <Pressable
+              onPress={() => toggle(item)}
+              className={`px-4 py-4 border-b border-line flex-row items-center justify-between ${
+                isSelected ? 'bg-surface2' : ''
+              }`}
+            >
+              <View className="flex-1">
+                <Text className="text-fg font-sans-sb text-body-lg">{item.name}</Text>
+                <Text className="text-muted font-mono-md text-label-sm tracking-label uppercase mt-1">
+                  {item.category}
+                </Text>
+              </View>
+              {isSelected && <Ionicons name="checkmark" size={20} color={tokens.color.lime} />}
+            </Pressable>
+          );
+        }}
+        ListEmptyComponent={
+          <View className="items-center justify-center p-10">
+            <Text className="text-muted font-sans-md text-body text-center">
+              Nic nie pasuje do „{query}". Możesz dodać własne ćwiczenie.
+            </Text>
+          </View>
+        }
+      />
+
+      {/* Picks save on their own (1 s debounce), so this only closes the picker. */}
+      <View className="p-4 border-t border-line bg-bg">
+        <Button
+          label={selectedCount > 0 ? `Gotowe (${selectedCount}) →` : 'Gotowe →'}
+          variant="primary"
+          onPress={() => navigation.goBack()}
+        />
+      </View>
+    </View>
   );
 };
