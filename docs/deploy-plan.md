@@ -216,7 +216,7 @@ Koszt ok. $0.05–0.20 (szac.), czas 1–1.5 h. Jeśli `KeyState` ≠ `Enabled`,
     3. `dotnet ef database update` przez DIRECT. Tylko migracje addytywne (expand/contract), żeby poprzednia wersja kodu działała na nowym schemacie.
     4. `deploy-api.sh`
     5. `git tag release-YYYYMMDD-N`
-    - **Wycofanie kodu:** `git checkout <poprzedni tag>` + `deploy-api.sh`.
+    - **Wycofanie kodu:** `scripts/deploy-api.sh --ref <poprzedni tag>` (kod z tagu, infra z `master`). Nie `git checkout <tag>` + deploy: to cofnęłoby też `infra/` i usunęło zasoby dodane później (alarmy, kill switch).
     - **Wycofanie danych:** Neon restore/branch w oknie 6 h albo `pg_restore` z dumpa.
     - **Rotacja hasła DB:** nowe hasło w Neon, potem `put-db-secret.sh`, potem podbicie `config_revision` w `variables.tf` i `deploy-api.sh`. Zmiana env var wymusza nowe środowiska, które czytają SSM przy starcie.
 - **Czego się uczysz:** IAM least privilege, resource policy Function URL, cold start w logu, dlaczego log group tworzymy sami.
